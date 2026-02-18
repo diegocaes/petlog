@@ -1,0 +1,46 @@
+---
+interface Props {
+  variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
+  size?: 'sm' | 'md' | 'lg';
+  type?: 'button' | 'submit' | 'reset';
+  href?: string;
+  class?: string;
+  disabled?: boolean;
+}
+
+const {
+  variant = 'primary',
+  size = 'md',
+  type = 'button',
+  href,
+  class: className = '',
+  disabled = false,
+} = Astro.props;
+
+const baseClasses = 'inline-flex items-center justify-center font-semibold rounded-2xl transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:pointer-events-none cursor-pointer';
+
+const variants: Record<string, string> = {
+  primary: 'bg-forest text-white hover:bg-forest-light shadow-md hover:shadow-lg',
+  secondary: 'bg-amber text-gray-900 hover:bg-amber-dark shadow-md hover:shadow-lg',
+  danger: 'bg-coral text-white hover:bg-red-500 shadow-md',
+  ghost: 'bg-transparent text-forest hover:bg-forest/10',
+};
+
+const sizes: Record<string, string> = {
+  sm: 'px-4 py-2 text-sm gap-1.5',
+  md: 'px-6 py-3 text-base gap-2',
+  lg: 'px-8 py-4 text-lg gap-2.5',
+};
+
+const classes = `${baseClasses} ${variants[variant]} ${sizes[size]} ${className}`;
+const Tag = href ? 'a' : 'button';
+---
+
+<Tag
+  href={href}
+  type={!href ? type : undefined}
+  class={classes}
+  disabled={disabled}
+>
+  <slot />
+</Tag>

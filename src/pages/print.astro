@@ -1,0 +1,208 @@
+---
+import '../styles/global.css';
+import { calculateAge, formatDate } from '../lib/utils';
+
+const { supabase, user } = Astro.locals;
+
+const { data: pet } = await supabase
+  .from('pets')
+  .select('*')
+  .eq('user_id', user.id)
+  .single();
+
+if (!pet) return Astro.redirect('/perfil?new=1');
+
+const { data: vaccines } = await supabase
+  .from('vaccines')
+  .select('name, date_given, next_due')
+  .eq('pet_id', pet.id)
+  .order('date_given', { ascending: false })
+  .limit(5);
+
+const { data: flights } = await supabase
+  .from('flights')
+  .select('*, flight_documents(*)')
+  .eq('pet_id', pet.id)
+  .order('flight_date', { ascending: false });
+
+const age = pet.birth_date ? calculateAge(pet.birth_date) : null;
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pasaporte de {pet.name} | PetLog</title>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body {
+        font-family: 'Inter', system-ui, sans-serif;
+        background: white;
+        color: #1f2937;
+        padding: 24px;
+        max-width: 700px;
+        margin: 0 auto;
+      }
+      .header {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        border-bottom: 3px solid #166534;
+        padding-bottom: 20px;
+        margin-bottom: 24px;
+      }
+      .pet-photo {
+        width: 120px;
+        height: 120px;
+        border-radius: 16px;
+        object-fit: cover;
+        border: 3px solid #166534;
+      }
+      .pet-info h1 { font-size: 28px; color: #166534; }
+      .pet-info p { font-size: 14px; color: #6b7280; margin-top: 4px; }
+      .section { margin-bottom: 20px; }
+      .section h2 {
+        font-size: 14px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: #166534;
+        border-bottom: 1px solid #e5e7eb;
+        padding-bottom: 6px;
+        margin-bottom: 12px;
+      }
+      .data-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px 24px;
+      }
+      .data-item label { font-size: 10px; text-transform: uppercase; color: #9ca3af; letter-spacing: 0.5px; }
+      .data-item p { font-size: 14px; font-weight: 600; }
+      table { width: 100%; border-collapse: collapse; font-size: 13px; }
+      th { text-align: left; padding: 6px 8px; background: #f3f4f6; font-size: 11px; text-transform: uppercase; color: #6b7280; }
+      td { padding: 6px 8px; border-bottom: 1px solid #f3f4f6; }
+      .badge { display: inline-block; padding: 2px 8px; border-radius: 9999px; font-size: 11px; font-weight: 500; }
+      .badge-ok { background: #f0fdf4; color: #15803d; }
+      .badge-no { background: #fef2f2; color: #ef4444; }
+      .print-btn {
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        background: #166534;
+        color: white;
+        border: none;
+        padding: 14px 28px;
+        border-radius: 16px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      }
+      @media print {
+        .print-btn { display: none !important; }
+        body { padding: 0; }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Header -->
+    <div class="header">
+      {pet.photo_url ? (
+        <img src={pet.photo_url} alt={pet.name} class="pet-photo" />
+      ) : (
+        <div class="pet-photo" style="display:flex;align-items:center;justify-content:center;background:#f5f0e8;font-size:48px;">🐾</div>
+      )}
+      <div class="pet-info">
+        <p style="font-size:10px;text-transform:uppercase;letter-spacing:2px;color:#166534;">Pasaporte de Viaje</p>
+        <h1>{pet.name}</h1>
+        <p>{pet.breed || 'Sin raza registrada'} {age && `· ${age}`}</p>
+      </div>
+    </div>
+
+    <!-- Essential Data -->
+    <div class="section">
+      <h2>Datos Esenciales</h2>
+      <div class="data-grid">
+        <div class="data-item">
+          <label>Nº Microchip</label>
+          <p>{pet.chip_id || '—'}</p>
+        </div>
+        <div class="data-item">
+          <label>Peso</label>
+          <p>{pet.weight_kg ? `${pet.weight_kg} kg` : '—'}</p>
+        </div>
+        <div class="data-item">
+          <label>Género</label>
+          <p>{pet.gender === 'macho' ? 'Macho' : pet.gender === 'hembra' ? 'Hembra' : '—'}</p>
+        </div>
+        <div class="data-item">
+          <label>Fecha nacimiento</label>
+          <p>{pet.birth_date ? formatDate(pet.birth_date) : '—'}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Vaccines -->
+    {vaccines && vaccines.length > 0 && (
+      <div class="section">
+        <h2>Vacunas Recientes</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Vacuna</th>
+              <th>Aplicada</th>
+              <th>Próx. dosis</th>
+            </tr>
+          </thead>
+          <tbody>
+            {vaccines.map((v) => (
+              <tr>
+                <td>{v.name}</td>
+                <td>{formatDate(v.date_given)}</td>
+                <td>{v.next_due ? formatDate(v.next_due) : '—'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    )}
+
+    <!-- Flight History -->
+    {flights && flights.length > 0 && (
+      <div class="section">
+        <h2>Historial de Vuelos</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Ruta</th>
+              <th>Fecha</th>
+              <th>Aerolínea</th>
+              <th>Docs</th>
+            </tr>
+          </thead>
+          <tbody>
+            {flights.map((f) => (
+              <tr>
+                <td>{f.origin} → {f.destination}</td>
+                <td>{formatDate(f.flight_date)}</td>
+                <td>{f.airline}{f.flight_number && ` ${f.flight_number}`}</td>
+                <td>
+                  <span class:list={['badge', f.vet_certificate ? 'badge-ok' : 'badge-no']}>Cert.</span>
+                  {' '}
+                  <span class:list={['badge', f.vaccines_updated ? 'badge-ok' : 'badge-no']}>Vac.</span>
+                  {' '}
+                  <span class:list={['badge', f.chip_verified ? 'badge-ok' : 'badge-no']}>Chip</span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    )}
+
+    <button class="print-btn" onclick="window.print()">
+      🖨️ Imprimir
+    </button>
+  </body>
+</html>

@@ -1,0 +1,140 @@
+---
+import MainLayout from '../../layouts/MainLayout.astro';
+import Card from '../../components/ui/Card.astro';
+import SectionHeader from '../../components/ui/SectionHeader.astro';
+import SaludTabs from '../../components/SaludTabs.astro';
+import EmptyState from '../../components/ui/EmptyState.astro';
+import WeightChart from '../../components/WeightChart.tsx';
+import { formatDate } from '../../lib/utils';
+
+const { supabase, user } = Astro.locals;
+
+const { data: pet } = await supabase
+  .from('pets')
+  .select('id, weight_kg')
+  .eq('user_id', user.id)
+  .single();
+
+if (!pet) return Astro.redirect('/perfil?new=1');
+
+// Handle form submission
+if (Astro.request.method === 'POST') {
+  const formData = await Astro.request.formData();
+  const action = formData.get('_action') as string;
+
+  if (action === 'add') {
+    const weightKg = Number(formData.get('weight_kg'));
+    await supabase.from('weight_records').insert({
+      pet_id: pet.id,
+      weight_kg: weightKg,
+      date: formData.get('date') as string,
+      notes: (formData.get('notes') as string) || null,
+    });
+    // Update current weight on pet
+    await supabase.from('pets').update({ weight_kg: weightKg }).eq('id', pet.id);
+  }
+
+  if (action === 'delete') {
+    await supabase.from('weight_records').delete().eq('id', formData.get('record_id') as string);
+  }
+
+  return Astro.redirect('/salud/peso');
+}
+
+const { data: records } = await supabase
+  .from('weight_records')
+  .select('*')
+  .eq('pet_id', pet.id)
+  .order('date', { ascending: true });
+---
+
+<MainLayout title="Control de Peso">
+  <SectionHeader title="Salud" subtitle="Control integral de tu mascota" />
+  <SaludTabs />
+
+  <!-- Weight Chart -->
+  {records && records.length >= 2 && (
+    <Card variant="elevated" class="mb-5 animate-fade-up animate-fade-up-delay-2">
+      <WeightChart records={records} client:load />
+    </Card>
+  )}
+
+  <!-- Add Weight Form -->
+  <Card class="mb-5 animate-fade-up animate-fade-up-delay-3">
+    <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Registrar peso</h2>
+    <form method="POST" class="space-y-4">
+      <input type="hidden" name="_action" value="add" />
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1.5">Peso (kg) <span class="text-coral">*</span></label>
+          <input
+            type="number"
+            name="weight_kg"
+            step="0.1"
+            min="0.1"
+            required
+            placeholder="12.5"
+            class="w-full rounded-xl border border-cream-dark bg-white px-4 py-3 text-gray-800 placeholder-gray-400 transition-all duration-200 hover:border-gray-300 focus:border-forest focus:outline-none focus:ring-2 focus:ring-forest/20"
+          />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1.5">Fecha <span class="text-coral">*</span></label>
+          <input
+            type="date"
+            name="date"
+            required
+            value={new Date().toISOString().split('T')[0]}
+            class="w-full rounded-xl border border-cream-dark bg-white px-4 py-3 text-gray-800 transition-all duration-200 hover:border-gray-300 focus:border-forest focus:outline-none focus:ring-2 focus:ring-forest/20"
+          />
+        </div>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1.5">Notas</label>
+        <textarea
+          name="notes"
+          rows="2"
+          placeholder="Después del baño, en ayunas..."
+          class="w-full rounded-xl border border-cream-dark bg-white px-4 py-3 text-gray-800 placeholder-gray-400 transition-all duration-200 hover:border-gray-300 focus:border-forest focus:outline-none focus:ring-2 focus:ring-forest/20 resize-none"
+        ></textarea>
+      </div>
+      <button type="submit" class="w-full rounded-2xl bg-forest px-6 py-3.5 font-semibold text-white shadow-md transition-all hover:bg-forest-light active:scale-95">
+        Registrar peso
+      </button>
+    </form>
+  </Card>
+
+  <!-- Weight Records List -->
+  {(!records || records.length === 0) ? (
+    <EmptyState
+      icon="weight"
+      title="Sin registros de peso"
+      description="Registra el primer peso de tu mascota para empezar a ver su evolución"
+    />
+  ) : (
+    <div class="space-y-3">
+      {[...records].reverse().map((record, i) => (
+        <Card variant="elevated" class:list={['animate-fade-up', i < 5 && `animate-fade-up-delay-${Math.min(i + 1, 5)}`]}>
+          <div class="flex items-center justify-between gap-3">
+            <div class="flex items-center gap-3 flex-1 min-w-0">
+              <div class="shrink-0 rounded-xl bg-amber/10 p-2.5 text-amber-dark">
+                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 12a4 4 0 0 1 8 0"/><line x1="12" y1="12" x2="12" y2="8"/></svg>
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="text-lg font-bold text-gray-800">{record.weight_kg} <span class="text-sm font-normal text-gray-400">kg</span></p>
+                <p class="text-xs text-gray-400">{formatDate(record.date)}</p>
+                {record.notes && <p class="text-xs text-gray-400 mt-0.5">{record.notes}</p>}
+              </div>
+            </div>
+            <form method="POST">
+              <input type="hidden" name="_action" value="delete" />
+              <input type="hidden" name="record_id" value={record.id} />
+              <button type="submit" class="shrink-0 rounded-xl p-2 text-gray-300 transition-colors hover:bg-red-50 hover:text-coral" title="Eliminar">
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+              </button>
+            </form>
+          </div>
+        </Card>
+      ))}
+    </div>
+  )}
+</MainLayout>

@@ -1,0 +1,239 @@
+---
+import MainLayout from '../layouts/MainLayout.astro';
+import Card from '../components/ui/Card.astro';
+import Input from '../components/ui/Input.astro';
+import Button from '../components/ui/Button.astro';
+import SectionHeader from '../components/ui/SectionHeader.astro';
+import { DOG_BREEDS } from '../lib/breeds';
+
+const { supabase, user } = Astro.locals;
+const isNew = Astro.url.searchParams.get('new') === '1';
+
+// Get existing pet
+const { data: pet } = await supabase
+  .from('pets')
+  .select('*')
+  .eq('user_id', user.id)
+  .single();
+
+// Handle form submission
+if (Astro.request.method === 'POST') {
+  const formData = await Astro.request.formData();
+  const action = formData.get('_action') as string;
+
+  if (action === 'logout') {
+    await supabase.auth.signOut();
+    return Astro.redirect('/login');
+  }
+
+  // Resolve breed: if "Otro" is selected, use the text input
+  const breedSelect = formData.get('breed') as string;
+  const breedOther = formData.get('breed_other') as string;
+  const breed = breedSelect === 'Otro' && breedOther ? breedOther : breedSelect || null;
+
+  const newWeight = formData.get('weight_kg') ? Number(formData.get('weight_kg')) : null;
+
+  const petData = {
+    user_id: user.id,
+    name: formData.get('name') as string,
+    breed,
+    birth_date: (formData.get('birth_date') as string) || null,
+    gender: (formData.get('gender') as string) || null,
+    weight_kg: newWeight,
+    chip_id: (formData.get('chip_id') as string) || null,
+  };
+
+  // Handle photo upload
+  const photoFile = formData.get('photo') as File;
+  let photo_url = pet?.photo_url || null;
+
+  if (photoFile && photoFile.size > 0) {
+    const ext = photoFile.name.split('.').pop();
+    const filePath = `${user.id}/pet-profile.${ext}`;
+    const { error: uploadError } = await supabase.storage
+      .from('pet-photos')
+      .upload(filePath, photoFile, { upsert: true });
+
+    if (!uploadError) {
+      const { data: publicUrl } = supabase.storage
+        .from('pet-photos')
+        .getPublicUrl(filePath);
+      photo_url = publicUrl.publicUrl;
+    }
+  }
+
+  let petId = pet?.id;
+
+  if (pet) {
+    await supabase.from('pets').update({ ...petData, photo_url }).eq('id', pet.id);
+  } else {
+    const { data: newPet } = await supabase.from('pets').insert({ ...petData, photo_url }).select('id').single();
+    petId = newPet?.id;
+  }
+
+  // Auto-log weight record if weight changed
+  if (newWeight && petId) {
+    const weightChanged = !pet || pet.weight_kg !== newWeight;
+    if (weightChanged) {
+      await supabase.from('weight_records').insert({
+        pet_id: petId,
+        weight_kg: newWeight,
+        date: new Date().toISOString().split('T')[0],
+      });
+    }
+  }
+
+  return Astro.redirect('/dashboard');
+}
+
+// Check if current breed is in the list (for "Otro" logic)
+const breedInList = pet?.breed ? DOG_BREEDS.includes(pet.breed as typeof DOG_BREEDS[number]) : false;
+const isOtherBreed = pet?.breed && !breedInList;
+---
+
+<MainLayout title={isNew ? 'Registra a tu mascota' : 'Perfil'}>
+  {isNew ? (
+    <div class="mb-6 rounded-3xl bg-gradient-to-br from-forest/5 to-amber/5 border border-forest/10 px-6 py-6 text-center animate-fade-up">
+      <div class="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-forest/10 text-2xl">
+        🐾
+      </div>
+      <p class="text-lg font-bold text-forest">¡Bienvenido a PetLog!</p>
+      <p class="text-sm text-gray-500 mt-1">Registra los datos de tu mascota para empezar</p>
+    </div>
+  ) : (
+    <SectionHeader title="Perfil" subtitle="Datos de tu mascota" />
+  )}
+
+  <Card variant="elevated" class="animate-fade-up animate-fade-up-delay-1">
+    <form method="POST" enctype="multipart/form-data" class="space-y-6">
+      <!-- Photo -->
+      <div class="flex flex-col items-center gap-3">
+        <div class="relative">
+          <img
+            id="photo-preview"
+            src={pet?.photo_url || '/icons/default-pet.svg'}
+            alt="Foto de mascota"
+            class="h-28 w-28 rounded-3xl object-cover border-2 border-cream-dark shadow-md"
+          />
+          <label class="absolute -bottom-2 -right-2 flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-forest text-white shadow-lg transition-all hover:bg-forest-light active:scale-95">
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+            <input type="file" name="photo" accept="image/*" class="hidden" id="photo-input" />
+          </label>
+        </div>
+        <p class="text-xs text-gray-400">Toca para cambiar la foto</p>
+      </div>
+
+      <!-- Section: Datos Básicos -->
+      <div class="space-y-4">
+        <div class="flex items-center gap-2 text-xs font-semibold text-gray-400 uppercase tracking-widest">
+          <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/></svg>
+          Datos Básicos
+        </div>
+
+        <Input label="Nombre" name="name" value={pet?.name || ''} required placeholder="Ej: Luna" />
+
+        <!-- Breed Dropdown -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1.5">Raza</label>
+          <select
+            name="breed"
+            id="breed-select"
+            class="w-full rounded-xl border border-cream-dark bg-white px-4 py-3 text-gray-800 transition-all duration-200 hover:border-gray-300 focus:border-forest focus:outline-none focus:ring-2 focus:ring-forest/20"
+          >
+            <option value="">Seleccionar raza</option>
+            {DOG_BREEDS.map((breed) => (
+              <option value={breed} selected={pet?.breed === breed || (isOtherBreed && breed === 'Otro')}>
+                {breed}
+              </option>
+            ))}
+          </select>
+          <input
+            type="text"
+            name="breed_other"
+            id="breed-other-input"
+            placeholder="Escribe la raza"
+            value={isOtherBreed ? pet?.breed : ''}
+            class:list={[
+              'mt-2 w-full rounded-xl border border-cream-dark bg-white px-4 py-3 text-gray-800 placeholder-gray-400 transition-all duration-200 hover:border-gray-300 focus:border-forest focus:outline-none focus:ring-2 focus:ring-forest/20',
+              { hidden: !isOtherBreed },
+            ]}
+          />
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <Input label="Fecha de nacimiento" name="birth_date" type="date" value={pet?.birth_date || ''} />
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1.5">Género</label>
+            <select
+              name="gender"
+              class="w-full rounded-xl border border-cream-dark bg-white px-4 py-3 text-gray-800 transition-all duration-200 hover:border-gray-300 focus:border-forest focus:outline-none focus:ring-2 focus:ring-forest/20"
+            >
+              <option value="">Seleccionar</option>
+              <option value="macho" selected={pet?.gender === 'macho'}>Macho ♂️</option>
+              <option value="hembra" selected={pet?.gender === 'hembra'}>Hembra ♀️</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <hr class="border-cream-dark/50" />
+
+      <!-- Section: Datos Médicos -->
+      <div class="space-y-4">
+        <div class="flex items-center gap-2 text-xs font-semibold text-gray-400 uppercase tracking-widest">
+          <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19.5 12.572l-7.5 7.428l-7.5 -7.428a5 5 0 1 1 7.5 -6.566a5 5 0 1 1 7.5 6.572"/></svg>
+          Datos Médicos
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <Input label="Peso (kg)" name="weight_kg" type="number" step="0.1" value={pet?.weight_kg?.toString() || ''} placeholder="Ej: 12.5" />
+          <Input label="Nº Microchip" name="chip_id" value={pet?.chip_id || ''} placeholder="Ej: 123456789" />
+        </div>
+        <p class="text-xs text-gray-400 -mt-2">Al cambiar el peso se guarda automáticamente en el historial</p>
+      </div>
+
+      <Button type="submit" variant="primary" size="lg" class="w-full">
+        {pet ? 'Guardar cambios' : 'Crear perfil'}
+      </Button>
+    </form>
+  </Card>
+
+  <!-- Logout & Account Info -->
+  <Card variant="elevated" class="mt-4 animate-fade-up animate-fade-up-delay-2">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-sm font-medium text-gray-600">Cuenta</p>
+        <p class="text-xs text-gray-400 truncate max-w-[200px]">{user.email}</p>
+      </div>
+      <form method="POST">
+        <input type="hidden" name="_action" value="logout" />
+        <Button type="submit" variant="danger" size="sm">
+          Cerrar sesión
+        </Button>
+      </form>
+    </div>
+  </Card>
+
+  <script>
+    // Photo preview
+    const input = document.getElementById('photo-input') as HTMLInputElement;
+    const preview = document.getElementById('photo-preview') as HTMLImageElement;
+    input?.addEventListener('change', () => {
+      const file = input.files?.[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => { preview.src = e.target?.result as string; };
+        reader.readAsDataURL(file);
+      }
+    });
+
+    // Breed "Otro" toggle
+    const select = document.getElementById('breed-select') as HTMLSelectElement;
+    const otherInput = document.getElementById('breed-other-input') as HTMLInputElement;
+    function toggleOther() {
+      otherInput.classList.toggle('hidden', select.value !== 'Otro');
+      if (select.value !== 'Otro') otherInput.value = '';
+    }
+    select?.addEventListener('change', toggleOther);
+  </script>
+</MainLayout>

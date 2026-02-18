@@ -1,0 +1,44 @@
+---
+/**
+ * Drop this component into any page to get:
+ * 1. Submit button loading spinner on form submit
+ * 2. Delete confirmation dialog before deleting
+ */
+---
+
+<script>
+  // 1. Loading state on submit buttons
+  document.querySelectorAll<HTMLFormElement>('form[method="POST"]').forEach(form => {
+    form.addEventListener('submit', (e) => {
+      const action = form.querySelector<HTMLInputElement>('input[name="_action"]')?.value;
+
+      // Skip delete forms — handled separately with confirmation
+      if (action === 'delete') return;
+
+      const submitBtn = form.querySelector<HTMLButtonElement>('button[type="submit"]');
+      if (submitBtn && !submitBtn.classList.contains('btn-loading')) {
+        submitBtn.classList.add('btn-loading');
+        submitBtn.setAttribute('disabled', '');
+      }
+    });
+  });
+
+  // 2. Delete confirmation
+  document.querySelectorAll<HTMLFormElement>('form[method="POST"]').forEach(form => {
+    const action = form.querySelector<HTMLInputElement>('input[name="_action"]');
+    if (action?.value !== 'delete') return;
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      // Show native confirm dialog
+      if (confirm('¿Eliminar este registro? Esta acción no se puede deshacer.')) {
+        const btn = form.querySelector<HTMLButtonElement>('button[type="submit"]');
+        if (btn) {
+          btn.classList.add('btn-loading');
+          btn.setAttribute('disabled', '');
+        }
+        form.submit();
+      }
+    });
+  });
+</script>

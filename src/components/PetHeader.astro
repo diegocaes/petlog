@@ -1,0 +1,63 @@
+---
+import type { Pet } from '../types/supabase';
+import { calculateAge, isBirthday } from '../lib/utils';
+
+interface Props {
+  pet: Pet;
+  showEditButton?: boolean;
+}
+
+const { pet, showEditButton = false } = Astro.props;
+const age = pet.birth_date ? calculateAge(pet.birth_date) : null;
+const birthday = pet.birth_date ? isBirthday(pet.birth_date) : false;
+const photoUrl = pet.photo_url || '/icons/default-pet.svg';
+---
+
+<div class="flex items-center gap-4 sm:gap-5">
+  <div class="relative">
+    <img
+      src={photoUrl}
+      alt={pet.name}
+      class:list={[
+        'h-16 w-16 sm:h-20 sm:w-20 rounded-2xl object-cover shadow-md',
+        birthday
+          ? 'border-[3px] border-amber ring-4 ring-amber/20'
+          : 'border-2 border-forest/20',
+      ]}
+    />
+    {birthday && (
+      <span class="absolute -top-2 -right-2 text-lg animate-bounce">🎂</span>
+    )}
+    {pet.gender && !birthday && (
+      <span class="absolute -bottom-1 -right-1 rounded-full bg-white px-1.5 py-0.5 text-xs shadow">
+        {pet.gender === 'macho' ? '♂️' : '♀️'}
+      </span>
+    )}
+  </div>
+  <div class="flex-1 min-w-0">
+    <div class="flex items-center gap-2">
+      <h1 class="text-2xl sm:text-3xl font-bold text-gray-800 truncate">{pet.name}</h1>
+      {birthday && <span class="text-lg">🎉</span>}
+    </div>
+    {birthday && (
+      <p class="text-sm font-medium text-amber-dark animate-fade-up">¡Feliz cumpleaños!</p>
+    )}
+    <div class="flex flex-wrap gap-x-3 gap-y-1 text-sm text-gray-500 mt-1">
+      {pet.breed && <span>{pet.breed}</span>}
+      {age && <span>· {age}</span>}
+      {pet.weight_kg && <span>· {pet.weight_kg} kg</span>}
+    </div>
+  </div>
+  {showEditButton && (
+    <a
+      href="/perfil"
+      class="shrink-0 rounded-xl bg-cream-dark p-2.5 text-gray-500 transition-colors hover:bg-cream hover:text-forest"
+      aria-label="Editar perfil"
+    >
+      <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+        <path d="m15 5 4 4" />
+      </svg>
+    </a>
+  )}
+</div>

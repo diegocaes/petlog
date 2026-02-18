@@ -1,0 +1,480 @@
+---
+import MainLayout from '../layouts/MainLayout.astro';
+import Card from '../components/ui/Card.astro';
+import SectionHeader from '../components/ui/SectionHeader.astro';
+import EmptyState from '../components/ui/EmptyState.astro';
+import { formatDate } from '../lib/utils';
+
+const { supabase, user } = Astro.locals;
+
+const { data: pet } = await supabase
+  .from('pets')
+  .select('*')
+  .eq('user_id', user.id)
+  .single();
+
+if (!pet) return Astro.redirect('/perfil?new=1');
+
+// Handle form submissions
+if (Astro.request.method === 'POST') {
+  const formData = await Astro.request.formData();
+  const action = formData.get('_action') as string;
+
+  if (action === 'add_flight') {
+    await supabase.from('flights').insert({
+      pet_id: pet.id,
+      airline: formData.get('airline') as string,
+      flight_number: (formData.get('flight_number') as string) || null,
+      origin: formData.get('origin') as string,
+      destination: formData.get('destination') as string,
+      flight_date: formData.get('flight_date') as string,
+      cabin_or_cargo: (formData.get('cabin_or_cargo') as string) || 'cabina',
+      crate_approved: formData.get('crate_approved') === 'on',
+      vet_certificate: formData.get('vet_certificate') === 'on',
+      chip_verified: formData.get('chip_verified') === 'on',
+      vaccines_updated: formData.get('vaccines_updated') === 'on',
+      import_permit: formData.get('import_permit') === 'on',
+      health_certificate: formData.get('health_certificate') === 'on',
+      notes: (formData.get('notes') as string) || null,
+    });
+  }
+
+  if (action === 'edit_flight') {
+    const flightId = formData.get('flight_id') as string;
+    await supabase.from('flights').update({
+      airline: formData.get('airline') as string,
+      flight_number: (formData.get('flight_number') as string) || null,
+      origin: formData.get('origin') as string,
+      destination: formData.get('destination') as string,
+      flight_date: formData.get('flight_date') as string,
+      cabin_or_cargo: (formData.get('cabin_or_cargo') as string) || 'cabina',
+      crate_approved: formData.get('crate_approved') === 'on',
+      vet_certificate: formData.get('vet_certificate') === 'on',
+      chip_verified: formData.get('chip_verified') === 'on',
+      vaccines_updated: formData.get('vaccines_updated') === 'on',
+      import_permit: formData.get('import_permit') === 'on',
+      health_certificate: formData.get('health_certificate') === 'on',
+      notes: (formData.get('notes') as string) || null,
+    }).eq('id', flightId);
+  }
+
+  if (action === 'delete_flight') {
+    const flightId = formData.get('flight_id') as string;
+    // Delete documents from storage first
+    const { data: docs } = await supabase
+      .from('flight_documents')
+      .select('file_url')
+      .eq('flight_id', flightId);
+    if (docs && docs.length > 0) {
+      const paths = docs.map((d) => {
+        const url = new URL(d.file_url);
+        const parts = url.pathname.split('/storage/v1/object/public/flight-docs/');
+        return parts[1] || '';
+      }).filter(Boolean);
+      if (paths.length > 0) {
+        await supabase.storage.from('flight-docs').remove(paths);
+      }
+    }
+    await supabase.from('flight_documents').delete().eq('flight_id', flightId);
+    await supabase.from('flights').delete().eq('id', flightId);
+  }
+
+  if (action === 'upload_doc') {
+    const flightId = formData.get('flight_id') as string;
+    const docName = formData.get('doc_name') as string;
+    const file = formData.get('doc_file') as File;
+
+    if (file && file.size > 0) {
+      const ext = file.name.split('.').pop();
+      const path = `${user.id}/${flightId}/${Date.now()}.${ext}`;
+      const { data: uploaded } = await supabase.storage
+        .from('flight-docs')
+        .upload(path, file, { contentType: file.type });
+
+      if (uploaded) {
+        const { data: { publicUrl } } = supabase.storage
+          .from('flight-docs')
+          .getPublicUrl(uploaded.path);
+
+        await supabase.from('flight_documents').insert({
+          flight_id: flightId,
+          name: docName || file.name,
+          file_url: publicUrl,
+        });
+      }
+    }
+  }
+
+  if (action === 'delete_doc') {
+    const docId = formData.get('doc_id') as string;
+    const fileUrl = formData.get('file_url') as string;
+    // Remove from storage
+    try {
+      const url = new URL(fileUrl);
+      const parts = url.pathname.split('/storage/v1/object/public/flight-docs/');
+      const storagePath = parts[1] || '';
+      if (storagePath) {
+        await supabase.storage.from('flight-docs').remove([storagePath]);
+      }
+    } catch {}
+    await supabase.from('flight_documents').delete().eq('id', docId);
+  }
+
+  return Astro.redirect('/viajes');
+}
+
+// Get all flights with documents
+const { data: flights } = await supabase
+  .from('flights')
+  .select('*, flight_documents(*)')
+  .eq('pet_id', pet.id)
+  .order('flight_date', { ascending: false });
+
+const totalFlights = flights?.length ?? 0;
+---
+
+<MainLayout title="Vuelos">
+  <SectionHeader
+    title="Vuelos"
+    subtitle="Registro de vuelos en avión de tu mascota"
+    action={totalFlights > 0 ? { href: '/print', label: '🖨️ Imprimir pasaporte' } : undefined}
+  />
+
+  <!-- Flight Stats -->
+  {totalFlights > 0 && (
+    <Card class="mb-5 bg-gradient-to-br from-forest to-forest-dark text-white animate-fade-up" padding={false}>
+      <div class="p-5 sm:p-6">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/20">
+            <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/>
+            </svg>
+          </div>
+          <div>
+            <p class="text-xs uppercase tracking-widest text-white/60">Bitácora de Vuelos</p>
+            <p class="text-xl font-bold">{pet.name}</p>
+          </div>
+        </div>
+        <div class="flex flex-wrap gap-3 mt-4">
+          {flights!.slice(0, 6).map((flight) => (
+            <div class="flex flex-col items-center">
+              <div class="flex h-11 w-11 items-center justify-center rounded-full bg-white/15 text-sm font-bold">
+                ✈️
+              </div>
+              <p class="text-[10px] text-white/80 mt-1 text-center max-w-[64px] truncate">
+                {flight.origin} → {flight.destination}
+              </p>
+            </div>
+          ))}
+        </div>
+        <p class="text-xs text-white/50 mt-4">{totalFlights} vuelo{totalFlights !== 1 ? 's' : ''} registrado{totalFlights !== 1 ? 's' : ''}</p>
+      </div>
+    </Card>
+  )}
+
+  <!-- Add Flight Form -->
+  <Card class="mb-5 animate-fade-up animate-fade-up-delay-1">
+    <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">Registrar vuelo</h2>
+    <form method="POST" class="space-y-4">
+      <input type="hidden" name="_action" value="add_flight" />
+
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Aerolínea <span class="text-coral">*</span></label>
+          <input type="text" name="airline" required placeholder="Ej: Iberia, LATAM" class="w-full rounded-xl border border-cream-dark bg-white px-4 py-3 text-gray-800 placeholder-gray-400 focus:border-forest focus:outline-none focus:ring-2 focus:ring-forest/20" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Nº de vuelo</label>
+          <input type="text" name="flight_number" placeholder="IB3456" class="w-full rounded-xl border border-cream-dark bg-white px-4 py-3 text-gray-800 placeholder-gray-400 focus:border-forest focus:outline-none focus:ring-2 focus:ring-forest/20" />
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Origen <span class="text-coral">*</span></label>
+          <input type="text" name="origin" required placeholder="Madrid (MAD)" class="w-full rounded-xl border border-cream-dark bg-white px-4 py-3 text-gray-800 placeholder-gray-400 focus:border-forest focus:outline-none focus:ring-2 focus:ring-forest/20" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Destino <span class="text-coral">*</span></label>
+          <input type="text" name="destination" required placeholder="Miami (MIA)" class="w-full rounded-xl border border-cream-dark bg-white px-4 py-3 text-gray-800 placeholder-gray-400 focus:border-forest focus:outline-none focus:ring-2 focus:ring-forest/20" />
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Fecha del vuelo <span class="text-coral">*</span></label>
+          <input type="date" name="flight_date" required class="w-full rounded-xl border border-cream-dark bg-white px-4 py-3 text-gray-800 focus:border-forest focus:outline-none focus:ring-2 focus:ring-forest/20" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Modalidad</label>
+          <select name="cabin_or_cargo" class="w-full rounded-xl border border-cream-dark bg-white px-4 py-3 text-gray-800 focus:border-forest focus:outline-none focus:ring-2 focus:ring-forest/20">
+            <option value="cabina">En cabina</option>
+            <option value="bodega">En bodega (cargo)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Document checklist -->
+      <div class="space-y-3">
+        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Documentación</p>
+        <label class="flex items-center gap-3 cursor-pointer">
+          <input type="checkbox" name="vet_certificate" class="h-5 w-5 rounded border-cream-dark text-forest focus:ring-forest/20" />
+          <span class="text-sm text-gray-700">Certificado veterinario</span>
+        </label>
+        <label class="flex items-center gap-3 cursor-pointer">
+          <input type="checkbox" name="health_certificate" class="h-5 w-5 rounded border-cream-dark text-forest focus:ring-forest/20" />
+          <span class="text-sm text-gray-700">Certificado de salud internacional</span>
+        </label>
+        <label class="flex items-center gap-3 cursor-pointer">
+          <input type="checkbox" name="chip_verified" class="h-5 w-5 rounded border-cream-dark text-forest focus:ring-forest/20" />
+          <span class="text-sm text-gray-700">Microchip verificado</span>
+        </label>
+        <label class="flex items-center gap-3 cursor-pointer">
+          <input type="checkbox" name="vaccines_updated" class="h-5 w-5 rounded border-cream-dark text-forest focus:ring-forest/20" />
+          <span class="text-sm text-gray-700">Vacunas al día (incluye rabia)</span>
+        </label>
+        <label class="flex items-center gap-3 cursor-pointer">
+          <input type="checkbox" name="import_permit" class="h-5 w-5 rounded border-cream-dark text-forest focus:ring-forest/20" />
+          <span class="text-sm text-gray-700">Permiso de importación</span>
+        </label>
+        <label class="flex items-center gap-3 cursor-pointer">
+          <input type="checkbox" name="crate_approved" class="h-5 w-5 rounded border-cream-dark text-forest focus:ring-forest/20" />
+          <span class="text-sm text-gray-700">Transportín aprobado (IATA)</span>
+        </label>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Notas</label>
+        <textarea name="notes" rows="2" placeholder="Requisitos especiales, detalles del vuelo..." class="w-full rounded-xl border border-cream-dark bg-white px-4 py-3 text-gray-800 placeholder-gray-400 focus:border-forest focus:outline-none focus:ring-2 focus:ring-forest/20 resize-none"></textarea>
+      </div>
+
+      <button type="submit" class="w-full rounded-2xl bg-forest px-6 py-3.5 font-semibold text-white shadow-md transition-all hover:bg-forest-light active:scale-95">
+        Registrar vuelo
+      </button>
+    </form>
+  </Card>
+
+  <!-- Flights List -->
+  {(!flights || flights.length === 0) ? (
+    <EmptyState
+      icon="travel"
+      title="Sin vuelos registrados"
+      description="Registra el primer vuelo en avión de tu mascota"
+    />
+  ) : (
+    <div class="space-y-4">
+      {flights.map((flight, i) => {
+        const docs = flight.flight_documents || [];
+        const requirementsMet = [
+          flight.vet_certificate,
+          flight.health_certificate,
+          flight.chip_verified,
+          flight.vaccines_updated,
+          flight.import_permit,
+          flight.crate_approved,
+        ].filter(Boolean).length;
+        const totalRequirements = 6;
+
+        return (
+          <Card class:list={['animate-fade-up', i < 5 && `animate-fade-up-delay-${Math.min(i + 1, 5)}`]}>
+            {/* View mode */}
+            <div class="item-view" data-id={flight.id}>
+            {/* Header */}
+            <div class="flex items-start justify-between gap-3 mb-3">
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <p class="text-lg font-bold text-gray-800">
+                    {flight.origin} → {flight.destination}
+                  </p>
+                  <span class="rounded-full bg-forest/10 px-2 py-0.5 text-xs font-medium text-forest">
+                    {flight.cabin_or_cargo === 'cabina' ? 'Cabina' : 'Bodega'}
+                  </span>
+                </div>
+                <p class="text-xs text-gray-400 mt-0.5">
+                  {formatDate(flight.flight_date)}
+                  {flight.airline && ` · ${flight.airline}`}
+                  {flight.flight_number && ` ${flight.flight_number}`}
+                </p>
+              </div>
+              <div class="flex gap-1 shrink-0">
+                <button type="button" class="edit-btn rounded-xl p-2 text-gray-300 transition-colors hover:bg-forest/10 hover:text-forest" data-id={flight.id} title="Editar vuelo">
+                  <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+                </button>
+                <form method="POST">
+                  <input type="hidden" name="_action" value="delete_flight" />
+                  <input type="hidden" name="flight_id" value={flight.id} />
+                  <button type="submit" class="rounded-xl p-2 text-gray-300 transition-colors hover:bg-red-50 hover:text-coral" title="Eliminar vuelo">
+                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                  </button>
+                </form>
+              </div>
+            </div>
+
+            {/* Requirement badges */}
+            <div class="flex flex-wrap gap-1.5 mb-3">
+              <span class:list={['rounded-full px-2 py-0.5 text-[11px] font-medium', flight.vet_certificate ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-400']}>
+                {flight.vet_certificate ? '✅' : '⬜'} Cert. vet.
+              </span>
+              <span class:list={['rounded-full px-2 py-0.5 text-[11px] font-medium', flight.health_certificate ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-400']}>
+                {flight.health_certificate ? '✅' : '⬜'} Salud intl.
+              </span>
+              <span class:list={['rounded-full px-2 py-0.5 text-[11px] font-medium', flight.chip_verified ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-400']}>
+                {flight.chip_verified ? '✅' : '⬜'} Chip
+              </span>
+              <span class:list={['rounded-full px-2 py-0.5 text-[11px] font-medium', flight.vaccines_updated ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-400']}>
+                {flight.vaccines_updated ? '✅' : '⬜'} Vacunas
+              </span>
+              <span class:list={['rounded-full px-2 py-0.5 text-[11px] font-medium', flight.import_permit ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-400']}>
+                {flight.import_permit ? '✅' : '⬜'} Permiso
+              </span>
+              <span class:list={['rounded-full px-2 py-0.5 text-[11px] font-medium', flight.crate_approved ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-400']}>
+                {flight.crate_approved ? '✅' : '⬜'} IATA
+              </span>
+            </div>
+
+            {/* Progress bar */}
+            <div class="flex items-center gap-2 mb-3">
+              <div class="relative h-1.5 flex-1 rounded-full bg-cream-dark">
+                <div
+                  class="absolute left-0 top-0 h-full rounded-full bg-forest transition-all"
+                  style={`width: ${(requirementsMet / totalRequirements) * 100}%`}
+                ></div>
+              </div>
+              <span class="text-xs text-gray-400">{requirementsMet}/{totalRequirements}</span>
+            </div>
+
+            {flight.notes && (
+              <p class="text-sm text-gray-500 mb-3">{flight.notes}</p>
+            )}
+
+            {/* Documents section */}
+            <div class="border-t border-cream-dark/50 pt-3 mt-3">
+              <div class="flex items-center justify-between mb-3">
+                <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Documentos adjuntos</p>
+                <span class="text-xs text-gray-400">{docs.length} archivo{docs.length !== 1 ? 's' : ''}</span>
+              </div>
+
+              {/* Existing docs */}
+              {docs.length > 0 && (
+                <div class="space-y-2 mb-3">
+                  {docs.map((doc: {id: string, name: string, file_url: string}) => (
+                    <div class="flex items-center justify-between gap-2 rounded-xl bg-cream/50 px-3 py-2">
+                      <a
+                        href={doc.file_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="flex items-center gap-2 text-sm text-forest font-medium hover:underline min-w-0"
+                      >
+                        <svg class="h-4 w-4 shrink-0 text-forest/60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+                        </svg>
+                        <span class="truncate">{doc.name}</span>
+                      </a>
+                      <form method="POST" class="shrink-0">
+                        <input type="hidden" name="_action" value="delete_doc" />
+                        <input type="hidden" name="doc_id" value={doc.id} />
+                        <input type="hidden" name="file_url" value={doc.file_url} />
+                        <button type="submit" class="rounded-lg p-1.5 text-gray-300 hover:bg-red-50 hover:text-coral transition-colors" title="Eliminar documento">
+                          <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                        </button>
+                      </form>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Upload form */}
+              <form method="POST" enctype="multipart/form-data" class="flex flex-col sm:flex-row gap-2">
+                <input type="hidden" name="_action" value="upload_doc" />
+                <input type="hidden" name="flight_id" value={flight.id} />
+                <input
+                  type="text"
+                  name="doc_name"
+                  placeholder="Nombre del doc"
+                  class="flex-1 rounded-xl border border-cream-dark bg-white px-3 py-2 text-sm text-gray-800 placeholder-gray-400 focus:border-forest focus:outline-none focus:ring-2 focus:ring-forest/20"
+                />
+                <input
+                  type="file"
+                  name="doc_file"
+                  accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                  required
+                  class="flex-1 rounded-xl border border-cream-dark bg-white px-3 py-2 text-sm text-gray-600 file:mr-2 file:rounded-lg file:border-0 file:bg-forest/10 file:px-3 file:py-1 file:text-xs file:font-medium file:text-forest focus:outline-none"
+                />
+                <button type="submit" class="shrink-0 rounded-xl bg-forest/10 px-4 py-2 text-sm font-medium text-forest transition-all hover:bg-forest/20 active:scale-95">
+                  Subir
+                </button>
+              </form>
+            </div>
+            </div>{/* end item-view */}
+
+            {/* Edit mode */}
+            <form method="POST" class="item-edit hidden space-y-3" data-id={flight.id}>
+              <input type="hidden" name="_action" value="edit_flight" />
+              <input type="hidden" name="flight_id" value={flight.id} />
+              <div class="flex items-center justify-between mb-2">
+                <p class="text-xs font-semibold text-forest uppercase tracking-wider">Editando vuelo</p>
+                <button type="button" class="cancel-edit text-xs text-gray-400 hover:text-gray-600" data-id={flight.id}>Cancelar</button>
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <input type="text" name="airline" value={flight.airline} required placeholder="Aerolínea" class="w-full rounded-xl border border-cream-dark bg-white px-3 py-2.5 text-sm text-gray-800 focus:border-forest focus:outline-none focus:ring-2 focus:ring-forest/20" />
+                <input type="text" name="flight_number" value={flight.flight_number || ''} placeholder="Nº vuelo" class="w-full rounded-xl border border-cream-dark bg-white px-3 py-2.5 text-sm text-gray-800 placeholder-gray-400 focus:border-forest focus:outline-none focus:ring-2 focus:ring-forest/20" />
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <input type="text" name="origin" value={flight.origin} required placeholder="Origen" class="w-full rounded-xl border border-cream-dark bg-white px-3 py-2.5 text-sm text-gray-800 focus:border-forest focus:outline-none focus:ring-2 focus:ring-forest/20" />
+                <input type="text" name="destination" value={flight.destination} required placeholder="Destino" class="w-full rounded-xl border border-cream-dark bg-white px-3 py-2.5 text-sm text-gray-800 focus:border-forest focus:outline-none focus:ring-2 focus:ring-forest/20" />
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <input type="date" name="flight_date" value={flight.flight_date} required class="w-full rounded-xl border border-cream-dark bg-white px-3 py-2.5 text-sm text-gray-800 focus:border-forest focus:outline-none focus:ring-2 focus:ring-forest/20" />
+                <select name="cabin_or_cargo" class="w-full rounded-xl border border-cream-dark bg-white px-3 py-2.5 text-sm text-gray-800 focus:border-forest focus:outline-none focus:ring-2 focus:ring-forest/20">
+                  <option value="cabina" selected={flight.cabin_or_cargo === 'cabina'}>Cabina</option>
+                  <option value="bodega" selected={flight.cabin_or_cargo === 'bodega'}>Bodega</option>
+                </select>
+              </div>
+              <div class="grid grid-cols-2 gap-x-4 gap-y-2">
+                <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-700">
+                  <input type="checkbox" name="vet_certificate" checked={flight.vet_certificate} class="h-4 w-4 rounded" /> Cert. vet.
+                </label>
+                <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-700">
+                  <input type="checkbox" name="health_certificate" checked={flight.health_certificate} class="h-4 w-4 rounded" /> Salud intl.
+                </label>
+                <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-700">
+                  <input type="checkbox" name="chip_verified" checked={flight.chip_verified} class="h-4 w-4 rounded" /> Chip
+                </label>
+                <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-700">
+                  <input type="checkbox" name="vaccines_updated" checked={flight.vaccines_updated} class="h-4 w-4 rounded" /> Vacunas
+                </label>
+                <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-700">
+                  <input type="checkbox" name="import_permit" checked={flight.import_permit} class="h-4 w-4 rounded" /> Permiso
+                </label>
+                <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-700">
+                  <input type="checkbox" name="crate_approved" checked={flight.crate_approved} class="h-4 w-4 rounded" /> IATA
+                </label>
+              </div>
+              <textarea name="notes" rows="2" placeholder="Notas" class="w-full rounded-xl border border-cream-dark bg-white px-3 py-2.5 text-sm text-gray-800 placeholder-gray-400 focus:border-forest focus:outline-none focus:ring-2 focus:ring-forest/20 resize-none">{flight.notes || ''}</textarea>
+              <button type="submit" class="w-full rounded-xl bg-forest px-4 py-2.5 text-sm font-semibold text-white transition-all hover:bg-forest-light active:scale-95">
+                Guardar cambios
+              </button>
+            </form>
+          </Card>
+        );
+      })}
+    </div>
+  )}
+
+  <script>
+    document.querySelectorAll('.edit-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = (btn as HTMLElement).dataset.id;
+        document.querySelector(`.item-view[data-id="${id}"]`)?.classList.add('hidden');
+        document.querySelector(`.item-edit[data-id="${id}"]`)?.classList.remove('hidden');
+      });
+    });
+    document.querySelectorAll('.cancel-edit').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = (btn as HTMLElement).dataset.id;
+        document.querySelector(`.item-view[data-id="${id}"]`)?.classList.remove('hidden');
+        document.querySelector(`.item-edit[data-id="${id}"]`)?.classList.add('hidden');
+      });
+    });
+  </script>
+</MainLayout>
