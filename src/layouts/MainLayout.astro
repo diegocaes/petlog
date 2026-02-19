@@ -1,6 +1,8 @@
 ---
 import Navbar from '../components/Navbar.astro';
 import FormEnhancements from '../components/ui/FormEnhancements.astro';
+import Toast from '../components/ui/Toast.astro';
+import { ClientRouter } from 'astro:transitions';
 import '../styles/global.css';
 
 interface Props {
@@ -12,7 +14,7 @@ const { title, description = 'El diario digital de tu mascota' } = Astro.props;
 ---
 
 <!doctype html>
-<html lang="es">
+<html lang="es" transition:animate="fade">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
@@ -27,6 +29,7 @@ const { title, description = 'El diario digital de tu mascota' } = Astro.props;
     <link rel="icon" href="/icons/icon-192.png" />
     <link rel="apple-touch-icon" href="/icons/icon-192.png" />
     <title>{title} | PetLog</title>
+    <ClientRouter />
   </head>
   <body class="min-h-screen pb-24 sm:pb-8 sm:pt-20">
     <Navbar />
@@ -34,6 +37,7 @@ const { title, description = 'El diario digital de tu mascota' } = Astro.props;
       <slot />
     </main>
 
+    <Toast />
     <FormEnhancements />
 
     <script>

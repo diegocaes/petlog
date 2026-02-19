@@ -51,9 +51,10 @@ if (Astro.request.method === 'POST') {
   if (action === 'delete') {
     const visitId = formData.get('visit_id') as string;
     await supabase.from('vet_visits').delete().eq('id', visitId);
+    return Astro.redirect('/salud/historial?deleted=1');
   }
 
-  return Astro.redirect('/salud/historial');
+  return Astro.redirect('/salud/historial?saved=1');
 }
 
 const { data: visits } = await supabase

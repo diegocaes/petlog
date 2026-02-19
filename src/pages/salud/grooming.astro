@@ -47,9 +47,10 @@ if (Astro.request.method === 'POST') {
   if (action === 'delete') {
     const groomingId = formData.get('grooming_id') as string;
     await supabase.from('groomings').delete().eq('id', groomingId);
+    return Astro.redirect('/salud/grooming?deleted=1');
   }
 
-  return Astro.redirect('/salud/grooming');
+  return Astro.redirect('/salud/grooming?saved=1');
 }
 
 const { data: groomings } = await supabase
@@ -125,7 +126,7 @@ const groomingTypes: Record<string, string> = {
   <!-- Grooming List -->
   {(!groomings || groomings.length === 0) ? (
     <EmptyState
-      icon="vet"
+      icon="grooming"
       title="Sin grooming registrado"
       description="Registra la primera sesión de grooming de tu mascota"
     />

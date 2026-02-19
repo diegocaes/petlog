@@ -77,6 +77,7 @@ if (Astro.request.method === 'POST') {
     }
     await supabase.from('flight_documents').delete().eq('flight_id', flightId);
     await supabase.from('flights').delete().eq('id', flightId);
+    return Astro.redirect('/viajes?deleted=1');
   }
 
   if (action === 'upload_doc') {
@@ -118,9 +119,10 @@ if (Astro.request.method === 'POST') {
       }
     } catch {}
     await supabase.from('flight_documents').delete().eq('id', docId);
+    return Astro.redirect('/viajes?deleted=1');
   }
 
-  return Astro.redirect('/viajes');
+  return Astro.redirect('/viajes?saved=1');
 }
 
 // Get all flights with documents

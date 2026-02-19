@@ -83,7 +83,7 @@ if (Astro.request.method === 'POST') {
     }
   }
 
-  return Astro.redirect('/dashboard');
+  return Astro.redirect('/dashboard?saved=1');
 }
 
 // Check if current breed is in the list (for "Otro" logic)

@@ -16,52 +16,66 @@ function isActive(match: string): boolean {
 ---
 
 <!-- Bottom navigation bar for mobile -->
-<nav class="no-print fixed bottom-0 left-0 right-0 z-40 border-t border-cream-dark bg-white/95 backdrop-blur-md safe-area-bottom sm:hidden">
-  <div class="flex items-center justify-around px-2 py-2">
-    {navItems.map((item) => (
-      <a
-        href={item.href}
-        class:list={[
-          'flex flex-col items-center gap-0.5 rounded-xl px-3 py-2 text-xs font-medium transition-all',
-          isActive(item.match)
-            ? 'text-forest bg-forest/10'
-            : 'text-gray-400 hover:text-gray-600',
-        ]}
-      >
-        <svg class="h-6 w-6" data-icon={item.icon}><use href={`#icon-${item.icon}`} /></svg>
-        <span>{item.label}</span>
-      </a>
-    ))}
-  </div>
-</nav>
-
-<!-- Side/Top navigation for desktop -->
-<nav class="no-print hidden sm:block fixed top-0 left-0 right-0 z-40 border-b border-cream-dark bg-white/95 backdrop-blur-md">
-  <div class="mx-auto flex max-w-5xl items-center justify-between px-6 py-3">
-    <a href="/dashboard" class="flex items-center gap-2 text-xl font-bold text-forest">
-      🐾 PetLog
-    </a>
-    <div class="flex items-center gap-1">
-      {navItems.map((item) => (
+<nav class="no-print fixed bottom-0 left-0 right-0 z-40 border-t border-cream-dark/60 bg-white/95 backdrop-blur-xl safe-area-bottom sm:hidden">
+  <div class="flex items-center justify-around px-1 py-1.5">
+    {navItems.map((item) => {
+      const active = isActive(item.match);
+      return (
         <a
           href={item.href}
           class:list={[
-            'rounded-xl px-4 py-2 text-sm font-medium transition-all',
-            isActive(item.match)
-              ? 'bg-forest text-white'
-              : 'text-gray-600 hover:bg-cream-dark hover:text-gray-800',
+            'relative flex flex-col items-center gap-0.5 rounded-2xl px-3 py-2 text-xs font-medium transition-all duration-200',
+            active
+              ? 'text-forest'
+              : 'text-gray-400 hover:text-gray-600 active:scale-90',
           ]}
         >
-          {item.label}
+          {active && (
+            <span class="absolute inset-0 rounded-2xl bg-forest/8 transition-all duration-200" />
+          )}
+          <svg class:list={['relative h-6 w-6 transition-transform duration-200', active && 'scale-110']} data-icon={item.icon}>
+            <use href={`#icon-${item.icon}`} />
+          </svg>
+          <span class:list={['relative', active && 'font-semibold']}>{item.label}</span>
+          {active && (
+            <span class="absolute -bottom-1.5 left-1/2 -translate-x-1/2 h-0.5 w-4 rounded-full bg-forest" />
+          )}
         </a>
-      ))}
+      );
+    })}
+  </div>
+</nav>
+
+<!-- Top navigation for desktop -->
+<nav class="no-print hidden sm:block fixed top-0 left-0 right-0 z-40 border-b border-cream-dark/60 bg-white/95 backdrop-blur-xl">
+  <div class="mx-auto flex max-w-5xl items-center justify-between px-6 py-3">
+    <a href="/dashboard" class="flex items-center gap-2 text-xl font-extrabold text-forest tracking-tight">
+      🐾 PetLog
+    </a>
+    <div class="flex items-center gap-1">
+      {navItems.map((item) => {
+        const active = isActive(item.match);
+        return (
+          <a
+            href={item.href}
+            class:list={[
+              'relative rounded-xl px-4 py-2 text-sm font-medium transition-all duration-200',
+              active
+                ? 'bg-forest text-white shadow-sm'
+                : 'text-gray-500 hover:bg-cream-dark hover:text-gray-800',
+            ]}
+          >
+            {item.label}
+          </a>
+        );
+      })}
       <a
         href="/perfil"
         class:list={[
-          'ml-2 rounded-xl px-4 py-2 text-sm font-medium transition-all',
+          'ml-2 relative rounded-xl px-4 py-2 text-sm font-medium transition-all duration-200',
           isActive('/perfil')
-            ? 'bg-forest text-white'
-            : 'text-gray-600 hover:bg-cream-dark hover:text-gray-800',
+            ? 'bg-forest text-white shadow-sm'
+            : 'text-gray-500 hover:bg-cream-dark hover:text-gray-800',
         ]}
       >
         Perfil

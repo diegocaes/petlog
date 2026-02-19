@@ -46,9 +46,10 @@ if (Astro.request.method === 'POST') {
   if (action === 'delete') {
     const foodId = formData.get('food_id') as string;
     await supabase.from('foods').delete().eq('id', foodId);
+    return Astro.redirect('/alimentacion?deleted=1');
   }
 
-  return Astro.redirect('/alimentacion');
+  return Astro.redirect('/alimentacion?saved=1');
 }
 
 const { data: foods } = await supabase

@@ -46,9 +46,10 @@ if (Astro.request.method === 'POST') {
   if (action === 'delete') {
     const vaccineId = formData.get('vaccine_id') as string;
     await supabase.from('vaccines').delete().eq('id', vaccineId);
+    return Astro.redirect('/salud/vacunas?deleted=1');
   }
 
-  return Astro.redirect('/salud/vacunas');
+  return Astro.redirect('/salud/vacunas?saved=1');
 }
 
 const { data: vaccines } = await supabase
@@ -104,14 +105,14 @@ const { data: vaccines } = await supabase
     />
   ) : (
     <div class="space-y-3 animate-fade-up animate-fade-up-delay-3">
-      {vaccines.map((vaccine) => {
+      {vaccines.map((vaccine, i) => {
         const overdue = vaccine.next_due && new Date(vaccine.next_due + 'T00:00:00') < new Date();
         const daysLeft = vaccine.next_due
           ? Math.ceil((new Date(vaccine.next_due + 'T00:00:00').getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
           : null;
 
         return (
-          <Card variant="elevated" class:list={[overdue && 'border-red-200 !bg-red-50/30']}>
+          <Card variant="elevated" class:list={[overdue && 'border-red-200 !bg-red-50/30', i >= 5 && 'collapse-item hidden']}>
             {/* View mode */}
             <div class="vaccine-view" data-id={vaccine.id}>
               <div class="flex items-start justify-between gap-3">
@@ -188,6 +189,16 @@ const { data: vaccines } = await supabase
     </div>
   )}
 
+  {vaccines && vaccines.length > 5 && (
+    <button
+      id="show-more-btn"
+      type="button"
+      class="mt-3 w-full rounded-2xl border border-cream-dark py-3 text-sm font-medium text-gray-500 transition-all hover:bg-cream-dark hover:text-gray-700 active:scale-95"
+    >
+      Ver {vaccines.length - 5} vacuna{vaccines.length - 5 !== 1 ? 's' : ''} más
+    </button>
+  )}
+
   <script>
     document.querySelectorAll('.edit-btn').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -203,5 +214,13 @@ const { data: vaccines } = await supabase
         document.querySelector(`.vaccine-edit[data-id="${id}"]`)?.classList.add('hidden');
       });
     });
+
+    const showMoreBtn = document.getElementById('show-more-btn');
+    if (showMoreBtn) {
+      showMoreBtn.addEventListener('click', () => {
+        document.querySelectorAll('.collapse-item').forEach(el => el.classList.remove('hidden'));
+        showMoreBtn.remove();
+      });
+    }
   </script>
 </MainLayout>

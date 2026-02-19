@@ -23,15 +23,19 @@
     });
   });
 
-  // 2. Delete confirmation
+  // 2. Delete confirmation + haptic feedback
   document.querySelectorAll<HTMLFormElement>('form[method="POST"]').forEach(form => {
-    const action = form.querySelector<HTMLInputElement>('input[name="_action"]');
-    if (action?.value !== 'delete') return;
+    const actionEl = form.querySelector<HTMLInputElement>('input[name="_action"]');
+    const actionVal = actionEl?.value ?? '';
+    if (!actionVal.includes('delete')) return;
 
     form.addEventListener('submit', (e) => {
       e.preventDefault();
-      // Show native confirm dialog
+      // Haptic on confirm prompt
+      if ('vibrate' in navigator) navigator.vibrate(8);
       if (confirm('¿Eliminar este registro? Esta acción no se puede deshacer.')) {
+        // Stronger haptic on confirm
+        if ('vibrate' in navigator) navigator.vibrate([10, 50, 10]);
         const btn = form.querySelector<HTMLButtonElement>('button[type="submit"]');
         if (btn) {
           btn.classList.add('btn-loading');
