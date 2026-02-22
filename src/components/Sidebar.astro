@@ -16,7 +16,7 @@ function isActive(match: string): boolean {
 ---
 
 <!-- ─── DESKTOP SIDEBAR ─────────────────────────────── -->
-<aside class="no-print hidden lg:flex flex-col fixed top-0 left-0 h-full w-[220px] bg-sidebar z-40">
+<aside class="no-print hidden lg:flex flex-col fixed top-0 left-0 h-full w-55 bg-sidebar z-40">
   <!-- Logo -->
   <div class="flex items-center gap-3 px-5 py-5 border-b border-white/5">
     <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-accent/20">
@@ -29,7 +29,7 @@ function isActive(match: string): boolean {
   <nav class="flex-1 px-3 py-4 space-y-0.5">
     {navItems.map((item) => (
       <a href={item.href} class:list={['sidebar-link', isActive(item.match) && 'active']}>
-        <svg class="h-[18px] w-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" data-icon={item.icon}>
+        <svg class="h-4.5 w-4.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" data-icon={item.icon}>
           <use href={`#sbi-${item.icon}`} />
         </svg>
         <span>{item.label}</span>
@@ -40,7 +40,7 @@ function isActive(match: string): boolean {
   <!-- Bottom: profile + logout -->
   <div class="px-3 py-4 border-t border-white/5 space-y-0.5">
     <a href="/perfil" class:list={['sidebar-link', isActive('/perfil') && 'active']}>
-      <svg class="h-[18px] w-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <svg class="h-4.5 w-4.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
       </svg>
       <span>Perfil</span>
@@ -88,7 +88,7 @@ function isActive(match: string): boolean {
     <nav class="flex-1 px-3 py-4 space-y-0.5">
       {navItems.map((item) => (
         <a href={item.href} class:list={['sidebar-link', isActive(item.match) && 'active']}>
-          <svg class="h-[18px] w-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <svg class="h-4.5 w-4.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
             <use href={`#sbi-${item.icon}`} />
           </svg>
           <span>{item.label}</span>
@@ -98,7 +98,7 @@ function isActive(match: string): boolean {
 
     <div class="px-3 py-4 border-t border-white/5">
       <a href="/perfil" class:list={['sidebar-link', isActive('/perfil') && 'active']}>
-        <svg class="h-[18px] w-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <svg class="h-4.5 w-4.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
         </svg>
         <span>Perfil</span>

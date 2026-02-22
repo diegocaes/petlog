@@ -41,6 +41,7 @@ if (Astro.request.method === 'POST') {
     gender: (formData.get('gender') as string) || null,
     weight_kg: newWeight,
     chip_id: (formData.get('chip_id') as string) || null,
+    color: (formData.get('color') as string) || null,
   };
 
   // Handle photo upload
@@ -113,7 +114,7 @@ const isOtherBreed = pet?.breed && !breedInList;
             id="photo-preview"
             src={pet?.photo_url || '/icons/default-pet.svg'}
             alt="Foto de mascota"
-            class="h-28 w-28 rounded-3xl object-cover border-2 border-cream-dark shadow-md"
+            class="h-28 w-28 rounded-3xl object-cover border-2 border-card-border shadow-md"
           />
           <label class="absolute -bottom-2 -right-2 flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-accent text-white shadow-lg transition-all hover:bg-accent-dark active:scale-95">
             <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
@@ -138,7 +139,7 @@ const isOtherBreed = pet?.breed && !breedInList;
           <select
             name="breed"
             id="breed-select"
-            class="w-full rounded-xl border border-cream-dark bg-white px-4 py-3 text-gray-800 transition-all duration-200 hover:border-gray-300 focus:border-forest focus:outline-none focus:ring-2 focus:ring-forest/20"
+            class="w-full rounded-xl border border-card-border bg-white px-4 py-3 text-gray-800 transition-all duration-200 hover:border-gray-300 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
           >
             <option value="">Seleccionar raza</option>
             {DOG_BREEDS.map((breed) => (
@@ -154,7 +155,7 @@ const isOtherBreed = pet?.breed && !breedInList;
             placeholder="Escribe la raza"
             value={isOtherBreed ? pet?.breed : ''}
             class:list={[
-              'mt-2 w-full rounded-xl border border-cream-dark bg-white px-4 py-3 text-gray-800 placeholder-gray-400 transition-all duration-200 hover:border-gray-300 focus:border-forest focus:outline-none focus:ring-2 focus:ring-forest/20',
+              'mt-2 w-full rounded-xl border border-card-border bg-white px-4 py-3 text-gray-800 placeholder-gray-400 transition-all duration-200 hover:border-gray-300 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20',
               { hidden: !isOtherBreed },
             ]}
           />
@@ -166,7 +167,7 @@ const isOtherBreed = pet?.breed && !breedInList;
             <label class="block text-sm font-medium text-gray-700 mb-1.5">Género</label>
             <select
               name="gender"
-              class="w-full rounded-xl border border-cream-dark bg-white px-4 py-3 text-gray-800 transition-all duration-200 hover:border-gray-300 focus:border-forest focus:outline-none focus:ring-2 focus:ring-forest/20"
+              class="w-full rounded-xl border border-card-border bg-white px-4 py-3 text-gray-800 transition-all duration-200 hover:border-gray-300 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
             >
               <option value="">Seleccionar</option>
               <option value="macho" selected={pet?.gender === 'macho'}>Macho ♂️</option>
@@ -176,7 +177,7 @@ const isOtherBreed = pet?.breed && !breedInList;
         </div>
       </div>
 
-      <hr class="border-cream-dark/50" />
+      <hr class="border-card-border/50" />
 
       <!-- Section: Datos Médicos -->
       <div class="space-y-4">
@@ -190,6 +191,7 @@ const isOtherBreed = pet?.breed && !breedInList;
           <Input label="Nº Microchip" name="chip_id" value={pet?.chip_id || ''} placeholder="Ej: 123456789" />
         </div>
         <p class="text-xs text-gray-400 -mt-2">Al cambiar el peso se guarda automáticamente en el historial</p>
+        <Input label="Color de pelaje" name="color" value={(pet as any)?.color || ''} placeholder="Ej: Dorado, Negro, Blanco..." />
       </div>
 
       <Button type="submit" variant="primary" size="lg" class="w-full">
@@ -203,7 +205,7 @@ const isOtherBreed = pet?.breed && !breedInList;
     <div class="flex items-center justify-between">
       <div>
         <p class="text-sm font-medium text-ink">Cuenta</p>
-        <p class="text-xs text-gray-400 truncate max-w-[200px]">{user.email}</p>
+        <p class="text-xs text-gray-400 truncate max-w-50">{user.email}</p>
       </div>
       <form method="POST">
         <input type="hidden" name="_action" value="logout" />

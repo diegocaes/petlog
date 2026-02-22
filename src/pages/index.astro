@@ -1,4 +1,5 @@
 ---
+import '../styles/global.css';
 import { createSupabaseClient } from '../lib/supabase';
 
 const supabase = createSupabaseClient(Astro.request, Astro.cookies);
@@ -7,6 +8,404 @@ const { data: { user } } = await supabase.auth.getUser();
 if (user) {
   return Astro.redirect('/dashboard');
 }
-
-return Astro.redirect('/login');
 ---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#7CB974" />
+    <meta name="description" content="PetLog — El diario digital de tu mascota. Vacunas, peso, veterinario, aventuras y pasaporte de viaje en un solo lugar." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="icon" href="/icons/icon-192.png" />
+    <title>PetLog — El diario digital de tu mascota</title>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      :root {
+        --accent: #7CB974;
+        --accent-dark: #5FA356;
+        --sidebar: #13161C;
+        --ink: #0F1117;
+        --muted: #6B7280;
+        --card-border: #EAECF0;
+        --canvas: #F7F8FA;
+      }
+      html { scroll-behavior: smooth; }
+      body {
+        font-family: 'Inter', system-ui, sans-serif;
+        background: white;
+        color: var(--ink);
+        overflow-x: hidden;
+      }
+
+      /* NAV */
+      nav {
+        position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 0 24px; height: 60px;
+        background: rgba(255,255,255,0.85);
+        backdrop-filter: blur(12px);
+        border-bottom: 1px solid var(--card-border);
+      }
+      .nav-logo { display: flex; align-items: center; gap: 8px; font-size: 17px; font-weight: 800; color: var(--ink); text-decoration: none; }
+      .nav-cta {
+        background: var(--accent); color: white; border: none;
+        padding: 8px 20px; border-radius: 50px; font-size: 14px; font-weight: 600;
+        cursor: pointer; text-decoration: none;
+        transition: background 0.15s, transform 0.1s;
+      }
+      .nav-cta:hover { background: var(--accent-dark); transform: translateY(-1px); }
+
+      /* HERO */
+      .hero {
+        padding-top: 120px; padding-bottom: 80px;
+        text-align: center; padding-left: 24px; padding-right: 24px;
+        background: linear-gradient(180deg, white 0%, var(--canvas) 100%);
+      }
+      .hero-badge {
+        display: inline-flex; align-items: center; gap: 8px;
+        background: rgba(124,185,116,0.12); color: var(--accent-dark);
+        border: 1px solid rgba(124,185,116,0.3);
+        padding: 6px 14px; border-radius: 50px;
+        font-size: 12px; font-weight: 600; letter-spacing: 0.5px;
+        margin-bottom: 24px;
+      }
+      .hero h1 {
+        font-size: clamp(36px, 8vw, 64px);
+        font-weight: 900; line-height: 1.1;
+        letter-spacing: -2px; color: var(--ink);
+        max-width: 700px; margin: 0 auto 20px;
+      }
+      .hero h1 span { color: var(--accent); }
+      .hero p {
+        font-size: clamp(16px, 2.5vw, 20px);
+        color: var(--muted); max-width: 500px; margin: 0 auto 36px;
+        line-height: 1.6;
+      }
+      .hero-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+      .btn-primary {
+        background: var(--accent); color: white;
+        padding: 14px 32px; border-radius: 50px;
+        font-size: 15px; font-weight: 700; text-decoration: none;
+        transition: background 0.15s, transform 0.1s, box-shadow 0.15s;
+        box-shadow: 0 4px 16px rgba(124,185,116,0.35);
+      }
+      .btn-primary:hover { background: var(--accent-dark); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(124,185,116,0.45); }
+      .btn-secondary {
+        background: white; color: var(--ink);
+        border: 1.5px solid var(--card-border);
+        padding: 14px 32px; border-radius: 50px;
+        font-size: 15px; font-weight: 600; text-decoration: none;
+        transition: border-color 0.15s, transform 0.1s;
+      }
+      .btn-secondary:hover { border-color: var(--accent); color: var(--accent); transform: translateY(-2px); }
+
+      /* PHONE MOCKUP */
+      .mockup-wrapper {
+        margin: 56px auto 0;
+        max-width: 280px;
+        position: relative;
+      }
+      .mockup-phone {
+        background: var(--sidebar);
+        border-radius: 40px;
+        padding: 12px;
+        box-shadow: 0 32px 80px rgba(0,0,0,0.25), 0 0 0 1px rgba(255,255,255,0.1);
+      }
+      .mockup-screen {
+        background: var(--canvas);
+        border-radius: 30px;
+        overflow: hidden;
+        aspect-ratio: 9/19;
+        display: flex; flex-direction: column;
+      }
+      .mockup-statusbar {
+        background: #1E3B1A; height: 44px; flex-shrink: 0;
+        display: flex; align-items: flex-end; padding: 0 20px 8px;
+      }
+      .mockup-content { padding: 16px; flex: 1; overflow: hidden; }
+      .mockup-stat-row {
+        display: grid; grid-template-columns: 1fr 1fr 1fr;
+        gap: 6px; margin-bottom: 10px;
+      }
+      .mockup-stat {
+        background: white; border-radius: 12px; padding: 8px 6px; text-align: center;
+        border: 1px solid var(--card-border);
+      }
+      .mockup-stat-n { font-size: 16px; font-weight: 900; color: var(--ink); }
+      .mockup-stat-l { font-size: 7px; color: var(--muted); }
+      .mockup-card {
+        background: var(--accent); border-radius: 14px; padding: 12px;
+        margin-bottom: 10px;
+      }
+      .mockup-card-label { font-size: 7px; color: rgba(255,255,255,0.6); text-transform: uppercase; letter-spacing: 1px; }
+      .mockup-card-value { font-size: 22px; font-weight: 900; color: white; }
+      .mockup-card-unit { font-size: 10px; color: rgba(255,255,255,0.6); }
+      .mockup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+      .mockup-mini {
+        background: white; border-radius: 12px; padding: 8px;
+        border: 1px solid var(--card-border);
+      }
+      .mockup-mini-icon { font-size: 14px; margin-bottom: 4px; }
+      .mockup-mini-label { font-size: 7px; color: var(--muted); }
+      .mockup-mini-value { font-size: 9px; font-weight: 600; color: var(--ink); }
+
+      /* FEATURES */
+      .features {
+        padding: 80px 24px;
+        background: var(--canvas);
+        max-width: 1100px; margin: 0 auto;
+      }
+      .section-label {
+        font-size: 11px; font-weight: 700; letter-spacing: 3px;
+        text-transform: uppercase; color: var(--accent);
+        margin-bottom: 12px; text-align: center;
+      }
+      .section-title {
+        font-size: clamp(26px, 4vw, 40px); font-weight: 900;
+        letter-spacing: -1px; text-align: center;
+        margin-bottom: 8px;
+      }
+      .section-sub {
+        color: var(--muted); text-align: center; font-size: 15px;
+        max-width: 480px; margin: 0 auto 48px; line-height: 1.6;
+      }
+      .features-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 20px;
+      }
+      .feature-card {
+        background: white; border: 1px solid var(--card-border);
+        border-radius: 20px; padding: 28px 24px;
+        transition: box-shadow 0.2s, transform 0.2s;
+      }
+      .feature-card:hover { box-shadow: 0 8px 32px rgba(0,0,0,0.08); transform: translateY(-2px); }
+      .feature-icon {
+        width: 48px; height: 48px; border-radius: 14px;
+        display: flex; align-items: center; justify-content: center;
+        margin-bottom: 16px; font-size: 22px;
+      }
+      .feature-card h3 { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+      .feature-card p { font-size: 14px; color: var(--muted); line-height: 1.6; }
+
+      /* PASSPORT TEASER */
+      .passport-section {
+        padding: 80px 24px;
+        background: var(--sidebar);
+        text-align: center;
+      }
+      .passport-section .section-label { color: var(--accent); }
+      .passport-section .section-title { color: white; }
+      .passport-section .section-sub { color: rgba(255,255,255,0.5); }
+      .passport-preview {
+        max-width: 320px; margin: 32px auto 0;
+        background: white; border-radius: 20px;
+        overflow: hidden; box-shadow: 0 24px 60px rgba(0,0,0,0.4);
+      }
+      .pp-cover {
+        background: linear-gradient(160deg, #1C4D2E, #3D8B58);
+        padding: 24px; text-align: center;
+      }
+      .pp-cover p { color: rgba(255,255,255,0.5); font-size: 10px; letter-spacing: 3px; text-transform: uppercase; }
+      .pp-cover h3 { color: white; font-size: 18px; font-weight: 900; letter-spacing: 3px; text-transform: uppercase; margin-top: 8px; }
+      .pp-body { padding: 16px; }
+      .pp-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px dashed #E5E7EB; }
+      .pp-row:last-child { border-bottom: none; }
+      .pp-label { font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+      .pp-value { font-size: 12px; font-weight: 700; }
+
+      /* CTA */
+      .cta-section {
+        padding: 100px 24px; text-align: center;
+        background: linear-gradient(160deg, rgba(124,185,116,0.08) 0%, white 100%);
+      }
+      .cta-section h2 {
+        font-size: clamp(28px, 5vw, 48px); font-weight: 900;
+        letter-spacing: -1.5px; margin-bottom: 16px;
+      }
+      .cta-section p { color: var(--muted); font-size: 16px; margin-bottom: 32px; max-width: 400px; margin-left: auto; margin-right: auto; }
+
+      /* FOOTER */
+      footer {
+        background: var(--sidebar); color: rgba(255,255,255,0.4);
+        text-align: center; padding: 24px;
+        font-size: 13px;
+      }
+      footer a { color: var(--accent); text-decoration: none; }
+
+      @media (max-width: 640px) {
+        nav { padding: 0 16px; }
+        .hero { padding-left: 16px; padding-right: 16px; }
+        .features { padding: 60px 16px; }
+      }
+    </style>
+  </head>
+  <body>
+
+    <!-- NAV -->
+    <nav>
+      <a href="/" class="nav-logo">
+        <span>🐾</span> PetLog
+      </a>
+      <a href="/login" class="nav-cta">Empezar gratis</a>
+    </nav>
+
+    <!-- HERO -->
+    <section class="hero">
+      <div class="hero-badge">🐾 Para amantes de mascotas</div>
+      <h1>El diario digital<br/>de tu <span>mascota</span></h1>
+      <p>Vacunas, peso, veterinario, grooming, aventuras y pasaporte de viaje — todo en un solo lugar, siempre contigo.</p>
+      <div class="hero-actions">
+        <a href="/login" class="btn-primary">Crear cuenta gratis</a>
+        <a href="#features" class="btn-secondary">Ver funciones</a>
+      </div>
+
+      <!-- Phone Mockup -->
+      <div class="mockup-wrapper">
+        <div class="mockup-phone">
+          <div class="mockup-screen">
+            <div class="mockup-statusbar"></div>
+            <div class="mockup-content">
+              <div class="mockup-stat-row">
+                <div class="mockup-stat">
+                  <div class="mockup-stat-n">6</div>
+                  <div class="mockup-stat-l">Vacunas</div>
+                </div>
+                <div class="mockup-stat">
+                  <div class="mockup-stat-n">12</div>
+                  <div class="mockup-stat-l">Visitas</div>
+                </div>
+                <div class="mockup-stat">
+                  <div class="mockup-stat-n">34</div>
+                  <div class="mockup-stat-l">Aventuras</div>
+                </div>
+              </div>
+              <div class="mockup-card">
+                <div class="mockup-card-label">Peso actual</div>
+                <div>
+                  <span class="mockup-card-value">12.4</span>
+                  <span class="mockup-card-unit"> kg</span>
+                </div>
+              </div>
+              <div class="mockup-grid">
+                <div class="mockup-mini">
+                  <div class="mockup-mini-icon">✂️</div>
+                  <div class="mockup-mini-label">Grooming</div>
+                  <div class="mockup-mini-value">Hace 2 sem.</div>
+                </div>
+                <div class="mockup-mini">
+                  <div class="mockup-mini-icon">📸</div>
+                  <div class="mockup-mini-label">Aventura</div>
+                  <div class="mockup-mini-value">La Playa</div>
+                </div>
+                <div class="mockup-mini">
+                  <div class="mockup-mini-icon">💉</div>
+                  <div class="mockup-mini-label">Vacunas</div>
+                  <div class="mockup-mini-value">Rabia · Parvo</div>
+                </div>
+                <div class="mockup-mini">
+                  <div class="mockup-mini-icon">✈️</div>
+                  <div class="mockup-mini-label">Vuelo</div>
+                  <div class="mockup-mini-value">PTY → MIA</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FEATURES -->
+    <div style="background:var(--canvas); padding: 80px 24px;" id="features">
+      <div style="max-width:1000px; margin:0 auto;">
+        <p class="section-label">Todo lo que necesitas</p>
+        <h2 class="section-title">Diseñado para tu mascota</h2>
+        <p class="section-sub">Cada función pensada para que nunca olvides nada importante sobre la salud y vida de tu perro.</p>
+        <div class="features-grid">
+          <div class="feature-card">
+            <div class="feature-icon" style="background:rgba(124,185,116,0.1);">💉</div>
+            <h3>Historial de Vacunas</h3>
+            <p>Registra cada vacuna con fecha y recordatorios. Visualiza los badges de protección de tu mascota.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon" style="background:rgba(251,191,36,0.1);">⚖️</div>
+            <h3>Control de Peso</h3>
+            <p>Gráfica de evolución del peso con tendencias. Detecta cambios importantes a tiempo.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon" style="background:rgba(59,130,246,0.1);">🏥</div>
+            <h3>Historial Veterinario</h3>
+            <p>Lleva un registro completo de cada visita al veterinario con diagnósticos y tratamientos.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon" style="background:rgba(236,72,153,0.1);">✂️</div>
+            <h3>Grooming</h3>
+            <p>Agenda y registra las sesiones de peluquería para mantener a tu mascota siempre presentable.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon" style="background:rgba(14,165,233,0.1);">📸</div>
+            <h3>Aventuras y Fotos</h3>
+            <p>Documenta los momentos especiales con fotos y notas. Un álbum de memorias para siempre.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon" style="background:rgba(139,92,246,0.1);">✈️</div>
+            <h3>Pasaporte de Viaje</h3>
+            <p>Genera el pasaporte de tu mascota con toda su info en formato imprimible. Perfecto para vuelos.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PASSPORT TEASER -->
+    <div class="passport-section">
+      <p class="section-label">Documento oficial</p>
+      <h2 class="section-title">Pasaporte imprimible</h2>
+      <p class="section-sub" style="color:rgba(255,255,255,0.5);max-width:420px;margin:0 auto 0;">Genera un documento de viaje con foto, vacunas, microchip y más — listo para imprimir.</p>
+      <div class="passport-preview">
+        <div class="pp-cover">
+          <p>🐾 Pet Passport</p>
+          <h3>Pasaporte</h3>
+        </div>
+        <div class="pp-body">
+          <div class="pp-row">
+            <span class="pp-label">Nombre</span>
+            <span class="pp-value">Luna</span>
+          </div>
+          <div class="pp-row">
+            <span class="pp-label">Raza</span>
+            <span class="pp-value">Golden Retriever</span>
+          </div>
+          <div class="pp-row">
+            <span class="pp-label">Microchip</span>
+            <span class="pp-value">985112345678</span>
+          </div>
+          <div class="pp-row">
+            <span class="pp-label">Vacunas</span>
+            <span class="pp-value">Rabia · Parvo · Moquillo</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CTA -->
+    <div class="cta-section">
+      <h2>Empieza hoy, es gratis</h2>
+      <p>Crea tu cuenta en segundos y registra a tu mascota. Sin tarjeta de crédito.</p>
+      <div class="hero-actions">
+        <a href="/login" class="btn-primary">Crear cuenta con Google</a>
+        <a href="/login" class="btn-secondary">Entrar con email</a>
+      </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer>
+      <p>© 2025 PetLog · Hecho con ❤️ en Panamá · <a href="/login">Iniciar sesión</a></p>
+    </footer>
+
+  </body>
+</html>

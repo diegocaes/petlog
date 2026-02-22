@@ -14,10 +14,9 @@ if (!pet) return Astro.redirect('/perfil?new=1');
 
 const { data: vaccines } = await supabase
   .from('vaccines')
-  .select('name, date_given, next_due')
+  .select('name, date_given')
   .eq('pet_id', pet.id)
-  .order('date_given', { ascending: false })
-  .limit(5);
+  .order('date_given', { ascending: false });
 
 const { data: flights } = await supabase
   .from('flights')
@@ -33,176 +32,426 @@ const age = pet.birth_date ? calculateAge(pet.birth_date) : null;
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Pasaporte de {pet.name} | PetLog</title>
+    <title>Pasaporte · {pet.name}</title>
     <style>
-      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+      @import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,900;1,400&display=swap');
+
       * { margin: 0; padding: 0; box-sizing: border-box; }
+
+      :root {
+        --green: #2A6B3F;
+        --green-light: #E8F5EE;
+        --green-mid: #4E9B6A;
+        --ink: #111827;
+        --muted: #6B7280;
+        --border: #D1D5DB;
+        --bg: #F9FAFB;
+      }
+
       body {
         font-family: 'Inter', system-ui, sans-serif;
-        background: white;
-        color: #1f2937;
-        padding: 24px;
-        max-width: 700px;
-        margin: 0 auto;
+        background: var(--bg);
+        color: var(--ink);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 32px 16px 80px;
+        min-height: 100vh;
       }
-      .header {
+
+      /* ── PASSPORT BOOK ── */
+      .passport {
+        width: 100%;
+        max-width: 520px;
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 8px 40px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.06);
+        overflow: hidden;
+      }
+
+      /* ── COVER ── */
+      .cover {
+        background: linear-gradient(160deg, #1C4D2E 0%, #2A6B3F 60%, #3D8B58 100%);
+        padding: 36px 32px 32px;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+      }
+      .cover::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background-image: radial-gradient(circle at 20% 80%, rgba(255,255,255,0.05) 0%, transparent 50%),
+                          radial-gradient(circle at 80% 20%, rgba(255,255,255,0.06) 0%, transparent 50%);
+      }
+      .cover-label {
+        position: relative;
+        font-size: 9px;
+        font-weight: 600;
+        letter-spacing: 4px;
+        text-transform: uppercase;
+        color: rgba(255,255,255,0.55);
+        margin-bottom: 20px;
+      }
+      .paw-icon {
+        position: relative;
+        font-size: 40px;
+        margin-bottom: 20px;
+        display: block;
+        filter: drop-shadow(0 2px 8px rgba(0,0,0,0.3));
+      }
+      .cover-title {
+        position: relative;
+        font-size: 22px;
+        font-weight: 900;
+        color: white;
+        letter-spacing: 3px;
+        text-transform: uppercase;
+        margin-bottom: 2px;
+      }
+      .cover-subtitle {
+        position: relative;
+        font-size: 10px;
+        color: rgba(255,255,255,0.5);
+        letter-spacing: 2px;
+        text-transform: uppercase;
+      }
+
+      /* ── PHOTO PAGE ── */
+      .photo-page {
+        padding: 28px 32px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        gap: 24px;
+        align-items: flex-start;
+      }
+      .photo-frame {
+        flex-shrink: 0;
+        width: 110px;
+        height: 130px;
+        border-radius: 10px;
+        border: 2px solid var(--green);
+        overflow: hidden;
+        background: var(--green-light);
         display: flex;
         align-items: center;
-        gap: 20px;
-        border-bottom: 3px solid #166534;
-        padding-bottom: 20px;
-        margin-bottom: 24px;
+        justify-content: center;
+        font-size: 40px;
       }
-      .pet-photo {
-        width: 120px;
-        height: 120px;
-        border-radius: 16px;
+      .photo-frame img {
+        width: 100%;
+        height: 100%;
         object-fit: cover;
-        border: 3px solid #166534;
       }
-      .pet-info h1 { font-size: 28px; color: #166534; }
-      .pet-info p { font-size: 14px; color: #6b7280; margin-top: 4px; }
-      .section { margin-bottom: 20px; }
-      .section h2 {
-        font-size: 14px;
+      .photo-info {
+        flex: 1;
+        min-width: 0;
+      }
+      .passport-type {
+        font-size: 8px;
+        font-weight: 700;
+        letter-spacing: 3px;
         text-transform: uppercase;
-        letter-spacing: 1px;
-        color: #166534;
-        border-bottom: 1px solid #e5e7eb;
-        padding-bottom: 6px;
-        margin-bottom: 12px;
+        color: var(--green);
+        margin-bottom: 4px;
       }
+      .pet-name {
+        font-size: 26px;
+        font-weight: 900;
+        color: var(--ink);
+        letter-spacing: -0.5px;
+        line-height: 1;
+        margin-bottom: 14px;
+      }
+      .field-row {
+        margin-bottom: 10px;
+        border-bottom: 1px solid #E5E7EB;
+        padding-bottom: 6px;
+      }
+      .field-label {
+        font-size: 8px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        color: var(--muted);
+        margin-bottom: 2px;
+      }
+      .field-value {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--ink);
+      }
+      .field-value.empty { color: var(--border); }
+
+      /* ── SECTIONS ── */
+      .section {
+        padding: 20px 32px;
+        border-bottom: 1px solid var(--border);
+      }
+      .section:last-of-type { border-bottom: none; }
+      .section-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 14px;
+      }
+      .section-header-line {
+        flex: 1;
+        height: 1px;
+        background: var(--border);
+      }
+      .section-title {
+        font-size: 8px;
+        font-weight: 700;
+        letter-spacing: 3px;
+        text-transform: uppercase;
+        color: var(--green);
+        white-space: nowrap;
+      }
+
+      /* Data grid inside section */
       .data-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 8px 24px;
+        gap: 10px 20px;
       }
-      .data-item label { font-size: 10px; text-transform: uppercase; color: #9ca3af; letter-spacing: 0.5px; }
-      .data-item p { font-size: 14px; font-weight: 600; }
-      table { width: 100%; border-collapse: collapse; font-size: 13px; }
-      th { text-align: left; padding: 6px 8px; background: #f3f4f6; font-size: 11px; text-transform: uppercase; color: #6b7280; }
-      td { padding: 6px 8px; border-bottom: 1px solid #f3f4f6; }
-      .badge { display: inline-block; padding: 2px 8px; border-radius: 9999px; font-size: 11px; font-weight: 500; }
-      .badge-ok { background: #f0fdf4; color: #15803d; }
-      .badge-no { background: #fef2f2; color: #ef4444; }
+
+      /* Vaccine list */
+      .vaccine-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+      }
+      .vaccine-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 0;
+        border-bottom: 1px dashed #E5E7EB;
+      }
+      .vaccine-row:last-child { border-bottom: none; }
+      .vaccine-name {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--ink);
+      }
+      .vaccine-date {
+        font-size: 11px;
+        color: var(--muted);
+        font-variant-numeric: tabular-nums;
+      }
+      .vaccine-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--green-mid);
+        margin-right: 10px;
+        flex-shrink: 0;
+      }
+
+      /* Flight table */
+      .flight-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px;
+      }
+      .flight-table th {
+        text-align: left;
+        padding: 6px 8px;
+        font-size: 8px;
+        font-weight: 700;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+        color: var(--muted);
+        background: var(--green-light);
+        border-radius: 4px;
+      }
+      .flight-table td {
+        padding: 8px 8px;
+        border-bottom: 1px solid #F3F4F6;
+        color: var(--ink);
+        font-weight: 500;
+      }
+
+      /* ── MRZ STRIP (bottom, like a real passport) ── */
+      .mrz {
+        background: var(--green-light);
+        border-top: 2px solid var(--green);
+        padding: 12px 24px;
+        font-family: 'Courier New', monospace;
+        font-size: 9px;
+        color: var(--green);
+        letter-spacing: 2px;
+        word-break: break-all;
+        line-height: 1.8;
+        opacity: 0.7;
+      }
+
+      /* ── PRINT BUTTON ── */
       .print-btn {
         position: fixed;
         bottom: 24px;
         right: 24px;
-        background: #166534;
+        background: var(--green);
         color: white;
         border: none;
         padding: 14px 28px;
-        border-radius: 16px;
-        font-size: 16px;
+        border-radius: 50px;
+        font-size: 14px;
         font-weight: 600;
         cursor: pointer;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        box-shadow: 0 4px 20px rgba(42,107,63,0.4);
+        font-family: 'Inter', sans-serif;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: transform 0.15s, box-shadow 0.15s;
       }
+      .print-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 24px rgba(42,107,63,0.5);
+      }
+
       @media print {
+        body { background: white; padding: 0; }
+        .passport { box-shadow: none; border-radius: 0; max-width: 100%; }
         .print-btn { display: none !important; }
-        body { padding: 0; }
       }
     </style>
   </head>
   <body>
-    <!-- Header -->
-    <div class="header">
-      {pet.photo_url ? (
-        <img src={pet.photo_url} alt={pet.name} class="pet-photo" />
-      ) : (
-        <div class="pet-photo" style="display:flex;align-items:center;justify-content:center;background:#f5f0e8;font-size:48px;">🐾</div>
-      )}
-      <div class="pet-info">
-        <p style="font-size:10px;text-transform:uppercase;letter-spacing:2px;color:#166534;">Pasaporte de Viaje</p>
-        <h1>{pet.name}</h1>
-        <p>{pet.breed || 'Sin raza registrada'} {age && `· ${age}`}</p>
-      </div>
-    </div>
 
-    <!-- Essential Data -->
-    <div class="section">
-      <h2>Datos Esenciales</h2>
-      <div class="data-grid">
-        <div class="data-item">
-          <label>Nº Microchip</label>
-          <p>{pet.chip_id || '—'}</p>
+    <div class="passport">
+
+      <!-- ── COVER ── -->
+      <div class="cover">
+        <p class="cover-label">República de Panamá · Pet Travel</p>
+        <span class="paw-icon">🐾</span>
+        <h1 class="cover-title">Pet Passport</h1>
+        <p class="cover-subtitle">Pasaporte de Mascota</p>
+      </div>
+
+      <!-- ── PHOTO & IDENTITY ── -->
+      <div class="photo-page">
+        <div class="photo-frame">
+          {pet.photo_url ? (
+            <img src={pet.photo_url} alt={pet.name} />
+          ) : '🐶'}
         </div>
-        <div class="data-item">
-          <label>Peso</label>
-          <p>{pet.weight_kg ? `${pet.weight_kg} kg` : '—'}</p>
-        </div>
-        <div class="data-item">
-          <label>Género</label>
-          <p>{pet.gender === 'macho' ? 'Macho' : pet.gender === 'hembra' ? 'Hembra' : '—'}</p>
-        </div>
-        <div class="data-item">
-          <label>Fecha nacimiento</label>
-          <p>{pet.birth_date ? formatDate(pet.birth_date) : '—'}</p>
+        <div class="photo-info">
+          <p class="passport-type">Pasaporte · Canino</p>
+          <h2 class="pet-name">{pet.name}</h2>
+
+          <div class="field-row">
+            <p class="field-label">Raza / Breed</p>
+            <p class:list={['field-value', !pet.breed && 'empty']}>{pet.breed || '—'}</p>
+          </div>
+          <div class="field-row">
+            <p class="field-label">Fecha de nacimiento</p>
+            <p class:list={['field-value', !pet.birth_date && 'empty']}>
+              {pet.birth_date ? formatDate(pet.birth_date) : '—'}
+              {age && <span style="color:#6B7280;font-weight:400;"> ({age})</span>}
+            </p>
+          </div>
+          <div class="field-row">
+            <p class="field-label">Sexo / Sex</p>
+            <p class:list={['field-value', !pet.gender && 'empty']}>
+              {pet.gender === 'macho' ? 'Macho / M' : pet.gender === 'hembra' ? 'Hembra / F' : '—'}
+            </p>
+          </div>
         </div>
       </div>
-    </div>
 
-    <!-- Vaccines -->
-    {vaccines && vaccines.length > 0 && (
+      <!-- ── DATOS ESENCIALES ── -->
       <div class="section">
-        <h2>Vacunas Recientes</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>Vacuna</th>
-              <th>Aplicada</th>
-              <th>Próx. dosis</th>
-            </tr>
-          </thead>
-          <tbody>
+        <div class="section-header">
+          <div class="section-header-line"></div>
+          <span class="section-title">Datos de Identificación</span>
+          <div class="section-header-line"></div>
+        </div>
+        <div class="data-grid">
+          <div class="field-row">
+            <p class="field-label">Nº Microchip</p>
+            <p class:list={['field-value', !pet.chip_id && 'empty']}>{pet.chip_id || '—'}</p>
+          </div>
+          <div class="field-row">
+            <p class="field-label">Peso</p>
+            <p class:list={['field-value', !pet.weight_kg && 'empty']}>{pet.weight_kg ? `${pet.weight_kg} kg` : '—'}</p>
+          </div>
+          <div class="field-row">
+            <p class="field-label">Color de pelaje</p>
+            <p class:list={['field-value', !pet.color && 'empty']}>{pet.color || '—'}</p>
+          </div>
+          <div class="field-row">
+            <p class="field-label">Especie</p>
+            <p class="field-value">Canino</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── VACUNAS ── -->
+      {vaccines && vaccines.length > 0 && (
+        <div class="section">
+          <div class="section-header">
+            <div class="section-header-line"></div>
+            <span class="section-title">Registro de Vacunación</span>
+            <div class="section-header-line"></div>
+          </div>
+          <div class="vaccine-list">
             {vaccines.map((v) => (
-              <tr>
-                <td>{v.name}</td>
-                <td>{formatDate(v.date_given)}</td>
-                <td>{v.next_due ? formatDate(v.next_due) : '—'}</td>
-              </tr>
+              <div class="vaccine-row">
+                <div style="display:flex;align-items:center;">
+                  <div class="vaccine-dot"></div>
+                  <span class="vaccine-name">{v.name}</span>
+                </div>
+                <span class="vaccine-date">{formatDate(v.date_given)}</span>
+              </div>
             ))}
-          </tbody>
-        </table>
-      </div>
-    )}
+          </div>
+        </div>
+      )}
 
-    <!-- Flight History -->
-    {flights && flights.length > 0 && (
-      <div class="section">
-        <h2>Historial de Vuelos</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>Ruta</th>
-              <th>Fecha</th>
-              <th>Aerolínea</th>
-              <th>Docs</th>
-            </tr>
-          </thead>
-          <tbody>
-            {flights.map((f) => (
+      <!-- ── VUELOS ── -->
+      {flights && flights.length > 0 && (
+        <div class="section">
+          <div class="section-header">
+            <div class="section-header-line"></div>
+            <span class="section-title">Historial de Viajes</span>
+            <div class="section-header-line"></div>
+          </div>
+          <table class="flight-table">
+            <thead>
               <tr>
-                <td>{f.origin} → {f.destination}</td>
-                <td>{formatDate(f.flight_date)}</td>
-                <td>{f.airline}{f.flight_number && ` ${f.flight_number}`}</td>
-                <td>
-                  <span class:list={['badge', f.vet_certificate ? 'badge-ok' : 'badge-no']}>Cert.</span>
-                  {' '}
-                  <span class:list={['badge', f.vaccines_updated ? 'badge-ok' : 'badge-no']}>Vac.</span>
-                  {' '}
-                  <span class:list={['badge', f.chip_verified ? 'badge-ok' : 'badge-no']}>Chip</span>
-                </td>
+                <th>Ruta</th>
+                <th>Fecha</th>
+                <th>Aerolínea</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {flights.map((f) => (
+                <tr>
+                  <td>{f.origin} → {f.destination}</td>
+                  <td>{formatDate(f.flight_date)}</td>
+                  <td>{f.airline || '—'}{f.flight_number ? ` ${f.flight_number}` : ''}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <!-- ── MRZ (decorativo) ── -->
+      <div class="mrz">
+        {'P<PAN' + (pet.name?.toUpperCase().replace(/\s/g, '<') ?? '').padEnd(39, '<')}<br />
+        {(pet.chip_id ?? '000000000').padEnd(9, '<') + '9CAN' + (pet.birth_date?.replace(/-/g, '').slice(2) ?? '000000') + '0' + (pet.gender === 'macho' ? 'M' : 'F') + '<<<<<<<<<<<<<<'}
       </div>
-    )}
+
+    </div>
 
     <button class="print-btn" onclick="window.print()">
-      🖨️ Imprimir
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+      Imprimir pasaporte
     </button>
+
   </body>
 </html>

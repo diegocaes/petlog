@@ -34,7 +34,7 @@ export default function Modal({ isOpen, onClose, title, children }: ModalProps) 
     <dialog
       ref={dialogRef}
       onClose={onClose}
-      className="fixed inset-0 z-50 m-auto w-[calc(100%-2rem)] max-w-lg rounded-3xl bg-white p-0 shadow-2xl backdrop:bg-black/50 backdrop:backdrop-blur-sm"
+      className="fixed inset-0 z-50 m-auto w-full mx-4 max-w-lg rounded-3xl bg-white p-0 shadow-2xl backdrop:bg-black/50 backdrop:backdrop-blur-sm"
     >
       <div className="flex items-center justify-between border-b border-gray-100 p-5">
         <h2 className="text-lg font-bold text-gray-800">{title}</h2>

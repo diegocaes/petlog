@@ -42,7 +42,7 @@ export default function AdventureGallery({ adventures }: Props) {
                 loading="lazy"
               />
             ) : (
-              <div className="flex h-full w-full items-center justify-center bg-linear-to-br from-[#F5F0E8] to-[#EBE4D6] text-3xl">
+              <div className="flex h-full w-full items-center justify-center bg-canvas text-3xl">
                 🐾
               </div>
             )}
@@ -82,10 +82,10 @@ export default function AdventureGallery({ adventures }: Props) {
               <img
                 src={lightbox.photo_url}
                 alt={lightbox.title}
-                className="w-full max-h-[60vh] object-contain bg-gray-900"
+                className="w-full max-h-96 object-contain bg-gray-900"
               />
             ) : (
-              <div className="flex h-48 w-full items-center justify-center bg-linear-to-br from-[#F5F0E8] to-[#EBE4D6] text-6xl">
+              <div className="flex h-48 w-full items-center justify-center bg-canvas text-6xl">
                 🐾
               </div>
             )}

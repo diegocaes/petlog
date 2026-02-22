@@ -75,7 +75,7 @@ const { data: records } = await supabase
             min="0.1"
             required
             placeholder="12.5"
-            class="w-full rounded-xl border border-cream-dark bg-white px-4 py-3 text-gray-800 placeholder-gray-400 transition-all duration-200 hover:border-gray-300 focus:border-forest focus:outline-none focus:ring-2 focus:ring-forest/20"
+            class="w-full rounded-xl border border-card-border bg-white px-4 py-3 text-gray-800 placeholder-gray-400 transition-all duration-200 hover:border-gray-300 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
           />
         </div>
         <div>
@@ -85,7 +85,7 @@ const { data: records } = await supabase
             name="date"
             required
             value={new Date().toISOString().split('T')[0]}
-            class="w-full rounded-xl border border-cream-dark bg-white px-4 py-3 text-gray-800 transition-all duration-200 hover:border-gray-300 focus:border-forest focus:outline-none focus:ring-2 focus:ring-forest/20"
+            class="w-full rounded-xl border border-card-border bg-white px-4 py-3 text-gray-800 transition-all duration-200 hover:border-gray-300 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
           />
         </div>
       </div>
@@ -95,7 +95,7 @@ const { data: records } = await supabase
           name="notes"
           rows="2"
           placeholder="Después del baño, en ayunas..."
-          class="w-full rounded-xl border border-cream-dark bg-white px-4 py-3 text-gray-800 placeholder-gray-400 transition-all duration-200 hover:border-gray-300 focus:border-forest focus:outline-none focus:ring-2 focus:ring-forest/20 resize-none"
+          class="w-full rounded-xl border border-card-border bg-white px-4 py-3 text-gray-800 placeholder-gray-400 transition-all duration-200 hover:border-gray-300 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20 resize-none"
         ></textarea>
       </div>
       <button type="submit" class="w-full rounded-xl bg-accent px-6 py-2.5 text-sm font-semibold text-white transition-all hover:bg-accent-dark active:scale-95">
