@@ -10,7 +10,6 @@ if (user) {
 }
 
 const error = Astro.url.searchParams.get('error');
-const success = Astro.url.searchParams.get('success');
 
 // Handle form submission
 if (Astro.request.method === 'POST') {
@@ -42,16 +41,6 @@ if (Astro.request.method === 'POST') {
     return Astro.redirect('/dashboard');
   }
 
-  if (action === 'register') {
-    const { error: registerError } = await supabase.auth.signUp({
-      email,
-      password,
-    });
-    if (registerError) {
-      return Astro.redirect('/login?error=register_failed');
-    }
-    return Astro.redirect('/login?success=check_email');
-  }
 }
 ---
 
@@ -108,17 +97,10 @@ if (Astro.request.method === 'POST') {
           {error && (
             <div class="mb-4 rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
               {error === 'invalid_credentials' && 'Email o contraseña incorrectos'}
-              {error === 'register_failed' && 'No se pudo crear la cuenta. Intenta con otro email.'}
               {error === 'auth_failed' && 'Error de autenticación'}
               {error === 'no_code' && 'Código de autenticación no encontrado'}
             </div>
           )}
-          {success === 'check_email' && (
-            <div class="mb-4 rounded-xl bg-accent/10 border border-accent/20 px-4 py-3 text-sm text-accent-dark">
-              ¡Cuenta creada! Revisa tu email para confirmar.
-            </div>
-          )}
-
           <!-- Google OAuth -->
           <form method="POST">
             <button
@@ -176,14 +158,12 @@ if (Astro.request.method === 'POST') {
               >
                 Entrar
               </button>
-              <button
-                type="submit"
-                name="action"
-                value="register"
-                class="flex-1 rounded-xl bg-amber px-6 py-2.5 text-sm font-semibold text-gray-900 transition-all duration-200 hover:bg-amber-dark active:scale-95"
+              <a
+                href="/register"
+                class="flex-1 rounded-xl bg-amber px-6 py-2.5 text-sm font-semibold text-gray-900 transition-all duration-200 hover:bg-amber-dark active:scale-95 text-center"
               >
                 Crear cuenta
-              </button>
+              </a>
             </div>
           </form>
         </div>

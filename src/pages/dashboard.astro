@@ -4,6 +4,7 @@ import { formatDate, isBirthday, calculateAge } from '../lib/utils';
 import { getVaccineBadge } from '../lib/vaccine-badges';
 
 const { supabase, user } = Astro.locals;
+const isNewlyOnboarded = Astro.url.searchParams.get('onboarded') === '1';
 
 const { data: pet } = await supabase
   .from('pets')
@@ -46,6 +47,13 @@ const weightDiff = latestWeight && prevWeight ? +(latestWeight - prevWeight).toF
 ---
 
 <MainLayout title="Inicio">
+
+  {/* Onboarding welcome banner */}
+  {isNewlyOnboarded && (
+    <div class="mb-5 rounded-2xl border border-accent/30 bg-accent/10 px-4 py-4 text-center animate-fade-up">
+      <p class="text-sm font-bold text-accent-dark">🎉 ¡{pet.name} ya tiene su pasaporte digital! Bienvenido a PetLog.</p>
+    </div>
+  )}
 
   {/* Birthday Banner */}
   {birthday && (

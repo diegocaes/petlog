@@ -9,6 +9,10 @@ import { DOG_BREEDS } from '../lib/breeds';
 const { supabase, user } = Astro.locals;
 const isNew = Astro.url.searchParams.get('new') === '1';
 
+// Extract first name for personalized greeting
+const fullName = user.user_metadata?.full_name || user.user_metadata?.name || '';
+const firstName = fullName.split(' ')[0] || user.email?.split('@')[0] || 'bienvenido';
+
 // Get existing pet
 const { data: pet } = await supabase
   .from('pets')
@@ -94,12 +98,37 @@ const isOtherBreed = pet?.breed && !breedInList;
 
 <MainLayout title={isNew ? 'Registra a tu mascota' : 'Perfil'}>
   {isNew ? (
-    <div class="mb-6 rounded-xl bg-accent/5 border border-accent/10 px-6 py-6 text-center animate-fade-up">
-      <div class="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-xl bg-accent/10 text-2xl">
-        🐾
+    <div class="mb-6 animate-fade-up">
+      <!-- Hero welcome card -->
+      <div class="relative overflow-hidden rounded-3xl bg-[#1E3B1A] px-6 py-8 text-center text-white shadow-xl mb-4">
+        <!-- Decorative circles -->
+        <div class="absolute -top-8 -right-8 h-32 w-32 rounded-full bg-white/5"></div>
+        <div class="absolute -bottom-6 -left-6 h-24 w-24 rounded-full bg-white/5"></div>
+
+        <div class="relative">
+          <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-white/10 text-3xl shadow-inner">
+            🐾
+          </div>
+          <p class="text-2xl font-bold tracking-tight">
+            ¡Hola, {firstName}!
+          </p>
+          <p class="mt-2 text-sm text-white/70 leading-relaxed max-w-xs mx-auto">
+            Vamos a registrar a tu mascota. Solo toma un minuto y tendrás su pasaporte digital listo.
+          </p>
+        </div>
+
+        <!-- Steps -->
+        <div class="relative mt-6 flex items-center justify-center gap-2 text-xs text-white/60">
+          <span class="flex h-5 w-5 items-center justify-center rounded-full bg-accent text-white font-bold text-xs">1</span>
+          <span>Datos</span>
+          <span class="h-px w-4 bg-white/20"></span>
+          <span class="flex h-5 w-5 items-center justify-center rounded-full bg-white/20 font-bold text-xs">2</span>
+          <span>Foto</span>
+          <span class="h-px w-4 bg-white/20"></span>
+          <span class="flex h-5 w-5 items-center justify-center rounded-full bg-white/20 font-bold text-xs">3</span>
+          <span>Vacunas</span>
+        </div>
       </div>
-      <p class="text-lg font-bold text-accent">¡Bienvenido a PetLog!</p>
-      <p class="text-sm text-gray-500 mt-1">Registra los datos de tu mascota para empezar</p>
     </div>
   ) : (
     <SectionHeader title="Perfil" subtitle="Datos de tu mascota" />

@@ -1,0 +1,532 @@
+---
+import '../styles/global.css';
+import { DOG_BREEDS } from '../lib/breeds';
+
+const { supabase, user } = Astro.locals;
+
+// If pet already exists, skip onboarding
+const { data: existingPet } = await supabase
+  .from('pets')
+  .select('id')
+  .eq('user_id', user.id)
+  .single();
+
+if (existingPet) {
+  return Astro.redirect('/dashboard');
+}
+
+// Personalized greeting
+const fullName = user.user_metadata?.full_name || user.user_metadata?.name || '';
+const firstName = fullName.split(' ')[0] || user.email?.split('@')[0] || 'amigo';
+
+// Handle final form submission (identical logic to perfil.astro INSERT branch)
+if (Astro.request.method === 'POST') {
+  const formData = await Astro.request.formData();
+
+  const breedSelect = formData.get('breed') as string;
+  const breedOther = formData.get('breed_other') as string;
+  const breed = breedSelect === 'Otro' && breedOther ? breedOther : breedSelect || null;
+
+  const newWeight = formData.get('weight_kg') ? Number(formData.get('weight_kg')) : null;
+
+  const petData = {
+    user_id: user.id,
+    name: formData.get('name') as string,
+    breed,
+    birth_date: (formData.get('birth_date') as string) || null,
+    gender: (formData.get('gender') as string) || null,
+    weight_kg: newWeight,
+    chip_id: (formData.get('chip_id') as string) || null,
+    color: (formData.get('color') as string) || null,
+  };
+
+  // Handle photo upload
+  const photoFile = formData.get('photo') as File;
+  let photo_url: string | null = null;
+
+  if (photoFile && photoFile.size > 0) {
+    const ext = photoFile.name.split('.').pop();
+    const filePath = `${user.id}/pet-profile.${ext}`;
+    const { error: uploadError } = await supabase.storage
+      .from('pet-photos')
+      .upload(filePath, photoFile, { upsert: true });
+
+    if (!uploadError) {
+      const { data: publicUrl } = supabase.storage
+        .from('pet-photos')
+        .getPublicUrl(filePath);
+      photo_url = publicUrl.publicUrl;
+    }
+  }
+
+  const { data: newPet } = await supabase
+    .from('pets')
+    .insert({ ...petData, photo_url })
+    .select('id')
+    .single();
+
+  // Auto-log initial weight
+  if (newWeight && newPet?.id) {
+    await supabase.from('weight_records').insert({
+      pet_id: newPet.id,
+      weight_kg: newWeight,
+      date: new Date().toISOString().split('T')[0],
+    });
+  }
+
+  return Astro.redirect('/dashboard?onboarded=1');
+}
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#7CB974" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="icon" href="/icons/icon-192.png" />
+    <title>Bienvenido | PetLog</title>
+  </head>
+  <body class="min-h-screen bg-canvas flex flex-col">
+
+    <!-- Progress bar (hidden on step 1) -->
+    <div class="fixed top-0 left-0 right-0 z-50" id="progress-bar-wrap" style="display:none">
+      <div class="h-1 bg-card-border">
+        <div id="progress-fill" class="h-full bg-accent transition-all duration-500" style="width:33%"></div>
+      </div>
+      <div id="progress-text" class="absolute top-3 right-4 text-xs text-muted font-medium">Paso 2 de 4</div>
+    </div>
+
+    <!-- Wizard container -->
+    <main class="flex-1 flex items-center justify-center p-6 pt-8">
+      <div class="w-full max-w-sm mx-auto">
+
+        <!-- ───────────── PASO 1: Bienvenida ───────────── -->
+        <div data-step="1" class="animate-fade-up">
+          <div class="relative overflow-hidden rounded-3xl text-white px-6 py-8 shadow-xl" style="background:#1E3B1A">
+            <!-- Decorative circles -->
+            <div class="absolute -top-10 -right-10 h-36 w-36 rounded-full bg-white/5"></div>
+            <div class="absolute -bottom-8 -left-8 h-28 w-28 rounded-full bg-white/5"></div>
+
+            <div class="relative text-center">
+              <div class="text-5xl mb-4 animate-float inline-block">🐾</div>
+              <h1 class="text-2xl font-bold tracking-tight mb-2">
+                ¡Hola, {firstName}!
+              </h1>
+              <p class="text-sm text-white/70 leading-relaxed mb-6">
+                Estás a un minuto de tener el pasaporte digital de tu mascota.
+              </p>
+
+              <div class="space-y-3 text-left mb-8">
+                <div class="flex items-center gap-3 rounded-xl bg-white/10 px-4 py-2.5">
+                  <span class="text-lg shrink-0">🐾</span>
+                  <div>
+                    <p class="text-sm font-semibold">Perfil y pasaporte</p>
+                    <p class="text-xs text-white/60">Pasaporte digital para viajes</p>
+                  </div>
+                </div>
+                <div class="flex items-center gap-3 rounded-xl bg-white/10 px-4 py-2.5">
+                  <span class="text-lg shrink-0">💉</span>
+                  <div>
+                    <p class="text-sm font-semibold">Historial de vacunas</p>
+                    <p class="text-xs text-white/60">Nunca pierdas un registro</p>
+                  </div>
+                </div>
+                <div class="flex items-center gap-3 rounded-xl bg-white/10 px-4 py-2.5">
+                  <span class="text-lg shrink-0">📸</span>
+                  <div>
+                    <p class="text-sm font-semibold">Álbum de aventuras</p>
+                    <p class="text-xs text-white/60">Guarda los mejores momentos</p>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                id="btn-step1-next"
+                class="w-full rounded-2xl bg-white text-gray-900 px-6 py-3.5 font-bold text-sm transition-all hover:bg-white/90 active:scale-95 shadow-lg"
+              >
+                Empezar →
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ───────────── PASO 2: Nombre y foto ───────────── -->
+        <div data-step="2" class="hidden">
+          <div class="mb-6 text-center">
+            <p class="text-xs font-semibold text-accent uppercase tracking-widest mb-1">Paso 1 de 3</p>
+            <h2 class="text-2xl font-bold text-ink">¿Cómo se llama?</h2>
+            <p class="text-sm text-muted mt-1">Empieza por lo más importante.</p>
+          </div>
+
+          <div class="space-y-5">
+            <!-- Photo picker -->
+            <div class="flex flex-col items-center gap-2">
+              <div class="relative">
+                <img
+                  id="ob-photo-preview"
+                  src="/icons/default-pet.svg"
+                  alt="Foto"
+                  class="h-24 w-24 rounded-full object-cover border-2 border-card-border shadow-md"
+                />
+                <label class="absolute -bottom-1 -right-1 flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-accent text-white shadow-lg transition-all hover:bg-accent-dark active:scale-95">
+                  <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+                  <input type="file" id="ob-photo-input" accept="image/*" class="hidden" />
+                </label>
+              </div>
+              <p class="text-xs text-muted">Foto opcional — puedes agregar después</p>
+            </div>
+
+            <!-- Name -->
+            <div>
+              <label class="block text-sm font-medium text-ink mb-1.5">Nombre <span class="text-coral">*</span></label>
+              <input
+                type="text"
+                id="ob-name"
+                placeholder="Ej: Luna"
+                class="w-full rounded-xl border border-card-border bg-white px-4 py-3 text-ink placeholder-muted transition-all hover:border-gray-300 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
+              />
+              <p id="ob-name-error" class="text-xs text-red-500 mt-1 hidden">Por favor ingresa el nombre</p>
+            </div>
+
+            <!-- Breed -->
+            <div>
+              <label class="block text-sm font-medium text-ink mb-1.5">Raza</label>
+              <select
+                id="ob-breed-select"
+                class="w-full rounded-xl border border-card-border bg-white px-4 py-3 text-ink transition-all hover:border-gray-300 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
+              >
+                <option value="">Seleccionar raza</option>
+                {DOG_BREEDS.map((breed) => (
+                  <option value={breed}>{breed}</option>
+                ))}
+              </select>
+              <input
+                type="text"
+                id="ob-breed-other"
+                placeholder="Escribe la raza"
+                class="hidden mt-2 w-full rounded-xl border border-card-border bg-white px-4 py-3 text-ink placeholder-muted transition-all hover:border-gray-300 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
+              />
+            </div>
+          </div>
+
+          <div class="mt-6 space-y-3">
+            <button
+              id="btn-step2-next"
+              class="w-full rounded-2xl bg-accent px-6 py-3.5 font-bold text-sm text-white transition-all hover:bg-accent-dark active:scale-95 shadow-md"
+            >
+              Continuar →
+            </button>
+            <button type="button" id="btn-step2-back" class="w-full text-sm text-muted hover:text-ink transition-colors py-1">
+              ← Atrás
+            </button>
+          </div>
+        </div>
+
+        <!-- ───────────── PASO 3: Fecha y género ───────────── -->
+        <div data-step="3" class="hidden">
+          <div class="mb-6 text-center">
+            <p class="text-xs font-semibold text-accent uppercase tracking-widest mb-1">Paso 2 de 3</p>
+            <h2 class="text-2xl font-bold text-ink">¿Cuándo nació? 🎂</h2>
+            <p class="text-sm text-muted mt-1">Para calcular su edad y recordar su cumpleaños.</p>
+          </div>
+
+          <div class="space-y-5">
+            <!-- Birth date -->
+            <div>
+              <label class="block text-sm font-medium text-ink mb-1.5">Fecha de nacimiento</label>
+              <input
+                type="date"
+                id="ob-birth-date"
+                class="w-full rounded-xl border border-card-border bg-white px-4 py-3 text-ink transition-all hover:border-gray-300 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
+              />
+            </div>
+
+            <!-- Gender pills -->
+            <div>
+              <label class="block text-sm font-medium text-ink mb-2">Género</label>
+              <div class="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  data-gender="macho"
+                  class="gender-pill rounded-2xl border-2 border-card-border bg-white px-4 py-3.5 text-sm font-semibold text-ink transition-all hover:border-accent active:scale-95"
+                >
+                  Macho ♂
+                </button>
+                <button
+                  type="button"
+                  data-gender="hembra"
+                  class="gender-pill rounded-2xl border-2 border-card-border bg-white px-4 py-3.5 text-sm font-semibold text-ink transition-all hover:border-accent active:scale-95"
+                >
+                  Hembra ♀
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-6 space-y-3">
+            <button
+              id="btn-step3-next"
+              class="w-full rounded-2xl bg-accent px-6 py-3.5 font-bold text-sm text-white transition-all hover:bg-accent-dark active:scale-95 shadow-md"
+            >
+              Continuar →
+            </button>
+            <button type="button" id="btn-step3-skip" class="w-full text-sm text-muted underline hover:text-ink transition-colors py-1">
+              Saltar por ahora →
+            </button>
+            <button type="button" id="btn-step3-back" class="w-full text-sm text-muted hover:text-ink transition-colors py-1">
+              ← Atrás
+            </button>
+          </div>
+        </div>
+
+        <!-- ───────────── PASO 4: Datos de salud ───────────── -->
+        <div data-step="4" class="hidden">
+          <div class="mb-6 text-center">
+            <p class="text-xs font-semibold text-accent uppercase tracking-widest mb-1">Paso 3 de 3</p>
+            <h2 class="text-2xl font-bold text-ink">Datos de salud</h2>
+            <p class="text-sm text-muted mt-1">Opcional — puedes completarlo después.</p>
+          </div>
+
+          <div class="mb-4 flex items-center justify-center">
+            <span class="inline-flex items-center gap-1.5 rounded-full border border-amber/30 bg-amber/10 px-3 py-1 text-xs font-medium text-amber-dark">
+              <svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              Estos datos son opcionales
+            </span>
+          </div>
+
+          <div class="space-y-4">
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-ink mb-1.5">Peso (kg)</label>
+                <input
+                  type="number"
+                  id="ob-weight"
+                  step="0.1"
+                  placeholder="Ej: 12.5"
+                  class="w-full rounded-xl border border-card-border bg-white px-4 py-3 text-ink placeholder-muted transition-all hover:border-gray-300 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
+                />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-ink mb-1.5">Microchip</label>
+                <input
+                  type="text"
+                  id="ob-chip"
+                  placeholder="Nº chip"
+                  class="w-full rounded-xl border border-card-border bg-white px-4 py-3 text-ink placeholder-muted transition-all hover:border-gray-300 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
+                />
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-ink mb-1.5">Color de pelaje</label>
+              <input
+                type="text"
+                id="ob-color"
+                placeholder="Ej: Dorado, Negro, Blanco..."
+                class="w-full rounded-xl border border-card-border bg-white px-4 py-3 text-ink placeholder-muted transition-all hover:border-gray-300 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
+              />
+            </div>
+          </div>
+
+          <div class="mt-6 space-y-3">
+            <button
+              id="btn-final-submit"
+              class="w-full rounded-2xl bg-accent px-6 py-3.5 font-bold text-sm text-white transition-all hover:bg-accent-dark active:scale-95 shadow-md"
+            >
+              <span id="btn-final-label">Crear perfil →</span>
+            </button>
+            <button type="button" id="btn-final-skip" class="w-full text-sm text-muted underline hover:text-ink transition-colors py-1">
+              Saltar y terminar →
+            </button>
+            <button type="button" id="btn-step4-back" class="w-full text-sm text-muted hover:text-ink transition-colors py-1">
+              ← Atrás
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </main>
+
+    <!-- Hidden form — populated by JS before final submit -->
+    <form id="final-form" method="POST" enctype="multipart/form-data" class="hidden">
+      <input type="hidden" name="name" id="ff-name" />
+      <input type="hidden" name="breed" id="ff-breed" />
+      <input type="hidden" name="breed_other" id="ff-breed-other" />
+      <input type="hidden" name="birth_date" id="ff-birth-date" />
+      <input type="hidden" name="gender" id="ff-gender" />
+      <input type="hidden" name="weight_kg" id="ff-weight" />
+      <input type="hidden" name="chip_id" id="ff-chip" />
+      <input type="hidden" name="color" id="ff-color" />
+    </form>
+
+    <script>
+      // ── State ──
+      let currentStep = 1;
+      let selectedGender = '';
+      let photoFileRef: File | null = null;
+
+      const store: Record<string, string> = {};
+
+      // ── Progress bar ──
+      function updateProgress(step: number) {
+        const wrap = document.getElementById('progress-bar-wrap') as HTMLElement;
+        const fill = document.getElementById('progress-fill') as HTMLElement;
+        const text = document.getElementById('progress-text') as HTMLElement;
+
+        if (step === 1) {
+          wrap.style.display = 'none';
+          return;
+        }
+        wrap.style.display = 'block';
+
+        const stepLabels = ['', '', 'Paso 1 de 3', 'Paso 2 de 3', 'Paso 3 de 3'];
+        const stepWidths = ['', '', '33%', '66%', '100%'];
+        fill.style.width = stepWidths[step] || '33%';
+        text.textContent = stepLabels[step] || '';
+      }
+
+      // ── Navigate ──
+      function goTo(step: number) {
+        document.querySelectorAll('[data-step]').forEach((el) => {
+          (el as HTMLElement).classList.add('hidden');
+          (el as HTMLElement).classList.remove('animate-fade-up');
+        });
+        const target = document.querySelector(`[data-step="${step}"]`) as HTMLElement;
+        target.classList.remove('hidden');
+        // Trigger animation on next frame
+        requestAnimationFrame(() => target.classList.add('animate-fade-up'));
+
+        currentStep = step;
+        updateProgress(step);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+
+        // Personalize final button with pet name
+        if (step === 4) {
+          const petName = store.name || 'tu mascota';
+          const label = document.getElementById('btn-final-label');
+          if (label) label.textContent = `Crear perfil de ${petName} →`;
+        }
+      }
+
+      // ── Step 1 → 2 ──
+      document.getElementById('btn-step1-next')?.addEventListener('click', () => goTo(2));
+
+      // ── Photo preview ──
+      const photoInput = document.getElementById('ob-photo-input') as HTMLInputElement;
+      const photoPreview = document.getElementById('ob-photo-preview') as HTMLImageElement;
+      photoInput?.addEventListener('change', () => {
+        const file = photoInput.files?.[0];
+        if (file) {
+          photoFileRef = file;
+          const reader = new FileReader();
+          reader.onload = (e) => { photoPreview.src = e.target?.result as string; };
+          reader.readAsDataURL(file);
+        }
+      });
+
+      // ── Breed "Otro" toggle ──
+      const breedSelect = document.getElementById('ob-breed-select') as HTMLSelectElement;
+      const breedOtherInput = document.getElementById('ob-breed-other') as HTMLInputElement;
+      breedSelect?.addEventListener('change', () => {
+        breedOtherInput.classList.toggle('hidden', breedSelect.value !== 'Otro');
+        if (breedSelect.value !== 'Otro') breedOtherInput.value = '';
+      });
+
+      // ── Step 2 → 3 ──
+      document.getElementById('btn-step2-next')?.addEventListener('click', () => {
+        const nameInput = document.getElementById('ob-name') as HTMLInputElement;
+        const nameError = document.getElementById('ob-name-error') as HTMLElement;
+
+        if (!nameInput.value.trim()) {
+          nameInput.classList.add('border-red-400');
+          nameError.classList.remove('hidden');
+          nameInput.focus();
+          return;
+        }
+        nameInput.classList.remove('border-red-400');
+        nameError.classList.add('hidden');
+
+        store.name = nameInput.value.trim();
+        store.breed = breedSelect.value;
+        store.breedOther = breedOtherInput.value.trim();
+
+        goTo(3);
+      });
+      document.getElementById('btn-step2-back')?.addEventListener('click', () => goTo(1));
+
+      // ── Gender pills ──
+      document.querySelectorAll('.gender-pill').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.gender-pill').forEach((b) => {
+            b.classList.remove('bg-accent', 'text-white', 'border-accent');
+            b.classList.add('border-card-border', 'text-ink', 'bg-white');
+          });
+          btn.classList.add('bg-accent', 'text-white', 'border-accent');
+          btn.classList.remove('border-card-border', 'text-ink', 'bg-white');
+          selectedGender = (btn as HTMLElement).dataset.gender || '';
+        });
+      });
+
+      // ── Step 3 → 4 ──
+      document.getElementById('btn-step3-next')?.addEventListener('click', () => {
+        store.birthDate = (document.getElementById('ob-birth-date') as HTMLInputElement).value;
+        store.gender = selectedGender;
+        goTo(4);
+      });
+      document.getElementById('btn-step3-skip')?.addEventListener('click', () => {
+        store.birthDate = '';
+        store.gender = '';
+        goTo(4);
+      });
+      document.getElementById('btn-step3-back')?.addEventListener('click', () => goTo(2));
+      document.getElementById('btn-step4-back')?.addEventListener('click', () => goTo(3));
+
+      // ── Final submit ──
+      function submitFinal(skipOptional: boolean) {
+        // Populate hidden form fields from store
+        (document.getElementById('ff-name') as HTMLInputElement).value = store.name || '';
+        (document.getElementById('ff-breed') as HTMLInputElement).value = store.breed || '';
+        (document.getElementById('ff-breed-other') as HTMLInputElement).value = store.breedOther || '';
+        (document.getElementById('ff-birth-date') as HTMLInputElement).value = store.birthDate || '';
+        (document.getElementById('ff-gender') as HTMLInputElement).value = store.gender || '';
+
+        if (!skipOptional) {
+          (document.getElementById('ff-weight') as HTMLInputElement).value =
+            (document.getElementById('ob-weight') as HTMLInputElement).value;
+          (document.getElementById('ff-chip') as HTMLInputElement).value =
+            (document.getElementById('ob-chip') as HTMLInputElement).value;
+          (document.getElementById('ff-color') as HTMLInputElement).value =
+            (document.getElementById('ob-color') as HTMLInputElement).value;
+        }
+
+        // Inject photo file via DataTransfer
+        if (photoFileRef) {
+          const dt = new DataTransfer();
+          dt.items.add(photoFileRef);
+          let photoHidden = document.querySelector<HTMLInputElement>('#final-form input[name="photo"]');
+          if (!photoHidden) {
+            photoHidden = document.createElement('input');
+            photoHidden.type = 'file';
+            photoHidden.name = 'photo';
+            document.getElementById('final-form')?.appendChild(photoHidden);
+          }
+          photoHidden.files = dt.files;
+        }
+
+        // Loading state
+        const btn = document.getElementById('btn-final-submit') as HTMLButtonElement;
+        btn.classList.add('btn-loading');
+        btn.setAttribute('disabled', '');
+
+        const form = document.getElementById('final-form') as HTMLFormElement;
+        form.submit();
+      }
+
+      document.getElementById('btn-final-submit')?.addEventListener('click', () => submitFinal(false));
+      document.getElementById('btn-final-skip')?.addEventListener('click', () => submitFinal(true));
+    </script>
+  </body>
+</html>
