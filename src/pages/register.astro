@@ -10,6 +10,7 @@ if (user) {
 }
 
 const error = Astro.url.searchParams.get('error');
+const errorDetail = Astro.url.searchParams.get('detail');
 const success = Astro.url.searchParams.get('success');
 
 if (Astro.request.method === 'POST') {
@@ -31,9 +32,17 @@ if (Astro.request.method === 'POST') {
   }
 
   if (action === 'register') {
-    const { error: registerError } = await supabase.auth.signUp({ email, password });
+    const { data: signUpData, error: registerError } = await supabase.auth.signUp({ email, password });
     if (registerError) {
-      return Astro.redirect('/register?error=register_failed');
+      const msg = registerError.message?.toLowerCase() ?? '';
+      const code = msg.includes('already registered') || msg.includes('already exists') || msg.includes('user already')
+        ? 'email_exists'
+        : 'register_failed';
+      return Astro.redirect(`/register?error=${code}&detail=${encodeURIComponent(registerError.message)}`);
+    }
+    // Supabase sometimes returns no error but user is null (rate limit or email confirmation issue)
+    if (!signUpData.user) {
+      return Astro.redirect('/register?error=register_failed&detail=no_user_returned');
     }
     return Astro.redirect('/register?success=check_email');
   }
@@ -48,7 +57,8 @@ if (Astro.request.method === 'POST') {
     <meta name="theme-color" content="#7CB974" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+    <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" /></noscript>
     <link rel="manifest" href="/manifest.json" />
     <link rel="icon" href="/icons/icon-192.png" />
     <title>Crear cuenta | PetLog</title>
@@ -138,8 +148,12 @@ if (Astro.request.method === 'POST') {
 
             {error && (
               <div class="mb-4 rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
-                {error === 'register_failed' && 'No se pudo crear la cuenta. Intenta con otro email.'}
+                {error === 'register_failed' && 'No se pudo crear la cuenta. Intenta de nuevo.'}
+                {error === 'email_exists' && (
+                  <span>Este email ya tiene una cuenta. <a href="/login" class="font-semibold underline">Inicia sesión →</a></span>
+                )}
                 {error === 'auth_failed' && 'Error al conectar con Google. Intenta de nuevo.'}
+                {errorDetail && <p class="mt-1 text-xs opacity-70">Detalle: {errorDetail}</p>}
               </div>
             )}
 

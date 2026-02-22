@@ -81,19 +81,19 @@ ALTER TABLE pets ADD COLUMN IF NOT EXISTS color TEXT;
 ```
 
 **Tareas técnicas:**
-- [ ] Toast/feedback en todas las acciones (guardar, eliminar, error) — usar `sonner`
-- [ ] Loading states en forms (deshabilitar botón al submit)
-- [ ] Onboarding mínimo: cuando no hay mascota, mostrar pantalla de bienvenida antes del formulario vacío
+- ✅ Toast/feedback en todas las acciones (guardar, eliminar, error) — Toast.astro + FormEnhancements.astro en MainLayout
+- ✅ Loading states en forms (deshabilitar botón al submit)
+- ✅ Onboarding mínimo: cuando no hay mascota, mostrar pantalla de bienvenida antes del formulario vacío
 - [ ] Revisar responsive en iPhone 12/15 y Android Chrome
 - [ ] Corregir todos los `forest`, `cream-dark` legacy restantes por las variables nuevas del tema
 - [ ] Deploy en dominio propio (sugerencia: `petlog.app` o `petlog.lat`)
-- [ ] Google OAuth funcionando en producción (configurar callback URL de Vercel)
+- ✅ Google OAuth funcionando en producción (configurar callback URL de Vercel)
 - [ ] Vercel Analytics activado (gratis, 1 línea)
 - [ ] Documentar tablas en `docs/database.md`
 
 **Ya implementado en Fase 0:**
 - ✅ Onboarding wizard 4 pasos (`/register` → `/onboarding`)
-- ✅ Google OAuth funcionando en producción
+- ✅ Google OAuth funcionando en producción — probado en dispositivos reales
 - ✅ Badge de "Perfil completo" en `/perfil` (desbloqueado cuando todos los campos están llenos)
 - ✅ Razas en inglés, alfabéticas, con Border Collie
 - ✅ Checklist post-onboarding en el dashboard (`?onboarded=1`): 4 pasos accionables con links directos
@@ -102,41 +102,64 @@ ALTER TABLE pets ADD COLUMN IF NOT EXISTS color TEXT;
 - ✅ Hamburger menu mobile funcional (fix de `display:none` vs `classList.hidden`)
 - ✅ Eliminar cuenta desde `/perfil` con modal de confirmación y borrado en cascada en Supabase
 - ✅ Todos los journeys de auth auditados y corregidos (email no confirmado, login sin mascota, etc.)
+- ✅ Register: error diferenciado entre "email ya existe → ir a login" vs error genérico
 
 **Nota sobre el peso en el dashboard:** El card de peso verde con número grande + "kg" + flecha de tendencia fue muy bien recibido — mantener este estilo para cualquier métrica numérica importante (referencia visual).
 
-**Milestone:** Cualquier persona puede entrar, crear su cuenta con Google, registrar su perro y navegar todo sin errores. ✅ Probado en múltiples dispositivos reales.
+**Milestone:** Cualquier persona puede entrar, crear su cuenta con Google o email, registrar su perro y navegar todo sin errores. ✅ Probado en múltiples dispositivos reales.
 
 ---
 
-### Fase 1: Onboarding Épico (1-2 semanas)
+### Fase 1: Onboarding Épico ✅ COMPLETADO
 **Objetivo: que el primer uso sea memorable y genere retención.**
 
-**Flujo:**
-1. Login con Google → nueva cuenta detectada
-2. Pantalla "¡Bienvenido! ¿Cómo se llama tu mascota?" (minimalista, solo el nombre)
-3. Especie: Perro / Gato (ilustraciones)
-4. Raza: dropdown con autocomplete → card desliza mostrando:
-   - Descripción corta de la raza
-   - 3 fun facts
-   - Chips de colores típicos de la raza
-5. Foto + fecha de nacimiento + color
-6. "¡Listo! El pasaporte de {nombre} está creado" + animación confeti
-7. → Dashboard con datos pre-populados de ejemplo (o vacío con empty states motivadores)
+**Implementado:**
+- ✅ Wizard ampliado a 6 pasos (era 4)
+- ✅ Paso 2: Selector de especie (Perro 🐕 / Gato 🐱) con cards grandes clickables
+- ✅ Paso 3: Fun facts de raza — card animada con 3 datos curiosos al seleccionar raza (13 razas cubiertas hardcoded en `src/lib/breeds.ts`)
+- ✅ Para gatos: sección de raza oculta (no aplica aún)
+- ✅ Paso 6: Pantalla de celebración con fondo verde oscuro, emoji del animal, título personalizado con el nombre
+- ✅ Confeti en el dashboard al llegar desde onboarding (`?onboarded=1`) — CDN, sin overhead en bundle
+- ✅ Barra de progreso "Paso X de 4" en pasos 3-6
+- ✅ Fun facts pasados de server (Astro) al cliente vía `<script type="application/json">`
+
+**Milestone:** ✅ Flujo completo funciona. Tasa de completar onboarding pendiente de medir con Analytics.
+
+---
+
+### Fase 1.5: Citas Futuras + Recordatorios por Email
+**Objetivo: que el usuario no se olvide de las citas programadas con el veterinario.**
+
+**UX:**
+- En `/salud/citas`, al agregar una cita, marcarla como "futura" si la fecha es posterior a hoy
+- Dashboard: si hay una cita en los próximos 7 días, mostrar banner de recordatorio
+- El usuario puede activar recordatorio por email desde la ficha de la cita
+
+**Recordatorio por email — implementación:**
+- Tabla `vet_visit_reminders` asociada a `vet_visits`
+- Supabase Edge Function `send-reminders` (cron diario) que:
+  1. Busca citas con `date = tomorrow` y `reminder_email = true`
+  2. Envía email con Resend (`resend.com`) — plan gratuito = 3,000 emails/mes
+  3. Marca `reminder_sent = true` para no duplicar
 
 **DB:**
 ```sql
-CREATE TABLE IF NOT EXISTS breeds (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  name TEXT NOT NULL,
-  species TEXT NOT NULL DEFAULT 'dog',
-  description TEXT,
-  fun_facts JSONB,
-  typical_colors TEXT[]
-);
+ALTER TABLE vet_visits ADD COLUMN IF NOT EXISTS is_future BOOLEAN DEFAULT FALSE;
+ALTER TABLE vet_visits ADD COLUMN IF NOT EXISTS reminder_email BOOLEAN DEFAULT FALSE;
+ALTER TABLE vet_visits ADD COLUMN IF NOT EXISTS reminder_sent BOOLEAN DEFAULT FALSE;
 ```
 
-**Milestone:** Tasa de completar onboarding > 80%. Medir con Supabase Analytics.
+**Edge Function (Supabase):**
+```ts
+// supabase/functions/send-reminders/index.ts
+// Cron: "0 9 * * *" (9am diario)
+// 1. Query vet_visits WHERE date = tomorrow AND reminder_email = true AND reminder_sent = false
+// 2. JOIN pets + auth.users para obtener email del dueño
+// 3. Resend API: email con nombre del perro, vet, hora, dirección
+// 4. UPDATE reminder_sent = true
+```
+
+**Milestone:** Usuario recibe email "Mañana tienes cita con el vet para [nombre del perro] a las 10am."
 
 ---
 

@@ -3,12 +3,20 @@ import { createSupabaseClient } from './lib/supabase';
 
 const PUBLIC_ROUTES = ['/', '/login', '/register', '/api/auth/callback'];
 
+function withUtf8(response: Response): Response {
+  const contentType = response.headers.get('content-type');
+  if (contentType && contentType.includes('text/html') && !contentType.includes('charset')) {
+    response.headers.set('content-type', 'text/html; charset=utf-8');
+  }
+  return response;
+}
+
 export const onRequest = defineMiddleware(async (context, next) => {
   const { pathname } = context.url;
 
   // Allow public routes (exact match for '/', prefix match for others)
   if (PUBLIC_ROUTES.some((route) => route === '/' ? pathname === '/' : pathname.startsWith(route))) {
-    return next();
+    return withUtf8(await next());
   }
 
   // Allow static assets and PWA files
@@ -32,5 +40,5 @@ export const onRequest = defineMiddleware(async (context, next) => {
   context.locals.user = user;
   context.locals.supabase = supabase;
 
-  return next();
+  return withUtf8(await next());
 });

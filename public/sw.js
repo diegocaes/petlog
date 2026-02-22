@@ -31,10 +31,25 @@ self.addEventListener('fetch', (event) => {
   // Skip non-GET requests
   if (request.method !== 'GET') return;
 
-  // Cache-first for static assets
-  if (request.url.includes('/icons/') || request.url.includes('/manifest.json')) {
+  // Cache-first for static assets (icons, fonts, manifest)
+  if (
+    request.url.includes('/icons/') ||
+    request.url.includes('/manifest.json') ||
+    request.url.includes('/badges/') ||
+    request.url.includes('fonts.googleapis.com') ||
+    request.url.includes('fonts.gstatic.com')
+  ) {
     event.respondWith(
-      caches.match(request).then((cached) => cached || fetch(request))
+      caches.match(request).then((cached) => {
+        if (cached) return cached;
+        return fetch(request).then((response) => {
+          if (response.ok) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+          }
+          return response;
+        });
+      })
     );
     return;
   }

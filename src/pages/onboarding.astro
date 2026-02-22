@@ -82,8 +82,8 @@ if (Astro.request.method === 'POST') {
   return Astro.redirect('/dashboard?onboarded=1');
 }
 
-// Serialize breed facts for client-side use
-const breedFactsJSON = JSON.stringify(BREED_FACTS);
+// Serialize breed facts for client-side use (base64 to avoid special char issues)
+const breedFactsB64 = Buffer.from(JSON.stringify(BREED_FACTS)).toString('base64');
 ---
 
 <!doctype html>
@@ -94,7 +94,8 @@ const breedFactsJSON = JSON.stringify(BREED_FACTS);
     <meta name="theme-color" content="#7CB974" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+    <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" /></noscript>
     <link rel="icon" href="/icons/icon-192.png" />
     <title>Bienvenido | PetLog</title>
   </head>
@@ -454,8 +455,8 @@ const breedFactsJSON = JSON.stringify(BREED_FACTS);
       <input type="hidden" name="color" id="ff-color" />
     </form>
 
-    <!-- Breed facts data (server → client) -->
-    <script type="application/json" id="breed-facts-data" set:text={breedFactsJSON}></script>
+    <!-- Breed facts data (server → client, base64 encoded) -->
+    <div id="breed-facts-data" data-facts={breedFactsB64} hidden></div>
 
     <script>
       // ── State ──
@@ -465,8 +466,13 @@ const breedFactsJSON = JSON.stringify(BREED_FACTS);
       const store: Record<string, string> = {};
 
       // ── Breed facts ──
-      const factsData: Record<string, Array<{emoji: string; fact: string}>> =
-        JSON.parse(document.getElementById('breed-facts-data')!.textContent || '{}');
+      const factsData: Record<string, Array<{emoji: string; fact: string}>> = (() => {
+        try {
+          const b64 = document.getElementById('breed-facts-data')?.getAttribute('data-facts') || '';
+          const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+          return JSON.parse(new TextDecoder('utf-8').decode(bytes));
+        } catch { return {}; }
+      })();
 
       // ── Progress bar ──
       function updateProgress(step: number) {

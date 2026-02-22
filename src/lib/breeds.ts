@@ -92,9 +92,14 @@ export const BREED_FACTS: Partial<Record<DogBreed, BreedFact[]>> = {
     { emoji: '👁️', fact: 'Su "mirada fija" puede controlar rebaños de cientos de ovejas.' },
     { emoji: '🏃', fact: 'Necesitan hasta 2 horas de ejercicio diario para estar felices.' },
   ],
+  'Jack Russell Terrier': [
+    { emoji: '💥', fact: 'Tienen tanta energia que necesitan mas de 1 hora de ejercicio diario.' },
+    { emoji: '🕳️', fact: 'Fueron criados para cazar zorros metiendose en sus madrigueras.' },
+    { emoji: '🧠', fact: 'Son extremadamente inteligentes — aprenden trucos rapidisimo, pero tambien se aburren igual de rapido.' },
+  ],
   'Mixed / Rescue': [
-    { emoji: '❤️', fact: 'Los perros mestizos suelen tener menos problemas genéticos que los de raza pura.' },
+    { emoji: '❤️', fact: 'Los perros mestizos suelen tener menos problemas geneticos que los de raza pura.' },
     { emoji: '🏆', fact: 'Al adoptarlo, salvaste una vida y ganaste un amigo para siempre.' },
-    { emoji: '🧬', fact: 'Su mezcla de razas los hace únicos — ¡no hay dos iguales en el mundo!' },
+    { emoji: '🧬', fact: 'Su mezcla de razas los hace unicos — ¡no hay dos iguales en el mundo!' },
   ],
 };

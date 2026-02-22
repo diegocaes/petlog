@@ -44,116 +44,105 @@ const photoUrl = pet.photo_url || '/icons/default-pet.svg';
 const latestWeight = weightRecords?.[0]?.weight_kg ?? pet.weight_kg;
 const prevWeight = weightRecords?.[1]?.weight_kg;
 const weightDiff = latestWeight && prevWeight ? +(latestWeight - prevWeight).toFixed(1) : null;
+
+// Checklist — only show items the user hasn't completed yet
+const profileComplete = !!(pet.photo_url && pet.chip_id && (pet as any).color);
+const checklistItems = [
+  { done: (vaccineCount ?? 0) > 0,   href: '/salud/vacunas?new=1', label: 'Agregar vacuna',           sub: 'Rabia, Parvovirus, Moquillo u otras',           iconColor: 'bg-accent/10', iconStroke: 'text-accent',    icon: '<path d="m14.5 2-8.5 8.5v4h4l8.5-8.5a2.83 2.83 0 0 0-4-4z"/><path d="m18 2 4 4"/>' },
+  { done: (visitCount ?? 0) > 0,     href: '/salud/citas?new=1',  label: 'Agregar cita veterinaria', sub: 'Registra visitas al vet y próximas citas',       iconColor: 'bg-blue-50',   iconStroke: 'text-blue-500',  icon: '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>' },
+  { done: (weightRecords?.length ?? 0) > 0, href: '/salud/peso?new=1', label: 'Registrar peso',      sub: 'Lleva el historial de peso desde hoy',          iconColor: 'bg-sky-50',    iconStroke: 'text-sky-500',   icon: '<circle cx="12" cy="12" r="10"/><path d="M8 12a4 4 0 0 1 8 0"/><line x1="12" y1="12" x2="12" y2="8"/>' },
+  { done: (adventureCount ?? 0) > 0, href: '/aventuras?new=1',     label: 'Subir primera foto',       sub: `Guarda los mejores momentos de ${pet.name}`,    iconColor: 'bg-pink-50',   iconStroke: 'text-pink-500',  icon: '<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/>' },
+  { done: profileComplete,            href: '/perfil',              label: 'Completar perfil',          sub: 'Foto, microchip, color de pelaje',               iconColor: 'bg-amber/10',  iconStroke: 'text-amber-dark',icon: '<circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/>' },
+].filter(item => !item.done);
 ---
 
 <MainLayout title="Inicio">
 
-  {/* ── POST-ONBOARDING WELCOME CARD ── */}
-  {isNewlyOnboarded && (
+  {/* ── QUICK START CHECKLIST (smart: only pending items, hidden when all done or dismissed) ── */}
+  {checklistItems.length > 0 && (
     <div class="mb-5 animate-fade-up" id="onboarding-checklist">
-      {/* Welcome header */}
+      {/* Header */}
       <div class="rounded-t-2xl border border-b-0 border-accent/30 bg-accent/10 px-5 py-4">
         <div class="flex items-center gap-3">
-          <span class="text-2xl">🎉</span>
+          <span class="text-xl">🚀</span>
           <div>
-            <p class="text-sm font-bold text-accent-dark">¡{pet.name} ya tiene su pasaporte digital!</p>
-            <p class="text-xs text-muted mt-0.5">Bienvenido a PetLog. Aquí te decimos por dónde empezar.</p>
+            <p class="text-sm font-bold text-accent-dark">Primeros pasos con {pet.name}</p>
+            <p class="text-xs text-muted mt-0.5">{checklistItems.length} {checklistItems.length === 1 ? 'paso pendiente' : 'pasos pendientes'} para sacarle el máximo a PetLog.</p>
           </div>
         </div>
       </div>
 
-      {/* Adult dog message */}
-      {age && !age.includes('mes') && !age.startsWith('0') && (
+      {/* Adult dog message — only post-onboarding */}
+      {isNewlyOnboarded && age && !age.includes('mes') && !age.startsWith('0') && (
         <div class="border-x border-accent/30 bg-amber/5 px-5 py-3">
           <div class="flex items-start gap-2">
             <span class="text-base shrink-0 mt-0.5">💡</span>
             <p class="text-xs text-amber-dark leading-relaxed">
-              No importa si {pet.name} es mayor — PetLog te ayuda a llevar su historial desde hoy y registrar todo lo que viene.
+              No importa si {pet.name} es mayor — PetLog te ayuda a llevar su historial desde hoy.
             </p>
           </div>
         </div>
       )}
 
-      {/* Checklist */}
+      {/* Checklist items — server-rendered, only pending */}
       <div class="rounded-b-2xl border border-t-0 border-accent/30 bg-white divide-y divide-card-border">
-        <a href="/salud/vacunas" class="flex items-center gap-3 px-5 py-3.5 hover:bg-canvas transition-colors active:scale-95">
-          <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent/10">
-            <svg class="h-4 w-4 text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m14.5 2-8.5 8.5v4h4l8.5-8.5a2.83 2.83 0 0 0-4-4z"/><path d="m18 2 4 4"/></svg>
-          </div>
-          <div class="flex-1">
-            <p class="text-sm font-semibold text-ink">Registra la primera vacuna</p>
-            <p class="text-xs text-muted">Rabia, Parvovirus, Moquillo u otras</p>
-          </div>
-          <svg class="h-4 w-4 text-muted/40 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
-        </a>
-        <a href="/perfil" class="flex items-center gap-3 px-5 py-3.5 hover:bg-canvas transition-colors active:scale-95">
-          <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber/10">
-            <svg class="h-4 w-4 text-amber-dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/></svg>
-          </div>
-          <div class="flex-1">
-            <p class="text-sm font-semibold text-ink">Completa el perfil de {pet.name}</p>
-            <p class="text-xs text-muted">Foto, microchip, color de pelaje</p>
-          </div>
-          <svg class="h-4 w-4 text-muted/40 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
-        </a>
-        <a href="/salud/peso" class="flex items-center gap-3 px-5 py-3.5 hover:bg-canvas transition-colors active:scale-95">
-          <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sky-50">
-            <svg class="h-4 w-4 text-sky-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 12a4 4 0 0 1 8 0"/><line x1="12" y1="12" x2="12" y2="8"/></svg>
-          </div>
-          <div class="flex-1">
-            <p class="text-sm font-semibold text-ink">Ingresa el peso actual</p>
-            <p class="text-xs text-muted">Lleva el historial de peso desde hoy</p>
-          </div>
-          <svg class="h-4 w-4 text-muted/40 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
-        </a>
-        <a href="/aventuras" class="flex items-center gap-3 px-5 py-3.5 hover:bg-canvas transition-colors active:scale-95">
-          <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-pink-50">
-            <svg class="h-4 w-4 text-pink-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
-          </div>
-          <div class="flex-1">
-            <p class="text-sm font-semibold text-ink">Sube tu primera foto juntos</p>
-            <p class="text-xs text-muted">Guarda los mejores momentos de {pet.name}</p>
-          </div>
-          <svg class="h-4 w-4 text-muted/40 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
-        </a>
+        {checklistItems.map(item => (
+          <a href={item.href} class="flex items-center gap-3 px-5 py-3.5 hover:bg-canvas transition-colors active:scale-95">
+            <div class:list={['flex h-8 w-8 shrink-0 items-center justify-center rounded-full', item.iconColor]}>
+              <svg class:list={['h-4 w-4', item.iconStroke]} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" set:html={item.icon} />
+            </div>
+            <div class="flex-1">
+              <p class="text-sm font-semibold text-ink">{item.label}</p>
+              <p class="text-xs text-muted">{item.sub}</p>
+            </div>
+            <svg class="h-4 w-4 text-muted/40 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+          </a>
+        ))}
       </div>
 
-      {/* Dismiss button */}
+      {/* Dismiss — persists via localStorage */}
       <button
         type="button"
         id="btn-dismiss-checklist"
         class="mt-2 w-full text-xs text-muted hover:text-ink transition-colors py-1"
       >
-        Ya entendí, ocultar →
+        Ya lo sé, no mostrar de nuevo →
       </button>
     </div>
   )}
 
+  <script is:inline>
+    (function() {
+      if (localStorage.getItem('petlog_checklist_hidden') === '1') {
+        var el = document.getElementById('onboarding-checklist');
+        if (el) el.style.display = 'none';
+      }
+    })();
+  </script>
   <script>
     document.getElementById('btn-dismiss-checklist')?.addEventListener('click', () => {
+      localStorage.setItem('petlog_checklist_hidden', '1');
       const el = document.getElementById('onboarding-checklist');
       if (el) el.style.display = 'none';
     });
   </script>
 
-  <!-- Confetti on first arrival after onboarding -->
-  <script is:inline>
-    (function() {
-      const script = document.createElement('script');
-      script.src = 'https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js';
-      script.onload = function() {
-        setTimeout(function() {
-          window.confetti({
-            particleCount: 140,
-            spread: 90,
-            origin: { y: 0.55 },
-            colors: ['#7CB974', '#5FA356', '#ffffff', '#F59E0B', '#EAF5E8'],
-          });
-        }, 300);
-      };
-      document.head.appendChild(script);
-    })();
-  </script>
+  {/* Confetti — only on first arrival after onboarding */}
+  {isNewlyOnboarded && (
+    <script is:inline>
+      (function() {
+        var script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js';
+        script.onload = function() {
+          setTimeout(function() {
+            window.confetti({ particleCount: 140, spread: 90, origin: { y: 0.55 },
+              colors: ['#7CB974','#5FA356','#ffffff','#F59E0B','#EAF5E8'] });
+          }, 300);
+        };
+        document.head.appendChild(script);
+      })();
+    </script>
+  )}
 
   {/* Birthday Banner */}
   {birthday && (
