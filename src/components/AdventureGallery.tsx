@@ -42,11 +42,11 @@ export default function AdventureGallery({ adventures }: Props) {
                 loading="lazy"
               />
             ) : (
-              <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#F5F0E8] to-[#EBE4D6] text-3xl">
+              <div className="flex h-full w-full items-center justify-center bg-linear-to-br from-[#F5F0E8] to-[#EBE4D6] text-3xl">
                 🐾
               </div>
             )}
-            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-3 pt-8">
+            <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/60 to-transparent p-3 pt-8">
               <p className="text-xs font-semibold text-white truncate">{adventure.title}</p>
               {adventure.location && (
                 <p className="text-[10px] text-white/70 truncate flex items-center gap-0.5 mt-0.5">
@@ -85,7 +85,7 @@ export default function AdventureGallery({ adventures }: Props) {
                 className="w-full max-h-[60vh] object-contain bg-gray-900"
               />
             ) : (
-              <div className="flex h-48 w-full items-center justify-center bg-gradient-to-br from-[#F5F0E8] to-[#EBE4D6] text-6xl">
+              <div className="flex h-48 w-full items-center justify-center bg-linear-to-br from-[#F5F0E8] to-[#EBE4D6] text-6xl">
                 🐾
               </div>
             )}

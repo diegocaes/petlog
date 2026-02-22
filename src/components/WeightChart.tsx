@@ -56,6 +56,10 @@ export default function WeightChart({ records }: Props) {
   const previous = records[records.length - 2].weight_kg;
   const diff = latest - previous;
 
+  // Accent color: #7CB974 (matches --color-accent)
+  const ACCENT = '#7CB974';
+  const GRID = '#EAECF0';
+
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
@@ -66,7 +70,7 @@ export default function WeightChart({ records }: Props) {
           <span className="text-2xl font-bold text-gray-800">{latest}</span>
           <span className="text-sm text-gray-400">kg</span>
           <span className={`inline-flex items-center gap-0.5 text-xs font-semibold px-2 py-0.5 rounded-full ${
-            diff > 0 ? 'bg-amber-50 text-amber-600' : diff < 0 ? 'bg-green-50 text-[#166534]' : 'bg-gray-50 text-gray-400'
+            diff > 0 ? 'bg-amber-50 text-amber-600' : diff < 0 ? 'bg-green-50 text-green-700' : 'bg-gray-50 text-gray-400'
           }`}>
             {diff > 0 ? <TrendingUp size={12} /> : diff < 0 ? <TrendingDown size={12} /> : <Minus size={12} />}
             {diff > 0 ? '+' : ''}{diff.toFixed(1)}
@@ -81,7 +85,7 @@ export default function WeightChart({ records }: Props) {
           return (
             <g key={i}>
               <line x1={PAD.left} y1={y} x2={WIDTH - PAD.right} y2={y}
-                stroke="#EBE4D6" strokeWidth="1" />
+                stroke={GRID} strokeWidth="1" />
               <text x={PAD.left - 8} y={y + 4} textAnchor="end"
                 fill="#9ca3af" fontSize="10">{val.toFixed(1)}</text>
             </g>
@@ -91,21 +95,20 @@ export default function WeightChart({ records }: Props) {
         {/* Gradient fill */}
         <defs>
           <linearGradient id="wGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#166534" stopOpacity="0.12" />
-            <stop offset="100%" stopColor="#166534" stopOpacity="0.01" />
+            <stop offset="0%" stopColor={ACCENT} stopOpacity="0.12" />
+            <stop offset="100%" stopColor={ACCENT} stopOpacity="0.01" />
           </linearGradient>
         </defs>
         <path d={areaPath} fill="url(#wGrad)" />
 
         {/* Line */}
-        <path d={linePath} fill="none" stroke="#166534" strokeWidth="2.5"
+        <path d={linePath} fill="none" stroke={ACCENT} strokeWidth="2.5"
           strokeLinecap="round" strokeLinejoin="round" />
 
         {/* Data points */}
         {points.map((p, i) => (
           <g key={i}>
-            <circle cx={p.x} cy={p.y} r="5" fill="white" stroke="#166534" strokeWidth="2.5" />
-            {/* Tooltip-like label on hover area */}
+            <circle cx={p.x} cy={p.y} r="5" fill="white" stroke={ACCENT} strokeWidth="2.5" />
             <title>{`${p.record.weight_kg} kg — ${formatShort(p.record.date)}`}</title>
           </g>
         ))}

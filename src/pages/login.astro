@@ -48,7 +48,7 @@ if (Astro.request.method === 'POST') {
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#166534" />
+    <meta name="theme-color" content="#7CB974" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -56,88 +56,102 @@ if (Astro.request.method === 'POST') {
     <link rel="icon" href="/icons/icon-192.png" />
     <title>Entrar | PetLog</title>
   </head>
-  <body class="flex min-h-screen items-center justify-center bg-cream p-4">
-    <!-- Decorative background blobs -->
-    <div class="fixed inset-0 overflow-hidden pointer-events-none">
-      <div class="absolute -top-32 -right-32 h-64 w-64 rounded-full bg-forest/[0.03] blur-3xl"></div>
-      <div class="absolute -bottom-32 -left-32 h-64 w-64 rounded-full bg-amber/[0.05] blur-3xl"></div>
+  <body class="flex min-h-screen bg-canvas">
+    <!-- Left panel (hidden on mobile) -->
+    <div class="hidden lg:flex lg:flex-col lg:w-105 lg:shrink-0 bg-sidebar text-white p-10 relative overflow-hidden">
+      <div class="absolute inset-0 opacity-10">
+        <div class="absolute top-20 -left-20 h-64 w-64 rounded-full bg-accent blur-3xl"></div>
+        <div class="absolute bottom-20 right-10 h-48 w-48 rounded-full bg-amber blur-3xl"></div>
+      </div>
+      <div class="relative">
+        <div class="flex items-center gap-3 mb-12">
+          <span class="text-3xl">🐾</span>
+          <span class="text-xl font-bold tracking-tight">PetLog</span>
+        </div>
+        <h2 class="text-3xl font-bold leading-tight mb-4">El diario digital<br/>de tu mascota</h2>
+        <p class="text-white/60 text-sm leading-relaxed">Registra vacunas, visitas al veterinario, peso, aventuras y vuelos en un solo lugar.</p>
+      </div>
+      <div class="relative mt-auto">
+        <p class="text-xs text-white/30">Hecho con ❤️ para los amantes de sus mascotas</p>
+      </div>
     </div>
 
-    <div class="relative w-full max-w-sm">
-      <!-- Logo -->
-      <div class="mb-8 text-center animate-fade-up">
-        <div class="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-forest to-forest-dark text-4xl text-white shadow-xl ring-8 ring-forest/10">
-          🐾
+    <!-- Right panel (form) -->
+    <div class="flex flex-1 items-center justify-center p-6">
+      <div class="w-full max-w-sm">
+        <!-- Mobile logo -->
+        <div class="mb-8 text-center lg:hidden animate-fade-up">
+          <div class="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-2xl bg-sidebar text-3xl">
+            🐾
+          </div>
+          <h1 class="text-2xl font-bold text-ink">PetLog</h1>
+          <p class="text-sm text-muted mt-1">El diario digital de tu mascota</p>
         </div>
-        <h1 class="text-3xl font-extrabold text-gray-800 tracking-tight">PetLog</h1>
-        <p class="mt-2 text-gray-500">El diario digital de tu mascota</p>
-        <div class="mt-3 mx-auto h-1 w-12 rounded-full bg-gradient-to-r from-forest to-amber"></div>
+
+        <div class="animate-fade-up lg:animate-none">
+          <h2 class="text-xl font-bold text-ink mb-1">Bienvenido</h2>
+          <p class="text-sm text-muted mb-6">Inicia sesión o crea tu cuenta para continuar</p>
+
+          <!-- Messages -->
+          {error && (
+            <div class="mb-4 rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+              {error === 'invalid_credentials' && 'Email o contraseña incorrectos'}
+              {error === 'register_failed' && 'No se pudo crear la cuenta. Intenta con otro email.'}
+              {error === 'auth_failed' && 'Error de autenticación'}
+              {error === 'no_code' && 'Código de autenticación no encontrado'}
+            </div>
+          )}
+          {success === 'check_email' && (
+            <div class="mb-4 rounded-xl bg-accent/10 border border-accent/20 px-4 py-3 text-sm text-accent-dark">
+              ¡Cuenta creada! Revisa tu email para confirmar.
+            </div>
+          )}
+
+          <!-- Login Form -->
+          <form method="POST" class="space-y-4" id="login-form">
+            <div>
+              <label class="block text-sm font-medium text-ink mb-1.5">Email</label>
+              <input
+                type="email"
+                name="email"
+                required
+                placeholder="tu@email.com"
+                class="w-full rounded-xl border border-card-border bg-white px-4 py-2.5 text-ink placeholder-muted text-sm transition-all duration-200 hover:border-gray-300 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-ink mb-1.5">Contraseña</label>
+              <input
+                type="password"
+                name="password"
+                required
+                minlength="6"
+                placeholder="Mínimo 6 caracteres"
+                class="w-full rounded-xl border border-card-border bg-white px-4 py-2.5 text-ink placeholder-muted text-sm transition-all duration-200 hover:border-gray-300 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
+              />
+            </div>
+
+            <div class="flex gap-3 pt-1">
+              <button
+                type="submit"
+                name="action"
+                value="login"
+                class="flex-1 rounded-xl bg-accent px-6 py-2.5 text-sm font-semibold text-white transition-all duration-200 hover:bg-accent-dark active:scale-95"
+              >
+                Entrar
+              </button>
+              <button
+                type="submit"
+                name="action"
+                value="register"
+                class="flex-1 rounded-xl bg-amber px-6 py-2.5 text-sm font-semibold text-gray-900 transition-all duration-200 hover:bg-amber-dark active:scale-95"
+              >
+                Crear cuenta
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
-
-      <!-- Messages -->
-      {error && (
-        <div class="mb-4 rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-700 border border-red-100 animate-fade-up">
-          {error === 'invalid_credentials' && 'Email o contraseña incorrectos'}
-          {error === 'register_failed' && 'No se pudo crear la cuenta. Intenta con otro email.'}
-          {error === 'auth_failed' && 'Error de autenticación'}
-          {error === 'no_code' && 'Código de autenticación no encontrado'}
-        </div>
-      )}
-      {success === 'check_email' && (
-        <div class="mb-4 rounded-2xl bg-green-50 px-4 py-3 text-sm text-green-700 border border-green-100 animate-fade-up">
-          ¡Cuenta creada! Revisa tu email para confirmar.
-        </div>
-      )}
-
-      <!-- Login Form -->
-      <div class="rounded-3xl bg-white/80 backdrop-blur-xl p-6 sm:p-8 shadow-xl border border-white/60 animate-fade-up animate-fade-up-delay-1">
-        <form method="POST" class="space-y-5" id="login-form">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
-            <input
-              type="email"
-              name="email"
-              required
-              placeholder="tu@email.com"
-              class="w-full rounded-xl border border-cream-dark bg-white px-4 py-3 text-gray-800 placeholder-gray-400 transition-all duration-200 hover:border-gray-300 focus:border-forest focus:outline-none focus:ring-2 focus:ring-forest/20"
-            />
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1.5">Contraseña</label>
-            <input
-              type="password"
-              name="password"
-              required
-              minlength="6"
-              placeholder="Mínimo 6 caracteres"
-              class="w-full rounded-xl border border-cream-dark bg-white px-4 py-3 text-gray-800 placeholder-gray-400 transition-all duration-200 hover:border-gray-300 focus:border-forest focus:outline-none focus:ring-2 focus:ring-forest/20"
-            />
-          </div>
-
-          <div class="flex gap-3 pt-1">
-            <button
-              type="submit"
-              name="action"
-              value="login"
-              class="flex-1 rounded-2xl bg-forest px-6 py-3.5 font-semibold text-white shadow-md transition-all duration-200 hover:bg-forest-light hover:shadow-lg active:scale-95"
-            >
-              Entrar
-            </button>
-            <button
-              type="submit"
-              name="action"
-              value="register"
-              class="flex-1 rounded-2xl bg-amber px-6 py-3.5 font-semibold text-gray-900 shadow-md transition-all duration-200 hover:bg-amber-dark hover:shadow-lg active:scale-95"
-            >
-              Crear cuenta
-            </button>
-          </div>
-        </form>
-      </div>
-
-      <p class="mt-8 text-center text-xs text-gray-400">
-        Hecho con ❤️ para los amantes de sus mascotas
-      </p>
     </div>
 
     <script>

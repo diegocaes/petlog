@@ -2,20 +2,21 @@
 interface Props {
   class?: string;
   padding?: boolean;
-  variant?: 'default' | 'glass' | 'elevated';
+  variant?: 'default' | 'glass' | 'elevated' | 'dark';
 }
 
 const { class: className = '', padding = true, variant = 'default' } = Astro.props;
 
 const variantClasses: Record<string, string> = {
-  default: 'bg-white shadow-sm border border-cream-dark/50',
-  glass: 'bg-white/70 backdrop-blur-xl border border-white/40 shadow-lg',
-  elevated: 'bg-white shadow-md hover:shadow-lg transition-shadow duration-300 border border-cream-dark/30',
+  default:  'bg-card border border-card-border',
+  glass:    'bg-white/80 backdrop-blur-xl border border-card-border',
+  elevated: 'bg-card border border-card-border hover:shadow-md transition-shadow duration-200',
+  dark:     'bg-sidebar border border-white/10 text-white',
 };
 ---
 
 <div class:list={[
-  'rounded-3xl overflow-hidden',
+  'rounded-xl overflow-hidden',
   variantClasses[variant],
   { 'p-5 sm:p-6': padding },
   className,

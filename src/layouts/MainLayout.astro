@@ -1,5 +1,5 @@
 ---
-import Navbar from '../components/Navbar.astro';
+import Sidebar from '../components/Sidebar.astro';
 import FormEnhancements from '../components/ui/FormEnhancements.astro';
 import Toast from '../components/ui/Toast.astro';
 import { ClientRouter } from 'astro:transitions';
@@ -14,12 +14,12 @@ const { title, description = 'El diario digital de tu mascota' } = Astro.props;
 ---
 
 <!doctype html>
-<html lang="es" transition:animate="fade">
+<html lang="es">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="description" content={description} />
-    <meta name="theme-color" content="#166534" />
+    <meta name="theme-color" content="#13161C" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -31,17 +31,23 @@ const { title, description = 'El diario digital de tu mascota' } = Astro.props;
     <title>{title} | PetLog</title>
     <ClientRouter />
   </head>
-  <body class="min-h-screen pb-24 sm:pb-8 sm:pt-20">
-    <Navbar />
-    <main class="mx-auto max-w-2xl px-4 py-6 sm:px-6">
-      <slot />
+  <body class="min-h-screen bg-canvas">
+    <Sidebar />
+
+    <!-- Mobile top bar spacer -->
+    <div class="h-13 lg:hidden"></div>
+
+    <!-- Main content — offset by sidebar on desktop -->
+    <main class="lg:ml-55 px-4 py-6 sm:px-6 lg:px-8 max-w-full">
+      <div class="mx-auto max-w-3xl">
+        <slot />
+      </div>
     </main>
 
     <Toast />
     <FormEnhancements />
 
     <script>
-      // Register service worker for PWA
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('/sw.js').catch(() => {});
       }

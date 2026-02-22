@@ -1,13 +1,9 @@
 ---
 import MainLayout from '../layouts/MainLayout.astro';
-import PetHeader from '../components/PetHeader.astro';
-import Card from '../components/ui/Card.astro';
-import Button from '../components/ui/Button.astro';
-import { formatDate, isBirthday } from '../lib/utils';
+import { formatDate, isBirthday, calculateAge } from '../lib/utils';
 
 const { supabase, user } = Astro.locals;
 
-// Get the user's pet (only one in v1)
 const { data: pet } = await supabase
   .from('pets')
   .select('*')
@@ -18,192 +14,283 @@ if (!pet) {
   return Astro.redirect('/perfil?new=1');
 }
 
-// Get last grooming
-const { data: lastGrooming } = await supabase
-  .from('groomings')
-  .select('type, date')
-  .eq('pet_id', pet.id)
-  .order('date', { ascending: false })
-  .limit(1)
-  .single();
+const [
+  { data: lastGrooming },
+  { data: lastAdventure },
+  { data: lastFlight },
+  { count: vaccineCount },
+  { count: visitCount },
+  { count: adventureCount },
+  { data: weightRecords },
+  { data: recentVaccines },
+] = await Promise.all([
+  supabase.from('groomings').select('type, date').eq('pet_id', pet.id).order('date', { ascending: false }).limit(1).single(),
+  supabase.from('adventures').select('title, date, photo_url').eq('pet_id', pet.id).order('date', { ascending: false }).limit(1).single(),
+  supabase.from('flights').select('origin, destination, flight_date').eq('pet_id', pet.id).order('flight_date', { ascending: false }).limit(1).single(),
+  supabase.from('vaccines').select('*', { count: 'exact', head: true }).eq('pet_id', pet.id),
+  supabase.from('vet_visits').select('*', { count: 'exact', head: true }).eq('pet_id', pet.id),
+  supabase.from('adventures').select('*', { count: 'exact', head: true }).eq('pet_id', pet.id),
+  supabase.from('weight_records').select('weight_kg, date').eq('pet_id', pet.id).order('date', { ascending: false }).limit(2),
+  supabase.from('vaccines').select('name').eq('pet_id', pet.id).order('date_given', { ascending: false }).limit(4),
+]);
 
-// Get last adventure
-const { data: lastAdventure } = await supabase
-  .from('adventures')
-  .select('title, date, photo_url')
-  .eq('pet_id', pet.id)
-  .order('date', { ascending: false })
-  .limit(1)
-  .single();
-
-// Get last flight
-const { data: lastFlight } = await supabase
-  .from('flights')
-  .select('origin, destination, flight_date, airline')
-  .eq('pet_id', pet.id)
-  .order('flight_date', { ascending: false })
-  .limit(1)
-  .single();
-
-// Counts for summary row
-const { count: vaccineCount } = await supabase
-  .from('vaccines').select('*', { count: 'exact', head: true }).eq('pet_id', pet.id);
-const { count: visitCount } = await supabase
-  .from('vet_visits').select('*', { count: 'exact', head: true }).eq('pet_id', pet.id);
-const { count: adventureCount } = await supabase
-  .from('adventures').select('*', { count: 'exact', head: true }).eq('pet_id', pet.id);
 const birthday = pet.birth_date ? isBirthday(pet.birth_date) : false;
+const age = pet.birth_date ? calculateAge(pet.birth_date) : null;
+const photoUrl = pet.photo_url || '/icons/default-pet.svg';
+
+// Weight trend
+const latestWeight = weightRecords?.[0]?.weight_kg ?? pet.weight_kg;
+const prevWeight = weightRecords?.[1]?.weight_kg;
+const weightDiff = latestWeight && prevWeight ? +(latestWeight - prevWeight).toFixed(1) : null;
 ---
 
-<MainLayout title="Dashboard">
+<MainLayout title="Inicio">
+
   {/* Birthday Banner */}
   {birthday && (
-    <div class="relative -mx-4 -mt-6 mb-0 overflow-hidden sm:-mx-6 animate-fade-up">
-      <div class="bg-gradient-to-r from-amber/20 via-amber/30 to-amber/20 px-4 py-3 text-center">
-        <p class="text-sm font-bold text-amber-dark">
-          🎂 ¡Hoy es el cumpleaños de {pet.name}! 🎉
-        </p>
-      </div>
+    <div class="mb-5 rounded-2xl border border-amber/30 bg-amber/10 px-4 py-3 text-center animate-fade-up">
+      <p class="text-sm font-semibold text-amber-dark">🎂 ¡Hoy es el cumpleaños de {pet.name}! 🎉</p>
     </div>
   )}
 
-  <!-- Hero Banner with blurred pet photo -->
-  <div class:list={['relative -mx-4 mb-6 overflow-hidden rounded-b-3xl sm:-mx-6 animate-fade-up', !birthday && '-mt-6']}>
-    <div class="absolute inset-0">
-      {pet.photo_url ? (
-        <img src={pet.photo_url} alt="" class="h-full w-full object-cover blur-2xl scale-110 opacity-25" />
-      ) : (
-        <div class="h-full w-full bg-gradient-to-br from-forest/5 to-amber/5"></div>
+  {/* ── HERO CARD ── */}
+  <a href="/perfil" class="block mb-5 animate-fade-up">
+    <div class="relative rounded-2xl overflow-hidden bg-[#1E3B1A]">
+      {/* Subtle noise/gradient overlay */}
+      <div class="absolute inset-0 bg-linear-to-br from-white/5 to-transparent pointer-events-none"></div>
+
+      <div class="relative flex items-center gap-4 p-5">
+        {/* Avatar */}
+        <div class="relative shrink-0">
+          <img
+            src={photoUrl}
+            alt={pet.name}
+            class:list={[
+              'h-20 w-20 rounded-2xl object-cover',
+              birthday ? 'ring-2 ring-amber ring-offset-2 ring-offset-[#1E3B1A]' : 'ring-1 ring-white/10',
+            ]}
+          />
+          {birthday && <span class="absolute -top-2 -right-2 text-base animate-bounce">🎂</span>}
+          {pet.gender && !birthday && (
+            <span class="absolute -bottom-1 -right-1 rounded-full bg-white/10 border border-white/10 px-1.5 py-0.5 text-xs text-white/60">
+              {pet.gender === 'macho' ? '♂' : '♀'}
+            </span>
+          )}
+        </div>
+
+        {/* Info */}
+        <div class="flex-1 min-w-0">
+          <p class="text-xs font-medium text-white/40 uppercase tracking-widest mb-0.5">Mi mascota</p>
+          <h1 class="text-2xl font-bold text-white tracking-tight truncate">{pet.name}</h1>
+          <div class="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-1">
+            {pet.breed && <span class="text-sm text-white/60">{pet.breed}</span>}
+            {age && pet.breed && <span class="text-white/30 text-sm">·</span>}
+            {age && <span class="text-sm text-white/60">{age}</span>}
+          </div>
+        </div>
+
+        {/* Arrow */}
+        <div class="shrink-0 text-white/20">
+          <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m9 18 6-6-6-6"/>
+          </svg>
+        </div>
+      </div>
+
+      {/* Chips row */}
+      {(pet.weight_kg || pet.chip_id) && (
+        <div class="relative flex gap-2 px-5 pb-4">
+          {pet.weight_kg && (
+            <span class="inline-flex items-center gap-1.5 rounded-full bg-white/8 px-3 py-1 text-xs font-medium text-white/70">
+              <svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 12a4 4 0 0 1 8 0"/><line x1="12" y1="12" x2="12" y2="8"/></svg>
+              {pet.weight_kg} kg
+            </span>
+          )}
+          {pet.chip_id && (
+            <span class="inline-flex items-center gap-1.5 rounded-full bg-white/8 px-3 py-1 text-xs font-medium text-white/70">
+              <svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="7" y="7" width="10" height="10" rx="1"/><path d="M7 12H3M17 12h4M12 7V3M12 17v4"/></svg>
+              Chip
+            </span>
+          )}
+        </div>
       )}
-      <div class="absolute inset-0 bg-gradient-to-b from-cream/40 to-cream"></div>
     </div>
-    <div class="relative px-4 pt-8 pb-6 sm:px-6">
-      <PetHeader pet={pet} showEditButton />
-    </div>
-  </div>
+  </a>
 
-  <!-- Summary Counters -->
-  <div class="grid grid-cols-3 gap-3 mb-6 animate-fade-up animate-fade-up-delay-1">
-    <a href="/salud/vacunas" class="rounded-2xl bg-forest/5 px-4 py-3 text-center transition-all hover:bg-forest/10 active:scale-95">
-      <p class="text-xl font-bold text-forest">{vaccineCount ?? 0}</p>
-      <p class="text-[11px] text-gray-400 font-medium">Vacunas</p>
+  {/* ── STATS ROW ── */}
+  <div class="grid grid-cols-3 gap-3 mb-5 animate-fade-up animate-fade-up-delay-1">
+    <a href="/salud/vacunas" class="group rounded-2xl bg-card border border-card-border p-4 text-center transition-all duration-200 hover:border-accent/40 hover:shadow-sm active:scale-95">
+      <p class="text-3xl font-black text-ink tracking-tight">{vaccineCount ?? 0}</p>
+      <p class="text-[11px] text-muted font-medium mt-0.5 leading-tight">Vacunas</p>
     </a>
-    <a href="/salud/historial" class="rounded-2xl bg-amber/10 px-4 py-3 text-center transition-all hover:bg-amber/15 active:scale-95">
-      <p class="text-xl font-bold text-amber-dark">{visitCount ?? 0}</p>
-      <p class="text-[11px] text-gray-400 font-medium">Visitas vet.</p>
+    <a href="/salud/historial" class="group rounded-2xl bg-card border border-card-border p-4 text-center transition-all duration-200 hover:border-amber/40 hover:shadow-sm active:scale-95">
+      <p class="text-3xl font-black text-ink tracking-tight">{visitCount ?? 0}</p>
+      <p class="text-[11px] text-muted font-medium mt-0.5 leading-tight">Visitas vet.</p>
     </a>
-    <a href="/aventuras" class="rounded-2xl bg-sky/10 px-4 py-3 text-center transition-all hover:bg-sky/15 active:scale-95">
-      <p class="text-xl font-bold text-sky">{adventureCount ?? 0}</p>
-      <p class="text-[11px] text-gray-400 font-medium">Aventuras</p>
+    <a href="/aventuras" class="group rounded-2xl bg-card border border-card-border p-4 text-center transition-all duration-200 hover:border-sky-300 hover:shadow-sm active:scale-95">
+      <p class="text-3xl font-black text-ink tracking-tight">{adventureCount ?? 0}</p>
+      <p class="text-[11px] text-muted font-medium mt-0.5 leading-tight">Aventuras</p>
     </a>
   </div>
 
-  <!-- Quick Stats Grid -->
-  <div class="grid grid-cols-2 gap-3 sm:gap-4 mb-6">
-    <!-- Last Grooming -->
-    <a href="/salud/grooming" class="group animate-fade-up animate-fade-up-delay-2">
-      <Card variant="elevated" class="h-full">
-        <div class="flex items-start gap-3">
-          <div class="rounded-xl bg-gradient-to-br from-pink-50 to-pink-100/50 p-2.5 text-pink-500">
-            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2Z"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2Z"/></svg>
-          </div>
-          <div class="min-w-0 flex-1">
-            <p class="text-xs text-gray-400 font-medium">Último grooming</p>
-            {lastGrooming ? (
-              <>
-                <p class="text-sm font-semibold text-gray-800 truncate">{lastGrooming.type}</p>
-                <p class="text-xs text-gray-400">{formatDate(lastGrooming.date)}</p>
-              </>
-            ) : (
-              <p class="text-sm text-gray-400">Sin registros</p>
-            )}
-          </div>
+  {/* ── WEIGHT CARD (dark) ── */}
+  <a href="/salud/peso" class="block mb-5 animate-fade-up animate-fade-up-delay-1">
+    <div class="relative rounded-2xl bg-accent overflow-hidden">
+      <div class="absolute inset-0 bg-linear-to-br from-white/10 to-transparent pointer-events-none"></div>
+      <div class="relative flex items-center justify-between px-5 py-4">
+        <div>
+          <p class="text-xs font-medium text-white/60 uppercase tracking-widest mb-1">Peso actual</p>
+          {latestWeight ? (
+            <div class="flex items-baseline gap-2">
+              <p class="text-4xl font-black text-white tracking-tight">{latestWeight}</p>
+              <p class="text-lg font-medium text-white/60">kg</p>
+              {weightDiff !== null && (
+                <span class:list={[
+                  'inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-xs font-semibold',
+                  weightDiff > 0 ? 'bg-white/15 text-white' : weightDiff < 0 ? 'bg-white/15 text-white' : 'bg-white/10 text-white/60'
+                ]}>
+                  {weightDiff > 0 ? '↑' : weightDiff < 0 ? '↓' : '—'} {Math.abs(weightDiff)} kg
+                </span>
+              )}
+            </div>
+          ) : (
+            <p class="text-2xl font-bold text-white/60">Sin registrar</p>
+          )}
         </div>
-      </Card>
+        <div class="flex items-center justify-center h-12 w-12 rounded-2xl bg-white/15">
+          <svg class="h-6 w-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 12a4 4 0 0 1 8 0"/><line x1="12" y1="12" x2="12" y2="8"/></svg>
+        </div>
+      </div>
+    </div>
+  </a>
+
+  {/* ── RECENT ACTIVITY GRID ── */}
+  <p class="text-xs font-semibold text-muted uppercase tracking-widest mb-3 animate-fade-up animate-fade-up-delay-2">Actividad reciente</p>
+  <div class="grid grid-cols-2 gap-3 mb-5 animate-fade-up animate-fade-up-delay-2">
+
+    {/* Grooming */}
+    <a href="/salud/grooming" class="rounded-2xl bg-card border border-card-border p-4 transition-all duration-200 hover:shadow-sm hover:border-pink-200 active:scale-95">
+      <div class="flex items-center justify-between mb-3">
+        <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-pink-50">
+          <svg class="h-4.5 w-4.5 text-pink-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2Z"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2Z"/></svg>
+        </div>
+        <svg class="h-4 w-4 text-muted/40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+      </div>
+      <p class="text-[11px] text-muted font-medium mb-0.5">Grooming</p>
+      {lastGrooming ? (
+        <>
+          <p class="text-sm font-semibold text-ink leading-tight truncate">{lastGrooming.type}</p>
+          <p class="text-[11px] text-muted mt-0.5">{formatDate(lastGrooming.date)}</p>
+        </>
+      ) : (
+        <p class="text-sm text-muted">Sin registros</p>
+      )}
     </a>
 
-    <!-- Weight -->
-    <a href="/salud/peso" class="group animate-fade-up animate-fade-up-delay-2">
-      <Card variant="elevated" class="h-full">
-        <div class="flex items-start gap-3">
-          <div class="rounded-xl bg-gradient-to-br from-amber-50 to-amber-100/50 p-2.5 text-amber-dark">
-            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 12a4 4 0 0 1 8 0"/><line x1="12" y1="12" x2="12" y2="8"/></svg>
-          </div>
-          <div class="min-w-0 flex-1">
-            <p class="text-xs text-gray-400 font-medium">Peso actual</p>
-            {pet.weight_kg ? (
-              <p class="text-lg font-bold text-gray-800">{pet.weight_kg} <span class="text-sm font-normal text-gray-400">kg</span></p>
-            ) : (
-              <p class="text-sm text-gray-400">Sin registrar</p>
-            )}
-          </div>
+    {/* Aventura */}
+    <a href="/aventuras" class="rounded-2xl bg-card border border-card-border p-4 transition-all duration-200 hover:shadow-sm hover:border-sky-200 active:scale-95 overflow-hidden relative">
+      {lastAdventure?.photo_url && (
+        <div class="absolute inset-0">
+          <img src={lastAdventure.photo_url} alt="" class="h-full w-full object-cover opacity-15" />
+          <div class="absolute inset-0 bg-linear-to-t from-card via-card/80 to-card/20"></div>
         </div>
-      </Card>
+      )}
+      <div class="relative flex items-center justify-between mb-3">
+        <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-sky-50">
+          <svg class="h-4.5 w-4.5 text-sky-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+        </div>
+        <svg class="h-4 w-4 text-muted/40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+      </div>
+      <p class="relative text-[11px] text-muted font-medium mb-0.5">Aventura</p>
+      {lastAdventure ? (
+        <>
+          <p class="relative text-sm font-semibold text-ink leading-tight truncate">{lastAdventure.title}</p>
+          <p class="relative text-[11px] text-muted mt-0.5">{formatDate(lastAdventure.date)}</p>
+        </>
+      ) : (
+        <p class="relative text-sm text-muted">Sin aventuras</p>
+      )}
     </a>
 
-    <!-- Last Adventure -->
-    <a href="/aventuras" class="group animate-fade-up animate-fade-up-delay-3">
-      <Card variant="elevated" class="h-full">
-        <div class="flex items-start gap-3">
-          <div class="rounded-xl bg-gradient-to-br from-sky/10 to-sky/20 p-2.5 text-sky">
-            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
-          </div>
-          <div class="min-w-0 flex-1">
-            <p class="text-xs text-gray-400 font-medium">Última aventura</p>
-            {lastAdventure ? (
-              <>
-                <p class="text-sm font-semibold text-gray-800 truncate">{lastAdventure.title}</p>
-                <p class="text-xs text-gray-400">{formatDate(lastAdventure.date)}</p>
-              </>
-            ) : (
-              <p class="text-sm text-gray-400">Sin aventuras</p>
-            )}
-          </div>
+    {/* Vacunas badges */}
+    <a href="/salud/vacunas" class="rounded-2xl bg-card border border-card-border p-4 transition-all duration-200 hover:shadow-sm hover:border-accent/30 active:scale-95">
+      <div class="flex items-center justify-between mb-3">
+        <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-accent/10">
+          <svg class="h-4.5 w-4.5 text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m14.5 2-8.5 8.5v4h4l8.5-8.5a2.83 2.83 0 0 0-4-4z"/><path d="m18 2 4 4"/></svg>
         </div>
-      </Card>
+        <svg class="h-4 w-4 text-muted/40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+      </div>
+      <p class="text-[11px] text-muted font-medium mb-2">Vacunas</p>
+      {recentVaccines && recentVaccines.length > 0 ? (
+        <div class="flex flex-wrap gap-1">
+          {recentVaccines.map((v) => (
+            <span class="rounded-full bg-accent/10 px-2 py-0.5 text-[10px] font-semibold text-accent leading-tight">{v.name}</span>
+          ))}
+        </div>
+      ) : (
+        <p class="text-sm text-muted">Sin vacunas</p>
+      )}
     </a>
 
-    <!-- Last Flight -->
-    <a href="/viajes" class="group animate-fade-up animate-fade-up-delay-3">
-      <Card variant="elevated" class="h-full">
-        <div class="flex items-start gap-3">
-          <div class="rounded-xl bg-gradient-to-br from-purple-50 to-purple-100/50 p-2.5 text-purple-600">
-            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/></svg>
-          </div>
-          <div class="min-w-0 flex-1">
-            <p class="text-xs text-gray-400 font-medium">Último vuelo</p>
-            {lastFlight ? (
-              <>
-                <p class="text-sm font-semibold text-gray-800 truncate">{lastFlight.origin} → {lastFlight.destination}</p>
-                <p class="text-xs text-gray-400">{formatDate(lastFlight.flight_date)}</p>
-              </>
-            ) : (
-              <p class="text-sm text-gray-400">Sin vuelos</p>
-            )}
-          </div>
+    {/* Vuelos */}
+    <a href="/viajes" class="rounded-2xl bg-card border border-card-border p-4 transition-all duration-200 hover:shadow-sm hover:border-purple-200 active:scale-95">
+      <div class="flex items-center justify-between mb-3">
+        <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-purple-50">
+          <svg class="h-4.5 w-4.5 text-purple-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/></svg>
         </div>
-      </Card>
+        <svg class="h-4 w-4 text-muted/40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+      </div>
+      <p class="text-[11px] text-muted font-medium mb-0.5">Vuelo</p>
+      {lastFlight ? (
+        <>
+          <p class="text-sm font-semibold text-ink leading-tight">{lastFlight.origin} → {lastFlight.destination}</p>
+          <p class="text-[11px] text-muted mt-0.5">{formatDate(lastFlight.flight_date)}</p>
+        </>
+      ) : (
+        <p class="text-sm text-muted">Sin vuelos</p>
+      )}
     </a>
   </div>
 
-  <!-- Quick Actions -->
-  <Card variant="elevated" class="animate-fade-up animate-fade-up-delay-4">
-    <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">Acciones rápidas</h2>
-    <div class="grid grid-cols-2 gap-3">
-      <Button href="/salud/vacunas" variant="primary" size="md" class="w-full">
-        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m14.5 2-8.5 8.5v4h4l8.5-8.5a2.83 2.83 0 0 0-4-4z"/></svg>
-        Vacunas
-      </Button>
-      <Button href="/aventuras" variant="secondary" size="md" class="w-full">
-        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
-        Nueva foto
-      </Button>
-      <Button href="/salud/peso" variant="ghost" size="md" class="w-full">
-        Control de peso
-      </Button>
-      <Button href="/viajes" variant="ghost" size="md" class="w-full">
-        Registrar vuelo
-      </Button>
-    </div>
-  </Card>
+  {/* ── QUICK ACTIONS ── */}
+  <p class="text-xs font-semibold text-muted uppercase tracking-widest mb-3 animate-fade-up animate-fade-up-delay-3">Acciones rápidas</p>
+  <div class="grid grid-cols-2 gap-3 animate-fade-up animate-fade-up-delay-3">
+    <a href="/salud/vacunas" class="flex items-center gap-3 rounded-2xl bg-card border border-card-border px-4 py-3.5 transition-all duration-200 hover:border-accent/30 hover:shadow-sm active:scale-95">
+      <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent/10">
+        <svg class="h-4.5 w-4.5 text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m14.5 2-8.5 8.5v4h4l8.5-8.5a2.83 2.83 0 0 0-4-4z"/><path d="m18 2 4 4"/></svg>
+      </div>
+      <div>
+        <p class="text-sm font-semibold text-ink">Vacunas</p>
+        <p class="text-[11px] text-muted">Ver historial</p>
+      </div>
+    </a>
+    <a href="/aventuras" class="flex items-center gap-3 rounded-2xl bg-card border border-card-border px-4 py-3.5 transition-all duration-200 hover:border-sky-200 hover:shadow-sm active:scale-95">
+      <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-sky-50">
+        <svg class="h-4.5 w-4.5 text-sky-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+      </div>
+      <div>
+        <p class="text-sm font-semibold text-ink">Nueva foto</p>
+        <p class="text-[11px] text-muted">Registrar aventura</p>
+      </div>
+    </a>
+    <a href="/salud/peso" class="flex items-center gap-3 rounded-2xl bg-card border border-card-border px-4 py-3.5 transition-all duration-200 hover:border-amber/30 hover:shadow-sm active:scale-95">
+      <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber/10">
+        <svg class="h-4.5 w-4.5 text-amber-dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 12a4 4 0 0 1 8 0"/><line x1="12" y1="12" x2="12" y2="8"/></svg>
+      </div>
+      <div>
+        <p class="text-sm font-semibold text-ink">Peso</p>
+        <p class="text-[11px] text-muted">Registrar nuevo</p>
+      </div>
+    </a>
+    <a href="/alimentacion" class="flex items-center gap-3 rounded-2xl bg-card border border-card-border px-4 py-3.5 transition-all duration-200 hover:border-amber/30 hover:shadow-sm active:scale-95">
+      <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber/10">
+        <svg class="h-4.5 w-4.5 text-amber-dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/></svg>
+      </div>
+      <div>
+        <p class="text-sm font-semibold text-ink">Alimentación</p>
+        <p class="text-[11px] text-muted">Ver dieta</p>
+      </div>
+    </a>
+  </div>
+
 </MainLayout>
