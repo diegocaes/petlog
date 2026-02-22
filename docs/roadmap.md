@@ -96,8 +96,16 @@ ALTER TABLE pets ADD COLUMN IF NOT EXISTS color TEXT;
 - ✅ Google OAuth funcionando en producción
 - ✅ Badge de "Perfil completo" en `/perfil` (desbloqueado cuando todos los campos están llenos)
 - ✅ Razas en inglés, alfabéticas, con Border Collie
+- ✅ Checklist post-onboarding en el dashboard (`?onboarded=1`): 4 pasos accionables con links directos
+- ✅ Mensaje especial para mascotas adultas: "No importa si es mayor, registra desde hoy"
+- ✅ Logo PetLog en sidebar (desktop y mobile) y top bar → link a `/` (landing)
+- ✅ Hamburger menu mobile funcional (fix de `display:none` vs `classList.hidden`)
+- ✅ Eliminar cuenta desde `/perfil` con modal de confirmación y borrado en cascada en Supabase
+- ✅ Todos los journeys de auth auditados y corregidos (email no confirmado, login sin mascota, etc.)
 
-**Milestone:** Cualquier persona puede entrar, crear su cuenta con Google, registrar su perro y navegar todo sin errores. ✅
+**Nota sobre el peso en el dashboard:** El card de peso verde con número grande + "kg" + flecha de tendencia fue muy bien recibido — mantener este estilo para cualquier métrica numérica importante (referencia visual).
+
+**Milestone:** Cualquier persona puede entrar, crear su cuenta con Google, registrar su perro y navegar todo sin errores. ✅ Probado en múltiples dispositivos reales.
 
 ---
 

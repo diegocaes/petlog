@@ -48,12 +48,112 @@ const weightDiff = latestWeight && prevWeight ? +(latestWeight - prevWeight).toF
 
 <MainLayout title="Inicio">
 
-  {/* Onboarding welcome banner */}
+  {/* ── POST-ONBOARDING WELCOME CARD ── */}
   {isNewlyOnboarded && (
-    <div class="mb-5 rounded-2xl border border-accent/30 bg-accent/10 px-4 py-4 text-center animate-fade-up">
-      <p class="text-sm font-bold text-accent-dark">🎉 ¡{pet.name} ya tiene su pasaporte digital! Bienvenido a PetLog.</p>
+    <div class="mb-5 animate-fade-up" id="onboarding-checklist">
+      {/* Welcome header */}
+      <div class="rounded-t-2xl border border-b-0 border-accent/30 bg-accent/10 px-5 py-4">
+        <div class="flex items-center gap-3">
+          <span class="text-2xl">🎉</span>
+          <div>
+            <p class="text-sm font-bold text-accent-dark">¡{pet.name} ya tiene su pasaporte digital!</p>
+            <p class="text-xs text-muted mt-0.5">Bienvenido a PetLog. Aquí te decimos por dónde empezar.</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Adult dog message */}
+      {age && !age.includes('mes') && !age.startsWith('0') && (
+        <div class="border-x border-accent/30 bg-amber/5 px-5 py-3">
+          <div class="flex items-start gap-2">
+            <span class="text-base shrink-0 mt-0.5">💡</span>
+            <p class="text-xs text-amber-dark leading-relaxed">
+              No importa si {pet.name} es mayor — PetLog te ayuda a llevar su historial desde hoy y registrar todo lo que viene.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Checklist */}
+      <div class="rounded-b-2xl border border-t-0 border-accent/30 bg-white divide-y divide-card-border">
+        <a href="/salud/vacunas" class="flex items-center gap-3 px-5 py-3.5 hover:bg-canvas transition-colors active:scale-95">
+          <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent/10">
+            <svg class="h-4 w-4 text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m14.5 2-8.5 8.5v4h4l8.5-8.5a2.83 2.83 0 0 0-4-4z"/><path d="m18 2 4 4"/></svg>
+          </div>
+          <div class="flex-1">
+            <p class="text-sm font-semibold text-ink">Registra la primera vacuna</p>
+            <p class="text-xs text-muted">Rabia, Parvovirus, Moquillo u otras</p>
+          </div>
+          <svg class="h-4 w-4 text-muted/40 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+        </a>
+        <a href="/perfil" class="flex items-center gap-3 px-5 py-3.5 hover:bg-canvas transition-colors active:scale-95">
+          <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber/10">
+            <svg class="h-4 w-4 text-amber-dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/></svg>
+          </div>
+          <div class="flex-1">
+            <p class="text-sm font-semibold text-ink">Completa el perfil de {pet.name}</p>
+            <p class="text-xs text-muted">Foto, microchip, color de pelaje</p>
+          </div>
+          <svg class="h-4 w-4 text-muted/40 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+        </a>
+        <a href="/salud/peso" class="flex items-center gap-3 px-5 py-3.5 hover:bg-canvas transition-colors active:scale-95">
+          <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sky-50">
+            <svg class="h-4 w-4 text-sky-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 12a4 4 0 0 1 8 0"/><line x1="12" y1="12" x2="12" y2="8"/></svg>
+          </div>
+          <div class="flex-1">
+            <p class="text-sm font-semibold text-ink">Ingresa el peso actual</p>
+            <p class="text-xs text-muted">Lleva el historial de peso desde hoy</p>
+          </div>
+          <svg class="h-4 w-4 text-muted/40 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+        </a>
+        <a href="/aventuras" class="flex items-center gap-3 px-5 py-3.5 hover:bg-canvas transition-colors active:scale-95">
+          <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-pink-50">
+            <svg class="h-4 w-4 text-pink-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+          </div>
+          <div class="flex-1">
+            <p class="text-sm font-semibold text-ink">Sube tu primera foto juntos</p>
+            <p class="text-xs text-muted">Guarda los mejores momentos de {pet.name}</p>
+          </div>
+          <svg class="h-4 w-4 text-muted/40 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+        </a>
+      </div>
+
+      {/* Dismiss button */}
+      <button
+        type="button"
+        id="btn-dismiss-checklist"
+        class="mt-2 w-full text-xs text-muted hover:text-ink transition-colors py-1"
+      >
+        Ya entendí, ocultar →
+      </button>
     </div>
   )}
+
+  <script>
+    document.getElementById('btn-dismiss-checklist')?.addEventListener('click', () => {
+      const el = document.getElementById('onboarding-checklist');
+      if (el) el.style.display = 'none';
+    });
+  </script>
+
+  <!-- Confetti on first arrival after onboarding -->
+  <script is:inline>
+    (function() {
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js';
+      script.onload = function() {
+        setTimeout(function() {
+          window.confetti({
+            particleCount: 140,
+            spread: 90,
+            origin: { y: 0.55 },
+            colors: ['#7CB974', '#5FA356', '#ffffff', '#F59E0B', '#EAF5E8'],
+          });
+        }, 300);
+      };
+      document.head.appendChild(script);
+    })();
+  </script>
 
   {/* Birthday Banner */}
   {birthday && (

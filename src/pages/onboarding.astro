@@ -1,6 +1,6 @@
 ---
 import '../styles/global.css';
-import { DOG_BREEDS } from '../lib/breeds';
+import { DOG_BREEDS, BREED_FACTS } from '../lib/breeds';
 
 const { supabase, user } = Astro.locals;
 
@@ -20,13 +20,13 @@ const fullName = user.user_metadata?.full_name || user.user_metadata?.name || ''
 const firstName = fullName.split(' ')[0] || user.email?.split('@')[0] || 'amigo';
 const onboardingError = Astro.url.searchParams.get('error');
 
-// Handle final form submission (identical logic to perfil.astro INSERT branch)
+// Handle final form submission
 if (Astro.request.method === 'POST') {
   const formData = await Astro.request.formData();
 
   const breedSelect = formData.get('breed') as string;
   const breedOther = formData.get('breed_other') as string;
-  const breed = breedSelect === 'Otro' && breedOther ? breedOther : breedSelect || null;
+  const breed = breedSelect === 'Other' && breedOther ? breedOther : breedSelect || null;
 
   const newWeight = formData.get('weight_kg') ? Number(formData.get('weight_kg')) : null;
 
@@ -81,6 +81,9 @@ if (Astro.request.method === 'POST') {
 
   return Astro.redirect('/dashboard?onboarded=1');
 }
+
+// Serialize breed facts for client-side use
+const breedFactsJSON = JSON.stringify(BREED_FACTS);
 ---
 
 <!doctype html>
@@ -97,17 +100,18 @@ if (Astro.request.method === 'POST') {
   </head>
   <body class="min-h-screen bg-canvas flex flex-col">
 
-    <!-- Progress bar (hidden on step 1) -->
+    <!-- Progress bar (hidden on steps 1 & 2) -->
     <div class="fixed top-0 left-0 right-0 z-50" id="progress-bar-wrap" style="display:none">
       <div class="h-2 bg-card-border">
-        <div id="progress-fill" class="h-full bg-accent transition-all duration-500 rounded-r-full" style="width:33%"></div>
+        <div id="progress-fill" class="h-full bg-accent transition-all duration-500 rounded-r-full" style="width:25%"></div>
       </div>
-      <div id="progress-text" class="absolute top-4 right-4 text-xs text-muted font-medium">Paso 2 de 3</div>
+      <div id="progress-text" class="absolute top-4 right-4 text-xs text-muted font-medium">Paso 1 de 4</div>
     </div>
 
     <!-- Wizard container -->
     <main class="flex-1 flex items-center justify-center p-6 pt-8">
       <div class="w-full max-w-sm mx-auto">
+
         {onboardingError === 'save_failed' && (
           <div class="mb-4 rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
             Hubo un error al guardar. Intenta de nuevo.
@@ -117,7 +121,6 @@ if (Astro.request.method === 'POST') {
         <!-- ───────────── PASO 1: Bienvenida ───────────── -->
         <div data-step="1" class="animate-fade-up">
           <div class="relative overflow-hidden rounded-3xl text-white px-6 py-8 shadow-xl" style="background:#1E3B1A">
-            <!-- Decorative circles -->
             <div class="absolute -top-10 -right-10 h-36 w-36 rounded-full bg-white/5"></div>
             <div class="absolute -bottom-8 -left-8 h-28 w-28 rounded-full bg-white/5"></div>
 
@@ -164,11 +167,55 @@ if (Astro.request.method === 'POST') {
           </div>
         </div>
 
-        <!-- ───────────── PASO 2: Nombre y foto ───────────── -->
+        <!-- ───────────── PASO 2: Especie ───────────── -->
         <div data-step="2" class="hidden">
           <div class="mb-6 text-center">
-            <p class="text-xs font-semibold text-accent uppercase tracking-widest mb-1">Paso 1 de 3</p>
-            <h2 class="text-2xl font-bold text-ink">¿Cómo se llama?</h2>
+            <p class="text-xs font-semibold text-accent uppercase tracking-widest mb-1">El primero de muchos</p>
+            <h2 class="text-2xl font-bold text-ink">¿Qué tipo de mascota tienes?</h2>
+            <p class="text-sm text-muted mt-1">Cuéntanos un poco sobre tu compañero.</p>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4 mb-6">
+            <button
+              type="button"
+              id="species-dog"
+              data-species="dog"
+              class="species-pill flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-card-border bg-white px-4 py-8 text-center transition-all hover:border-accent active:scale-95"
+            >
+              <span class="text-5xl">🐕</span>
+              <span class="text-base font-bold text-ink">Perro</span>
+            </button>
+            <button
+              type="button"
+              id="species-cat"
+              data-species="cat"
+              class="species-pill flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-card-border bg-white px-4 py-8 text-center transition-all hover:border-accent active:scale-95"
+            >
+              <span class="text-5xl">🐱</span>
+              <span class="text-base font-bold text-ink">Gato</span>
+            </button>
+          </div>
+
+          <p id="species-error" class="text-xs text-red-500 text-center mb-4 hidden">Selecciona una opción para continuar</p>
+
+          <div class="space-y-3">
+            <button
+              id="btn-step2-next"
+              class="w-full rounded-2xl bg-accent px-6 py-3.5 font-bold text-sm text-white transition-all hover:bg-accent-dark active:scale-95 shadow-md"
+            >
+              Continuar →
+            </button>
+            <button type="button" id="btn-step2-back" class="w-full text-sm text-muted hover:text-ink transition-colors py-1">
+              ← Atrás
+            </button>
+          </div>
+        </div>
+
+        <!-- ───────────── PASO 3: Nombre, raza y foto ───────────── -->
+        <div data-step="3" class="hidden">
+          <div class="mb-6 text-center">
+            <p class="text-xs font-semibold text-accent uppercase tracking-widest mb-1">Paso 1 de 4</p>
+            <h2 class="text-2xl font-bold text-ink" id="step3-heading">¿Cómo se llama?</h2>
             <p class="text-sm text-muted mt-1">Empieza por lo más importante.</p>
           </div>
 
@@ -202,8 +249,8 @@ if (Astro.request.method === 'POST') {
               <p id="ob-name-error" class="text-xs text-red-500 mt-1 hidden">Por favor ingresa el nombre</p>
             </div>
 
-            <!-- Breed -->
-            <div>
+            <!-- Breed (only for dogs) -->
+            <div id="breed-section">
               <label class="block text-sm font-medium text-ink mb-1.5">Raza</label>
               <select
                 id="ob-breed-select"
@@ -220,32 +267,37 @@ if (Astro.request.method === 'POST') {
                 placeholder="Escribe la raza"
                 class="hidden mt-2 w-full rounded-xl border border-card-border bg-white px-4 py-3 text-ink placeholder-muted transition-all hover:border-gray-300 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
               />
+
+              <!-- Fun facts card -->
+              <div id="breed-facts-card" class="hidden mt-3 rounded-2xl border border-accent/20 bg-accent/5 px-4 py-4">
+                <p class="text-xs font-bold text-accent-dark uppercase tracking-wider mb-3">¿Sabías que...?</p>
+                <div id="breed-facts-list" class="space-y-2"></div>
+              </div>
             </div>
           </div>
 
           <div class="mt-6 space-y-3">
             <button
-              id="btn-step2-next"
+              id="btn-step3-next"
               class="w-full rounded-2xl bg-accent px-6 py-3.5 font-bold text-sm text-white transition-all hover:bg-accent-dark active:scale-95 shadow-md"
             >
               Continuar →
             </button>
-            <button type="button" id="btn-step2-back" class="w-full text-sm text-muted hover:text-ink transition-colors py-1">
+            <button type="button" id="btn-step3-back" class="w-full text-sm text-muted hover:text-ink transition-colors py-1">
               ← Atrás
             </button>
           </div>
         </div>
 
-        <!-- ───────────── PASO 3: Fecha y género ───────────── -->
-        <div data-step="3" class="hidden">
+        <!-- ───────────── PASO 4: Fecha y género ───────────── -->
+        <div data-step="4" class="hidden">
           <div class="mb-6 text-center">
-            <p class="text-xs font-semibold text-accent uppercase tracking-widest mb-1">Paso 2 de 3</p>
+            <p class="text-xs font-semibold text-accent uppercase tracking-widest mb-1">Paso 2 de 4</p>
             <h2 class="text-2xl font-bold text-ink">¿Cuándo nació? 🎂</h2>
             <p class="text-sm text-muted mt-1">Para calcular su edad y recordar su cumpleaños.</p>
           </div>
 
           <div class="space-y-5">
-            <!-- Birth date -->
             <div>
               <label class="block text-sm font-medium text-ink mb-1.5">Fecha de nacimiento</label>
               <input
@@ -255,7 +307,6 @@ if (Astro.request.method === 'POST') {
               />
             </div>
 
-            <!-- Gender pills -->
             <div>
               <label class="block text-sm font-medium text-ink mb-2">Género</label>
               <div class="grid grid-cols-2 gap-3">
@@ -279,24 +330,24 @@ if (Astro.request.method === 'POST') {
 
           <div class="mt-6 space-y-3">
             <button
-              id="btn-step3-next"
+              id="btn-step4-next"
               class="w-full rounded-2xl bg-accent px-6 py-3.5 font-bold text-sm text-white transition-all hover:bg-accent-dark active:scale-95 shadow-md"
             >
               Continuar →
             </button>
-            <button type="button" id="btn-step3-skip" class="w-full text-sm text-muted underline hover:text-ink transition-colors py-1">
+            <button type="button" id="btn-step4-skip" class="w-full text-sm text-muted underline hover:text-ink transition-colors py-1">
               Saltar por ahora →
             </button>
-            <button type="button" id="btn-step3-back" class="w-full text-sm text-muted hover:text-ink transition-colors py-1">
+            <button type="button" id="btn-step4-back" class="w-full text-sm text-muted hover:text-ink transition-colors py-1">
               ← Atrás
             </button>
           </div>
         </div>
 
-        <!-- ───────────── PASO 4: Datos de salud ───────────── -->
-        <div data-step="4" class="hidden">
+        <!-- ───────────── PASO 5: Datos de salud ───────────── -->
+        <div data-step="5" class="hidden">
           <div class="mb-6 text-center">
-            <p class="text-xs font-semibold text-accent uppercase tracking-widest mb-1">Paso 3 de 3</p>
+            <p class="text-xs font-semibold text-accent uppercase tracking-widest mb-1">Paso 3 de 4</p>
             <h2 class="text-2xl font-bold text-ink">Datos de salud</h2>
             <p class="text-sm text-muted mt-1">Opcional — puedes completarlo después.</p>
           </div>
@@ -343,17 +394,48 @@ if (Astro.request.method === 'POST') {
 
           <div class="mt-6 space-y-3">
             <button
-              id="btn-final-submit"
+              id="btn-step5-next"
               class="w-full rounded-2xl bg-accent px-6 py-3.5 font-bold text-sm text-white transition-all hover:bg-accent-dark active:scale-95 shadow-md"
             >
-              <span id="btn-final-label">Crear perfil →</span>
+              Continuar →
             </button>
-            <button type="button" id="btn-final-skip" class="w-full text-sm text-muted underline hover:text-ink transition-colors py-1">
-              Saltar y terminar →
+            <button type="button" id="btn-step5-skip" class="w-full text-sm text-muted underline hover:text-ink transition-colors py-1">
+              Saltar y continuar →
             </button>
-            <button type="button" id="btn-step4-back" class="w-full text-sm text-muted hover:text-ink transition-colors py-1">
+            <button type="button" id="btn-step5-back" class="w-full text-sm text-muted hover:text-ink transition-colors py-1">
               ← Atrás
             </button>
+          </div>
+        </div>
+
+        <!-- ───────────── PASO 6: Celebración ───────────── -->
+        <div data-step="6" class="hidden">
+          <div class="relative overflow-hidden rounded-3xl text-white px-6 py-10 shadow-xl text-center" style="background:#1E3B1A">
+            <div class="absolute -top-10 -right-10 h-36 w-36 rounded-full bg-white/5"></div>
+            <div class="absolute -bottom-8 -left-8 h-28 w-28 rounded-full bg-white/5"></div>
+
+            <div class="relative">
+              <div id="celebration-emoji" class="text-6xl mb-5 animate-float inline-block">🐾</div>
+
+              <div class="mb-2 inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-1.5">
+                <svg class="h-4 w-4 text-accent" viewBox="0 0 24 24" fill="currentColor"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <span class="text-xs font-semibold text-white">Paso 4 de 4</span>
+              </div>
+
+              <h2 class="text-2xl font-bold tracking-tight mt-4 mb-2" id="celebration-title">
+                ¡Listo! El pasaporte está creado 🎉
+              </h2>
+              <p class="text-sm text-white/70 leading-relaxed mb-8">
+                Bienvenido a PetLog. Tu mejor amigo ya tiene su historial digital — vacunas, peso, aventuras y más.
+              </p>
+
+              <button
+                id="btn-final-submit"
+                class="w-full rounded-2xl bg-white text-gray-900 px-6 py-3.5 font-bold text-sm transition-all hover:bg-white/90 active:scale-95 shadow-lg"
+              >
+                <span id="btn-final-label">Ver el pasaporte →</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -372,13 +454,19 @@ if (Astro.request.method === 'POST') {
       <input type="hidden" name="color" id="ff-color" />
     </form>
 
+    <!-- Breed facts data (server → client) -->
+    <script type="application/json" id="breed-facts-data" set:text={breedFactsJSON}></script>
+
     <script>
       // ── State ──
-      let currentStep = 1;
       let selectedGender = '';
+      let selectedSpecies = '';
       let photoFileRef: File | null = null;
-
       const store: Record<string, string> = {};
+
+      // ── Breed facts ──
+      const factsData: Record<string, Array<{emoji: string; fact: string}>> =
+        JSON.parse(document.getElementById('breed-facts-data')!.textContent || '{}');
 
       // ── Progress bar ──
       function updateProgress(step: number) {
@@ -386,16 +474,22 @@ if (Astro.request.method === 'POST') {
         const fill = document.getElementById('progress-fill') as HTMLElement;
         const text = document.getElementById('progress-text') as HTMLElement;
 
-        if (step === 1) {
+        // Show progress only from step 3 onward (steps 1 & 2 are pre-flow)
+        if (step <= 2) {
           wrap.style.display = 'none';
           return;
         }
         wrap.style.display = 'block';
 
-        const stepLabels = ['', '', 'Paso 1 de 3', 'Paso 2 de 3', 'Paso 3 de 3'];
-        const stepWidths = ['', '', '33%', '66%', '100%'];
-        fill.style.width = stepWidths[step] || '33%';
-        text.textContent = stepLabels[step] || '';
+        const stepMap: Record<number, { width: string; label: string }> = {
+          3: { width: '25%', label: 'Paso 1 de 4' },
+          4: { width: '50%', label: 'Paso 2 de 4' },
+          5: { width: '75%', label: 'Paso 3 de 4' },
+          6: { width: '100%', label: 'Paso 4 de 4' },
+        };
+        const info = stepMap[step] || { width: '25%', label: '' };
+        fill.style.width = info.width;
+        text.textContent = info.label;
       }
 
       // ── Navigate ──
@@ -406,23 +500,44 @@ if (Astro.request.method === 'POST') {
         });
         const target = document.querySelector(`[data-step="${step}"]`) as HTMLElement;
         target.classList.remove('hidden');
-        // Trigger animation on next frame
         requestAnimationFrame(() => target.classList.add('animate-fade-up'));
-
-        currentStep = step;
         updateProgress(step);
         window.scrollTo({ top: 0, behavior: 'smooth' });
-
-        // Personalize final button with pet name
-        if (step === 4) {
-          const petName = store.name || 'tu mascota';
-          const label = document.getElementById('btn-final-label');
-          if (label) label.textContent = `Crear perfil de ${petName} →`;
-        }
       }
 
       // ── Step 1 → 2 ──
       document.getElementById('btn-step1-next')?.addEventListener('click', () => goTo(2));
+
+      // ── Species selection ──
+      document.querySelectorAll('.species-pill').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.species-pill').forEach((b) => {
+            b.classList.remove('border-accent', 'bg-accent/10');
+            b.classList.add('border-card-border');
+          });
+          btn.classList.add('border-accent', 'bg-accent/10');
+          btn.classList.remove('border-card-border');
+          selectedSpecies = (btn as HTMLElement).dataset.species || '';
+          document.getElementById('species-error')?.classList.add('hidden');
+        });
+      });
+
+      document.getElementById('btn-step2-next')?.addEventListener('click', () => {
+        if (!selectedSpecies) {
+          document.getElementById('species-error')?.classList.remove('hidden');
+          return;
+        }
+        // Update heading and emoji for selected species
+        const heading = document.getElementById('step3-heading');
+        const celebEmoji = document.getElementById('celebration-emoji');
+        if (heading) heading.textContent = selectedSpecies === 'cat' ? '¿Cómo se llama?' : '¿Cómo se llama?';
+        if (celebEmoji) celebEmoji.textContent = selectedSpecies === 'cat' ? '🐱' : '🐕';
+        // Hide breed section for cats (no breed list for cats yet)
+        const breedSection = document.getElementById('breed-section');
+        if (breedSection) breedSection.style.display = selectedSpecies === 'cat' ? 'none' : 'block';
+        goTo(3);
+      });
+      document.getElementById('btn-step2-back')?.addEventListener('click', () => goTo(1));
 
       // ── Photo preview ──
       const photoInput = document.getElementById('ob-photo-input') as HTMLInputElement;
@@ -437,16 +552,36 @@ if (Astro.request.method === 'POST') {
         }
       });
 
-      // ── Breed "Otro" toggle ──
+      // ── Breed select + fun facts ──
       const breedSelect = document.getElementById('ob-breed-select') as HTMLSelectElement;
       const breedOtherInput = document.getElementById('ob-breed-other') as HTMLInputElement;
+      const factsCard = document.getElementById('breed-facts-card') as HTMLElement;
+      const factsList = document.getElementById('breed-facts-list') as HTMLElement;
+
       breedSelect?.addEventListener('change', () => {
-        breedOtherInput.classList.toggle('hidden', breedSelect.value !== 'Otro');
-        if (breedSelect.value !== 'Otro') breedOtherInput.value = '';
+        const val = breedSelect.value;
+        // Toggle "Other" input
+        breedOtherInput.classList.toggle('hidden', val !== 'Other');
+        if (val !== 'Other') breedOtherInput.value = '';
+
+        // Show fun facts
+        const facts = factsData[val];
+        if (facts && facts.length > 0) {
+          factsList.innerHTML = facts.map(f =>
+            `<div class="flex items-start gap-2">
+              <span class="text-base shrink-0 leading-tight">${f.emoji}</span>
+              <p class="text-xs text-ink/80 leading-relaxed">${f.fact}</p>
+            </div>`
+          ).join('');
+          factsCard.classList.remove('hidden');
+          factsCard.classList.add('animate-scale-in');
+        } else {
+          factsCard.classList.add('hidden');
+        }
       });
 
-      // ── Step 2 → 3 ──
-      document.getElementById('btn-step2-next')?.addEventListener('click', () => {
+      // ── Step 3 → 4 ──
+      document.getElementById('btn-step3-next')?.addEventListener('click', () => {
         const nameInput = document.getElementById('ob-name') as HTMLInputElement;
         const nameError = document.getElementById('ob-name-error') as HTMLElement;
 
@@ -460,12 +595,18 @@ if (Astro.request.method === 'POST') {
         nameError.classList.add('hidden');
 
         store.name = nameInput.value.trim();
-        store.breed = breedSelect.value;
-        store.breedOther = breedOtherInput.value.trim();
+        store.breed = breedSelect?.value || '';
+        store.breedOther = breedOtherInput?.value.trim() || '';
 
-        goTo(3);
+        // Update celebration screen title
+        const celebTitle = document.getElementById('celebration-title');
+        const celebBtn = document.getElementById('btn-final-label');
+        if (celebTitle) celebTitle.textContent = `¡Listo! El pasaporte de ${store.name} está creado 🎉`;
+        if (celebBtn) celebBtn.textContent = `Ver el pasaporte de ${store.name} →`;
+
+        goTo(4);
       });
-      document.getElementById('btn-step2-back')?.addEventListener('click', () => goTo(1));
+      document.getElementById('btn-step3-back')?.addEventListener('click', () => goTo(2));
 
       // ── Gender pills ──
       document.querySelectorAll('.gender-pill').forEach((btn) => {
@@ -480,37 +621,46 @@ if (Astro.request.method === 'POST') {
         });
       });
 
-      // ── Step 3 → 4 ──
-      document.getElementById('btn-step3-next')?.addEventListener('click', () => {
+      // ── Step 4 → 5 ──
+      document.getElementById('btn-step4-next')?.addEventListener('click', () => {
         store.birthDate = (document.getElementById('ob-birth-date') as HTMLInputElement).value;
         store.gender = selectedGender;
-        goTo(4);
+        goTo(5);
       });
-      document.getElementById('btn-step3-skip')?.addEventListener('click', () => {
+      document.getElementById('btn-step4-skip')?.addEventListener('click', () => {
         store.birthDate = '';
         store.gender = '';
-        goTo(4);
+        goTo(5);
       });
-      document.getElementById('btn-step3-back')?.addEventListener('click', () => goTo(2));
       document.getElementById('btn-step4-back')?.addEventListener('click', () => goTo(3));
 
-      // ── Final submit ──
-      function submitFinal(skipOptional: boolean) {
-        // Populate hidden form fields from store
+      // ── Step 5 → 6 ──
+      function goToStep5Next(skipOptional: boolean) {
+        if (!skipOptional) {
+          store.weight = (document.getElementById('ob-weight') as HTMLInputElement).value;
+          store.chip = (document.getElementById('ob-chip') as HTMLInputElement).value;
+          store.color = (document.getElementById('ob-color') as HTMLInputElement).value;
+        } else {
+          store.weight = '';
+          store.chip = '';
+          store.color = '';
+        }
+        goTo(6);
+      }
+      document.getElementById('btn-step5-next')?.addEventListener('click', () => goToStep5Next(false));
+      document.getElementById('btn-step5-skip')?.addEventListener('click', () => goToStep5Next(true));
+      document.getElementById('btn-step5-back')?.addEventListener('click', () => goTo(4));
+
+      // ── Final submit (from celebration screen) ──
+      function submitFinal() {
         (document.getElementById('ff-name') as HTMLInputElement).value = store.name || '';
         (document.getElementById('ff-breed') as HTMLInputElement).value = store.breed || '';
         (document.getElementById('ff-breed-other') as HTMLInputElement).value = store.breedOther || '';
         (document.getElementById('ff-birth-date') as HTMLInputElement).value = store.birthDate || '';
         (document.getElementById('ff-gender') as HTMLInputElement).value = store.gender || '';
-
-        if (!skipOptional) {
-          (document.getElementById('ff-weight') as HTMLInputElement).value =
-            (document.getElementById('ob-weight') as HTMLInputElement).value;
-          (document.getElementById('ff-chip') as HTMLInputElement).value =
-            (document.getElementById('ob-chip') as HTMLInputElement).value;
-          (document.getElementById('ff-color') as HTMLInputElement).value =
-            (document.getElementById('ob-color') as HTMLInputElement).value;
-        }
+        (document.getElementById('ff-weight') as HTMLInputElement).value = store.weight || '';
+        (document.getElementById('ff-chip') as HTMLInputElement).value = store.chip || '';
+        (document.getElementById('ff-color') as HTMLInputElement).value = store.color || '';
 
         // Inject photo file via DataTransfer
         if (photoFileRef) {
@@ -526,17 +676,14 @@ if (Astro.request.method === 'POST') {
           photoHidden.files = dt.files;
         }
 
-        // Loading state
         const btn = document.getElementById('btn-final-submit') as HTMLButtonElement;
         btn.classList.add('btn-loading');
         btn.setAttribute('disabled', '');
 
-        const form = document.getElementById('final-form') as HTMLFormElement;
-        form.submit();
+        (document.getElementById('final-form') as HTMLFormElement).submit();
       }
 
-      document.getElementById('btn-final-submit')?.addEventListener('click', () => submitFinal(false));
-      document.getElementById('btn-final-skip')?.addEventListener('click', () => submitFinal(true));
+      document.getElementById('btn-final-submit')?.addEventListener('click', submitFinal);
     </script>
   </body>
 </html>

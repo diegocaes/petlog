@@ -18,12 +18,12 @@ function isActive(match: string): boolean {
 <!-- ─── DESKTOP SIDEBAR ─────────────────────────────── -->
 <aside class="no-print hidden lg:flex flex-col fixed top-0 left-0 h-full w-55 bg-sidebar z-40">
   <!-- Logo -->
-  <div class="flex items-center gap-3 px-5 py-5 border-b border-white/5">
+  <a href="/" class="flex items-center gap-3 px-5 py-5 border-b border-white/5 hover:opacity-80 transition-opacity">
     <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-accent/20">
       <span class="text-base">🐾</span>
     </div>
     <span class="text-white font-bold text-base tracking-tight">PetLog</span>
-  </div>
+  </a>
 
   <!-- Nav -->
   <nav class="flex-1 px-3 py-4 space-y-0.5">
@@ -50,12 +50,12 @@ function isActive(match: string): boolean {
 
 <!-- ─── MOBILE TOP BAR ─────────────────────────────── -->
 <header class="no-print lg:hidden fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-4 py-3 bg-sidebar border-b border-white/5">
-  <div class="flex items-center gap-2.5">
+  <a href="/" class="flex items-center gap-2.5 hover:opacity-80 transition-opacity">
     <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-accent/20">
       <span class="text-sm">🐾</span>
     </div>
     <span class="text-white font-bold text-sm tracking-tight">PetLog</span>
-  </div>
+  </a>
   <button
     id="mobile-menu-btn"
     type="button"
@@ -68,12 +68,12 @@ function isActive(match: string): boolean {
 </header>
 
 <!-- ─── MOBILE DRAWER ─────────────────────────────── -->
-<div id="mobile-overlay" class="lg:hidden fixed inset-0 z-50 hidden">
+<div id="mobile-overlay" class="lg:hidden fixed inset-0 z-50" style="display:none">
   <!-- Backdrop -->
   <div id="mobile-backdrop" class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
 
   <!-- Drawer -->
-  <aside class="absolute top-0 left-0 h-full w-64 bg-sidebar flex flex-col translate-x-[-100%] transition-transform duration-300 ease-out" id="mobile-drawer">
+  <aside class="absolute top-0 left-0 h-full w-64 bg-sidebar flex flex-col transition-transform duration-300 ease-out" id="mobile-drawer" style="transform:translateX(-100%)"  >
     <!-- Logo -->
     <div class="flex items-center justify-between px-5 py-5 border-b border-white/5">
       <div class="flex items-center gap-2.5">
@@ -141,7 +141,7 @@ function isActive(match: string): boolean {
     if (!btn || !overlay || !drawer) return;
 
     function open() {
-      overlay!.classList.remove('hidden');
+      overlay!.style.display = 'block';
       requestAnimationFrame(() => {
         drawer!.style.transform = 'translateX(0)';
       });
@@ -151,7 +151,7 @@ function isActive(match: string): boolean {
 
     function close() {
       drawer!.style.transform = 'translateX(-100%)';
-      setTimeout(() => overlay!.classList.add('hidden'), 300);
+      setTimeout(() => { overlay!.style.display = 'none'; }, 300);
       iconOpen!.classList.remove('hidden');
       iconClose!.classList.add('hidden');
     }
