@@ -31,12 +31,27 @@ if (Astro.request.method === 'POST') {
   }
 
   if (action === 'login') {
-    const { error: loginError } = await supabase.auth.signInWithPassword({
+    const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
     if (loginError) {
-      return Astro.redirect('/login?error=invalid_credentials');
+      const msg = loginError.message?.toLowerCase() ?? '';
+      const errorCode = (msg.includes('email not confirmed') || msg.includes('not confirmed'))
+        ? 'email_not_confirmed'
+        : 'invalid_credentials';
+      return Astro.redirect(`/login?error=${errorCode}`);
+    }
+    // Route to onboarding if user has no pet yet
+    if (loginData.user) {
+      const { data: pet } = await supabase
+        .from('pets')
+        .select('id')
+        .eq('user_id', loginData.user.id)
+        .single();
+      if (!pet) {
+        return Astro.redirect('/onboarding');
+      }
     }
     return Astro.redirect('/dashboard');
   }
@@ -65,10 +80,10 @@ if (Astro.request.method === 'POST') {
         <div class="absolute bottom-20 right-10 h-48 w-48 rounded-full bg-amber blur-3xl"></div>
       </div>
       <div class="relative">
-        <div class="flex items-center gap-3 mb-12">
+        <a href="/" class="flex items-center gap-3 mb-12 hover:opacity-80 transition-opacity">
           <span class="text-3xl">🐾</span>
           <span class="text-xl font-bold tracking-tight">PetLog</span>
-        </div>
+        </a>
         <h2 class="text-3xl font-bold leading-tight mb-4">El diario digital<br/>de tu mascota</h2>
         <p class="text-white/60 text-sm leading-relaxed">Registra vacunas, visitas al veterinario, peso, aventuras y vuelos en un solo lugar.</p>
       </div>
@@ -82,10 +97,12 @@ if (Astro.request.method === 'POST') {
       <div class="w-full max-w-sm">
         <!-- Mobile logo -->
         <div class="mb-8 text-center lg:hidden animate-fade-up">
-          <div class="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-2xl bg-sidebar text-3xl">
-            🐾
-          </div>
-          <h1 class="text-2xl font-bold text-ink">PetLog</h1>
+          <a href="/" class="inline-flex flex-col items-center hover:opacity-80 transition-opacity">
+            <div class="mb-3 flex h-16 w-16 items-center justify-center rounded-2xl bg-sidebar text-3xl">
+              🐾
+            </div>
+            <h1 class="text-2xl font-bold text-ink">PetLog</h1>
+          </a>
           <p class="text-sm text-muted mt-1">El diario digital de tu mascota</p>
         </div>
 
@@ -96,9 +113,10 @@ if (Astro.request.method === 'POST') {
           <!-- Messages -->
           {error && (
             <div class="mb-4 rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
-              {error === 'invalid_credentials' && 'Email o contraseña incorrectos'}
-              {error === 'auth_failed' && 'Error de autenticación'}
-              {error === 'no_code' && 'Código de autenticación no encontrado'}
+              {error === 'invalid_credentials' && 'Email o contraseña incorrectos.'}
+              {error === 'email_not_confirmed' && 'Confirma tu correo antes de entrar. Revisa tu bandeja de entrada.'}
+              {error === 'auth_failed' && 'Error de autenticación. Intenta de nuevo.'}
+              {error === 'no_code' && 'Código de autenticación no encontrado.'}
             </div>
           )}
           <!-- Google OAuth -->

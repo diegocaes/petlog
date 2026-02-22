@@ -18,6 +18,7 @@ if (existingPet) {
 // Personalized greeting
 const fullName = user.user_metadata?.full_name || user.user_metadata?.name || '';
 const firstName = fullName.split(' ')[0] || user.email?.split('@')[0] || 'amigo';
+const onboardingError = Astro.url.searchParams.get('error');
 
 // Handle final form submission (identical logic to perfil.astro INSERT branch)
 if (Astro.request.method === 'POST') {
@@ -59,14 +60,18 @@ if (Astro.request.method === 'POST') {
     }
   }
 
-  const { data: newPet } = await supabase
+  const { data: newPet, error: insertError } = await supabase
     .from('pets')
     .insert({ ...petData, photo_url })
     .select('id')
     .single();
 
+  if (insertError || !newPet) {
+    return Astro.redirect('/onboarding?error=save_failed');
+  }
+
   // Auto-log initial weight
-  if (newWeight && newPet?.id) {
+  if (newWeight && newPet.id) {
     await supabase.from('weight_records').insert({
       pet_id: newPet.id,
       weight_kg: newWeight,
@@ -103,6 +108,11 @@ if (Astro.request.method === 'POST') {
     <!-- Wizard container -->
     <main class="flex-1 flex items-center justify-center p-6 pt-8">
       <div class="w-full max-w-sm mx-auto">
+        {onboardingError === 'save_failed' && (
+          <div class="mb-4 rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+            Hubo un error al guardar. Intenta de nuevo.
+          </div>
+        )}
 
         <!-- ───────────── PASO 1: Bienvenida ───────────── -->
         <div data-step="1" class="animate-fade-up">

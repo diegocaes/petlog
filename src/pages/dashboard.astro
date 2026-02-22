@@ -13,7 +13,7 @@ const { data: pet } = await supabase
   .single();
 
 if (!pet) {
-  return Astro.redirect('/perfil?new=1');
+  return Astro.redirect('/onboarding');
 }
 
 const [
