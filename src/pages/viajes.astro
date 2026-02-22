@@ -182,7 +182,7 @@ const totalFlights = flights?.length ?? 0;
 
       <div class="grid grid-cols-2 gap-4">
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Aerolínea <span class="text-coral">*</span></label>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Aerolínea <span class="text-red-500">*</span></label>
           <input type="text" name="airline" required placeholder="Ej: Iberia, LATAM" class="w-full rounded-xl border border-card-border bg-white px-4 py-3 text-gray-800 placeholder-gray-400 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20" />
         </div>
         <div>
@@ -193,18 +193,18 @@ const totalFlights = flights?.length ?? 0;
 
       <div class="grid grid-cols-2 gap-4">
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Origen <span class="text-coral">*</span></label>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Origen <span class="text-red-500">*</span></label>
           <input type="text" name="origin" required placeholder="Madrid (MAD)" class="w-full rounded-xl border border-card-border bg-white px-4 py-3 text-gray-800 placeholder-gray-400 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20" />
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Destino <span class="text-coral">*</span></label>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Destino <span class="text-red-500">*</span></label>
           <input type="text" name="destination" required placeholder="Miami (MIA)" class="w-full rounded-xl border border-card-border bg-white px-4 py-3 text-gray-800 placeholder-gray-400 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20" />
         </div>
       </div>
 
       <div class="grid grid-cols-2 gap-4">
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Fecha del vuelo <span class="text-coral">*</span></label>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Fecha del vuelo <span class="text-red-500">*</span></label>
           <input type="date" name="flight_date" required class="w-full rounded-xl border border-card-border bg-white px-4 py-3 text-gray-800 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20" />
         </div>
         <div>
@@ -305,7 +305,7 @@ const totalFlights = flights?.length ?? 0;
                 <form method="POST">
                   <input type="hidden" name="_action" value="delete_flight" />
                   <input type="hidden" name="flight_id" value={flight.id} />
-                  <button type="submit" class="rounded-xl p-2 text-gray-300 transition-colors hover:bg-red-50 hover:text-coral" title="Eliminar vuelo">
+                  <button type="submit" class="rounded-xl p-2 text-gray-300 transition-colors hover:bg-red-50 hover:text-red-500" title="Eliminar vuelo">
                     <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
                   </button>
                 </form>
@@ -376,7 +376,7 @@ const totalFlights = flights?.length ?? 0;
                         <input type="hidden" name="_action" value="delete_doc" />
                         <input type="hidden" name="doc_id" value={doc.id} />
                         <input type="hidden" name="file_url" value={doc.file_url} />
-                        <button type="submit" class="rounded-lg p-1.5 text-gray-300 hover:bg-red-50 hover:text-coral transition-colors" title="Eliminar documento">
+                        <button type="submit" class="rounded-lg p-1.5 text-gray-300 hover:bg-red-50 hover:text-red-500 transition-colors" title="Eliminar documento">
                           <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
                         </button>
                       </form>

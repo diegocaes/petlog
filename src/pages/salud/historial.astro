@@ -75,7 +75,7 @@ const { data: visits } = await supabase
       <input type="hidden" name="_action" value="add" />
       <div class="grid grid-cols-2 gap-4">
         <div>
-          <label class="block text-sm font-medium text-ink mb-1.5">Fecha <span class="text-coral">*</span></label>
+          <label class="block text-sm font-medium text-ink mb-1.5">Fecha <span class="text-red-500">*</span></label>
           <input type="date" name="date" required class="w-full rounded-xl border border-card-border bg-white px-4 py-3 text-gray-800 transition-all duration-200 hover:border-gray-300 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20" />
         </div>
         <div>
@@ -84,7 +84,7 @@ const { data: visits } = await supabase
         </div>
       </div>
       <div>
-        <label class="block text-sm font-medium text-ink mb-1.5">Motivo <span class="text-coral">*</span></label>
+        <label class="block text-sm font-medium text-ink mb-1.5">Motivo <span class="text-red-500">*</span></label>
         <input type="text" name="reason" required placeholder="Ej: Revisión anual" class="w-full rounded-xl border border-card-border bg-white px-4 py-3 text-gray-800 placeholder-gray-400 transition-all duration-200 hover:border-gray-300 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20" />
       </div>
       <div class="grid grid-cols-2 gap-4">
@@ -152,7 +152,7 @@ const { data: visits } = await supabase
                 <form method="POST">
                   <input type="hidden" name="_action" value="delete" />
                   <input type="hidden" name="visit_id" value={visit.id} />
-                  <button type="submit" class="rounded-xl p-2 text-gray-300 transition-colors hover:bg-red-50 hover:text-coral" title="Eliminar">
+                  <button type="submit" class="rounded-xl p-2 text-gray-300 transition-colors hover:bg-red-50 hover:text-red-500" title="Eliminar">
                     <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
                   </button>
                 </form>

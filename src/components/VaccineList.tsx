@@ -47,7 +47,7 @@ export default function VaccineList({ vaccines }: Props) {
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-start gap-3 flex-1 min-w-0">
                 <div className={`shrink-0 rounded-xl p-2.5 ${
-                  overdue ? 'bg-red-100 text-red-500' : 'bg-green-50 text-[#166534]'
+                  overdue ? 'bg-red-100 text-red-500' : 'bg-green-50 text-green-800'
                 }`}>
                   <Syringe size={18} />
                 </div>
@@ -59,7 +59,7 @@ export default function VaccineList({ vaccines }: Props) {
                   </p>
                   {vaccine.next_due && (
                     <div className={`mt-2 flex items-center gap-1.5 text-xs font-medium ${
-                      overdue ? 'text-red-500' : daysLeft !== null && daysLeft <= 30 ? 'text-amber-600' : 'text-[#166534]'
+                      overdue ? 'text-red-500' : daysLeft !== null && daysLeft <= 30 ? 'text-amber-600' : 'text-green-800'
                     }`}>
                       {overdue ? <AlertTriangle size={12} /> : <Clock size={12} />}
                       <span>

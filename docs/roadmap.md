@@ -1,5 +1,5 @@
 # 🐾 PetLog - ROADMAP 2026-2027
-**Versión 1.1** | Actualizado: 22 de febrero 2026
+**Versión 1.2** | Actualizado: 22 de febrero 2026
 **Objetivo final:** Convertir PetLog en la app #1 de registro de vida de mascotas en Latinoamérica (empezando por Panamá) y generar ingresos recurrentes vía Freemium + afiliados.
 
 ---
@@ -91,6 +91,12 @@ ALTER TABLE pets ADD COLUMN IF NOT EXISTS color TEXT;
 - [ ] Vercel Analytics activado (gratis, 1 línea)
 - [ ] Documentar tablas en `docs/database.md`
 
+**Ya implementado en Fase 0:**
+- ✅ Onboarding wizard 4 pasos (`/register` → `/onboarding`)
+- ✅ Google OAuth funcionando en producción
+- ✅ Badge de "Perfil completo" en `/perfil` (desbloqueado cuando todos los campos están llenos)
+- ✅ Razas en inglés, alfabéticas, con Border Collie
+
 **Milestone:** Cualquier persona puede entrar, crear su cuenta con Google, registrar su perro y navegar todo sin errores. ✅
 
 ---
@@ -170,14 +176,50 @@ CREATE TABLE IF NOT EXISTS breeds (
 
 ---
 
-### Fase 4: Engagement & Monetización Afiliados (2-3 semanas)
+### Fase 4: Badges & Engagement (1-2 semanas)
+**Objetivo: que el usuario sienta progreso y quiera completar su perfil.**
 
-- Sistema de logros (`user_badges`): "Vacuna Master", "Grooming Pro", "Viajero Frecuente", etc.
-- Sección "Productos recomendados para tu raza" con links de Amazon Affiliates
-- Recomendaciones básicas por raza (con disclaimer veterinario)
+**Galería de badges en el Dashboard (home):**
+- Sección "Logros de {petName}" visible en el dashboard, debajo de las stats
+- Grid horizontal scrollable con todos los badges: ganados en color, pendientes en gris con candado
+- Al tap en un badge pendiente → tooltip "¿Cómo ganarlo?" con instrucción
+- Badges PNG en `/public/badges/` — el usuario los agrega, el código los referencia
+
+**Badges previstos:**
+
+| Badge | Archivo PNG | Condición |
+|-------|------------|-----------|
+| Perfil completo | `perfil-completo.png` | Todos los campos del perfil llenos ✅ ya implementado |
+| Primera vacuna | `primera-vacuna.png` | ≥ 1 vacuna registrada |
+| Vacuna Master | `vacuna-master.png` | 5+ vacunas registradas |
+| Primera aventura | `primera-aventura.png` | ≥ 1 aventura con foto |
+| Viajero | `viajero.png` | ≥ 1 vuelo registrado |
+| Control de peso | `control-peso.png` | ≥ 3 registros de peso |
+| Grooming Pro | `grooming-pro.png` | ≥ 3 groomings registrados |
+| Pasaporte listo | `pasaporte-listo.png` | Perfil completo + ≥ 3 vacunas |
+
+**Implementación:**
+- Archivo `src/lib/badges.ts` — define cada badge: `{ id, label, file, condition(petData) → boolean }`
+- En `dashboard.astro`: query paralela de conteos (vaccines, adventures, flights, weight_records, groomings) → evaluar condiciones → renderizar grid
+- Badges desbloqueados se guardan en tabla `pet_badges` para historial y notificaciones futuras
+
+**DB:**
+```sql
+CREATE TABLE IF NOT EXISTS pet_badges (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  pet_id UUID NOT NULL REFERENCES pets(id) ON DELETE CASCADE,
+  badge_id TEXT NOT NULL,
+  earned_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(pet_id, badge_id)
+);
+CREATE INDEX IF NOT EXISTS pet_badges_pet_id_idx ON pet_badges(pet_id);
+```
+
+**Afiliados (misma fase):**
+- Sección "Productos para tu raza" con links de Amazon Affiliates
 - Compartir tarjeta de perfil de mascota (link público `/p/[slug]`)
 
-**Milestone:** Primer click de afiliado registrado. Primera tarjeta compartida en Instagram.
+**Milestone:** Usuario ve sus badges ganados en el home. Al completar el perfil se desbloquea el primer badge con animación.
 
 ---
 

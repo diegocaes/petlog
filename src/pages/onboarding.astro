@@ -94,10 +94,10 @@ if (Astro.request.method === 'POST') {
 
     <!-- Progress bar (hidden on step 1) -->
     <div class="fixed top-0 left-0 right-0 z-50" id="progress-bar-wrap" style="display:none">
-      <div class="h-1 bg-card-border">
-        <div id="progress-fill" class="h-full bg-accent transition-all duration-500" style="width:33%"></div>
+      <div class="h-2 bg-card-border">
+        <div id="progress-fill" class="h-full bg-accent transition-all duration-500 rounded-r-full" style="width:33%"></div>
       </div>
-      <div id="progress-text" class="absolute top-3 right-4 text-xs text-muted font-medium">Paso 2 de 4</div>
+      <div id="progress-text" class="absolute top-4 right-4 text-xs text-muted font-medium">Paso 2 de 3</div>
     </div>
 
     <!-- Wizard container -->
@@ -182,7 +182,7 @@ if (Astro.request.method === 'POST') {
 
             <!-- Name -->
             <div>
-              <label class="block text-sm font-medium text-ink mb-1.5">Nombre <span class="text-coral">*</span></label>
+              <label class="block text-sm font-medium text-ink mb-1.5">Nombre <span class="text-red-500">*</span></label>
               <input
                 type="text"
                 id="ob-name"
