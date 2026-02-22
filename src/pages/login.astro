@@ -141,11 +141,27 @@ if (Astro.request.method === 'POST') {
     </div>
 
     <script>
-      // Loading state on login form submit
+      // Loading state — preserve action value before disabling buttons
       const form = document.getElementById('login-form') as HTMLFormElement;
+      let clickedAction = '';
+
+      form?.querySelectorAll<HTMLButtonElement>('button[type="submit"]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          clickedAction = btn.value;
+        });
+      });
+
       form?.addEventListener('submit', () => {
-        const btns = form.querySelectorAll<HTMLButtonElement>('button[type="submit"]');
-        btns.forEach(btn => {
+        // Inject the action as a hidden input so it survives button disable
+        if (clickedAction) {
+          const hidden = document.createElement('input');
+          hidden.type = 'hidden';
+          hidden.name = 'action';
+          hidden.value = clickedAction;
+          form.appendChild(hidden);
+        }
+        // Now safe to disable buttons
+        form.querySelectorAll<HTMLButtonElement>('button[type="submit"]').forEach(btn => {
           btn.classList.add('btn-loading');
           btn.setAttribute('disabled', '');
         });
