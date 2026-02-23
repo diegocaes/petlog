@@ -36,9 +36,10 @@ export const onRequest = defineMiddleware(async (context, next) => {
     return context.redirect('/login');
   }
 
-  // Store user and supabase client in locals for downstream use
+  // Store user, supabase client, and active pet id in locals for downstream use
   context.locals.user = user;
   context.locals.supabase = supabase;
+  context.locals.activePetId = context.cookies.get('active_pet_id')?.value ?? null;
 
   return withUtf8(await next());
 });

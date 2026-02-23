@@ -25,16 +25,28 @@ export const GET: APIRoute = async ({ request, cookies, redirect }) => {
     return redirect('/login?error=no_code');
   }
 
-  // Route new users (no pet yet) to onboarding
+  // Route new users (no pet yet) to onboarding, set active_pet_id cookie for returning users
   const { data: { user } } = await supabase.auth.getUser();
   if (user) {
-    const { data: pet } = await supabase
+    const { data: pets } = await supabase
       .from('pets')
       .select('id')
       .eq('user_id', user.id)
-      .single();
-    if (!pet) {
+      .order('created_at', { ascending: true });
+
+    if (!pets?.length) {
       return redirect('/onboarding');
+    }
+
+    // Set the first pet as active if no cookie exists yet
+    if (!cookies.get('active_pet_id')?.value) {
+      cookies.set('active_pet_id', pets[0].id, {
+        path: '/',
+        httpOnly: true,
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 24 * 365,
+        secure: import.meta.env.PROD,
+      });
     }
   }
 

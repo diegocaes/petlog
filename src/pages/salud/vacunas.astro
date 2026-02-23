@@ -6,14 +6,11 @@ import SaludTabs from '../../components/SaludTabs.astro';
 import EmptyState from '../../components/ui/EmptyState.astro';
 import { formatDate } from '../../lib/utils';
 import { getVaccineBadge } from '../../lib/vaccine-badges';
+import { getActivePet } from '../../lib/pet';
 
-const { supabase, user } = Astro.locals;
+const { supabase, user, activePetId } = Astro.locals;
 
-const { data: pet } = await supabase
-  .from('pets')
-  .select('id')
-  .eq('user_id', user.id)
-  .single();
+const { pet } = await getActivePet(supabase, user.id, activePetId);
 
 if (!pet) return Astro.redirect('/perfil?new=1');
 
@@ -110,7 +107,7 @@ const badgeList = [...new Map(vaccines?.map(v => [v.name.toLowerCase(), v]) ?? [
         <label class="block text-sm font-medium text-ink mb-1.5">Vacuna <span class="text-red-500">*</span></label>
         <select
           id="vaccine-select"
-          class="w-full rounded-xl border border-card-border bg-white px-4 py-3 text-gray-800 transition-all duration-200 hover:border-gray-300 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
+          class="field-input"
         >
           <option value="">Seleccionar vacuna</option>
           <option value="Rabia">Rabia</option>
@@ -127,26 +124,26 @@ const badgeList = [...new Map(vaccines?.map(v => [v.name.toLowerCase(), v]) ?? [
           id="vaccine-name-input"
           required
           placeholder="Nombre de la vacuna"
-          class="mt-2 hidden w-full rounded-xl border border-card-border bg-white px-4 py-3 text-gray-800 placeholder-gray-400 transition-all duration-200 hover:border-gray-300 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
+          class="mt-2 hidden field-input"
         />
       </div>
       <div class="grid grid-cols-2 gap-4">
         <div>
           <label class="block text-sm font-medium text-ink mb-1.5">Fecha aplicada <span class="text-red-500">*</span></label>
-          <input type="date" name="date_given" required class="w-full rounded-xl border border-card-border bg-white px-4 py-3 text-gray-800 transition-all duration-200 hover:border-gray-300 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20" />
+          <input type="date" name="date_given" required class="field-input" />
         </div>
         <div>
           <label class="block text-sm font-medium text-ink mb-1.5">Próx. dosis <span class="text-xs text-gray-400">(si aplica)</span></label>
-          <input type="date" name="next_due" class="w-full rounded-xl border border-card-border bg-white px-4 py-3 text-gray-800 transition-all duration-200 hover:border-gray-300 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20" />
+          <input type="date" name="next_due" class="field-input" />
         </div>
       </div>
       <div>
         <label class="block text-sm font-medium text-ink mb-1.5">Veterinario</label>
-        <input type="text" name="vet_name" placeholder="Dr. García" class="w-full rounded-xl border border-card-border bg-white px-4 py-3 text-gray-800 placeholder-gray-400 transition-all duration-200 hover:border-gray-300 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20" />
+        <input type="text" name="vet_name" placeholder="Dr. García" class="field-input" />
       </div>
       <div>
         <label class="block text-sm font-medium text-ink mb-1.5">Notas</label>
-        <textarea name="notes" rows="2" placeholder="Observaciones..." class="w-full rounded-xl border border-card-border bg-white px-4 py-3 text-gray-800 placeholder-gray-400 transition-all duration-200 hover:border-gray-300 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20 resize-none"></textarea>
+        <textarea name="notes" rows="2" placeholder="Observaciones..." class="field-input resize-none"></textarea>
       </div>
       <button type="submit" class="w-full rounded-xl bg-accent px-6 py-2.5 text-sm font-semibold text-white transition-all hover:bg-accent-dark active:scale-95">
         Registrar vacuna
@@ -179,7 +176,7 @@ const badgeList = [...new Map(vaccines?.map(v => [v.name.toLowerCase(), v]) ?? [
                     <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m14.5 2-8.5 8.5v4h4l8.5-8.5a2.83 2.83 0 0 0-4-4z"/><path d="m18 2 4 4"/></svg>
                   </div>
                   <div class="flex-1 min-w-0">
-                    <p class="font-semibold text-gray-800">{vaccine.name}</p>
+                    <p class="font-semibold text-ink">{vaccine.name}</p>
                     <p class="text-xs text-gray-400 mt-0.5">
                       Aplicada: {formatDate(vaccine.date_given)}
                       {vaccine.vet_name && ` · ${vaccine.vet_name}`}
@@ -230,13 +227,13 @@ const badgeList = [...new Map(vaccines?.map(v => [v.name.toLowerCase(), v]) ?? [
                 <p class="text-xs font-semibold text-accent uppercase tracking-wider">Editando</p>
                 <button type="button" class="cancel-edit text-xs text-gray-400 hover:text-gray-600" data-id={vaccine.id}>Cancelar</button>
               </div>
-              <input type="text" name="name" value={vaccine.name} required class="w-full rounded-xl border border-card-border bg-white px-3 py-2.5 text-sm text-gray-800 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20" />
+              <input type="text" name="name" value={vaccine.name} required class="field-input-sm" />
               <div class="grid grid-cols-2 gap-3">
-                <input type="date" name="date_given" value={vaccine.date_given} required class="w-full rounded-xl border border-card-border bg-white px-3 py-2.5 text-sm text-gray-800 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20" />
-                <input type="date" name="next_due" value={vaccine.next_due || ''} placeholder="Próx. dosis" class="w-full rounded-xl border border-card-border bg-white px-3 py-2.5 text-sm text-gray-800 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20" />
+                <input type="date" name="date_given" value={vaccine.date_given} required class="field-input-sm" />
+                <input type="date" name="next_due" value={vaccine.next_due || ''} placeholder="Próx. dosis" class="field-input-sm" />
               </div>
-              <input type="text" name="vet_name" value={vaccine.vet_name || ''} placeholder="Veterinario" class="w-full rounded-xl border border-card-border bg-white px-3 py-2.5 text-sm text-gray-800 placeholder-gray-400 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20" />
-              <textarea name="notes" rows="2" placeholder="Notas" class="w-full rounded-xl border border-card-border bg-white px-3 py-2.5 text-sm text-gray-800 placeholder-gray-400 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20 resize-none">{vaccine.notes || ''}</textarea>
+              <input type="text" name="vet_name" value={vaccine.vet_name || ''} placeholder="Veterinario" class="field-input-sm" />
+              <textarea name="notes" rows="2" placeholder="Notas" class="field-input-sm resize-none">{vaccine.notes || ''}</textarea>
               <button type="submit" class="w-full rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-white transition-all hover:bg-accent-dark active:scale-95">
                 Guardar cambios
               </button>

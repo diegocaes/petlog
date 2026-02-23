@@ -1,4 +1,12 @@
 ---
+import type { Pet } from '../types/supabase';
+
+interface Props {
+  activePet: Pet | null;
+  pets: Pet[];
+}
+
+const { activePet, pets } = Astro.props;
 const currentPath = Astro.url.pathname;
 
 const navItems = [
@@ -13,7 +21,15 @@ function isActive(match: string): boolean {
   if (match === '/dashboard') return currentPath === '/dashboard';
   return currentPath.startsWith(match);
 }
+
+// Avatar: first letter of pet name, or photo
+function petInitial(name: string) {
+  return name.charAt(0).toUpperCase();
+}
 ---
+
+<!-- ─── PET SWITCHER SNIPPET (reused in desktop + mobile) ─────── -->
+<!-- Defined as a fragment rendered twice below -->
 
 <!-- ─── DESKTOP SIDEBAR ─────────────────────────────── -->
 <aside class="no-print hidden lg:flex flex-col fixed top-0 left-0 h-full w-55 bg-sidebar z-40">
@@ -25,8 +41,63 @@ function isActive(match: string): boolean {
     <span class="text-white font-bold text-base tracking-tight">PetLog</span>
   </a>
 
+  <!-- Pet switcher -->
+  {activePet && (
+    <div class="px-3 pt-3 pb-1">
+      <div class="relative" id="pet-switcher-desktop">
+        <!-- Trigger -->
+        <button
+          type="button"
+          id="pet-trigger-desktop"
+          class="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 transition-colors text-left"
+          aria-expanded="false"
+        >
+          {activePet.photo_url ? (
+            <img src={activePet.photo_url} alt={activePet.name} class="h-7 w-7 rounded-full object-cover shrink-0" />
+          ) : (
+            <div class="h-7 w-7 rounded-full bg-accent/30 flex items-center justify-center shrink-0">
+              <span class="text-xs font-bold text-accent">{petInitial(activePet.name)}</span>
+            </div>
+          )}
+          <span class="flex-1 text-sm font-semibold text-white truncate">{activePet.name}</span>
+          <svg class="h-3.5 w-3.5 text-white/40 shrink-0 transition-transform" id="pet-chevron-desktop" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+
+        <!-- Dropdown -->
+        <div id="pet-dropdown-desktop" class="hidden absolute top-full left-0 right-0 mt-1 rounded-xl bg-sidebar border border-white/10 shadow-xl overflow-hidden z-50">
+          {pets.map(p => (
+            <form method="POST" action="/api/pets/switch">
+              <input type="hidden" name="pet_id" value={p.id} />
+              <button type="submit" class="w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-white/8 transition-colors text-left">
+                {p.photo_url ? (
+                  <img src={p.photo_url} alt={p.name} class="h-6 w-6 rounded-full object-cover shrink-0" />
+                ) : (
+                  <div class="h-6 w-6 rounded-full bg-accent/30 flex items-center justify-center shrink-0">
+                    <span class="text-xs font-bold text-accent">{petInitial(p.name)}</span>
+                  </div>
+                )}
+                <span class="flex-1 text-sm text-white/80 truncate">{p.name}</span>
+                {p.id === activePet.id && (
+                  <svg class="h-3.5 w-3.5 text-accent shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6 9 17l-5-5"/></svg>
+                )}
+              </button>
+            </form>
+          ))}
+          <div class="border-t border-white/5">
+            <a href="/onboarding?add=1" class="flex items-center gap-2.5 px-3 py-2.5 hover:bg-white/8 transition-colors">
+              <div class="h-6 w-6 rounded-full bg-white/10 flex items-center justify-center shrink-0">
+                <svg class="h-3.5 w-3.5 text-white/50" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+              </div>
+              <span class="text-sm text-white/50">Agregar mascota</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  )}
+
   <!-- Nav -->
-  <nav class="flex-1 px-3 py-4 space-y-0.5">
+  <nav class="flex-1 px-3 py-3 space-y-0.5">
     {navItems.map((item) => (
       <a href={item.href} class:list={['sidebar-link', isActive(item.match) && 'active']}>
         <svg class="h-4.5 w-4.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" data-icon={item.icon}>
@@ -37,7 +108,7 @@ function isActive(match: string): boolean {
     ))}
   </nav>
 
-  <!-- Bottom: profile + logout -->
+  <!-- Bottom: profile -->
   <div class="px-3 py-4 border-t border-white/5 space-y-0.5">
     <a href="/perfil" class:list={['sidebar-link', isActive('/perfil') && 'active']}>
       <svg class="h-4.5 w-4.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -73,7 +144,7 @@ function isActive(match: string): boolean {
   <div id="mobile-backdrop" class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
 
   <!-- Drawer -->
-  <aside class="absolute top-0 left-0 h-full w-64 bg-sidebar flex flex-col transition-transform duration-300 ease-out" id="mobile-drawer" style="transform:translateX(-100%)"  >
+  <aside class="absolute top-0 left-0 h-full w-64 bg-sidebar flex flex-col transition-transform duration-300 ease-out" id="mobile-drawer" style="transform:translateX(-100%)">
     <!-- Logo -->
     <div class="flex items-center justify-between px-5 py-5 border-b border-white/5">
       <div class="flex items-center gap-2.5">
@@ -84,8 +155,61 @@ function isActive(match: string): boolean {
       </div>
     </div>
 
+    <!-- Pet switcher mobile -->
+    {activePet && (
+      <div class="px-3 pt-3 pb-1">
+        <div class="relative" id="pet-switcher-mobile">
+          <button
+            type="button"
+            id="pet-trigger-mobile"
+            class="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 transition-colors text-left"
+            aria-expanded="false"
+          >
+            {activePet.photo_url ? (
+              <img src={activePet.photo_url} alt={activePet.name} class="h-7 w-7 rounded-full object-cover shrink-0" />
+            ) : (
+              <div class="h-7 w-7 rounded-full bg-accent/30 flex items-center justify-center shrink-0">
+                <span class="text-xs font-bold text-accent">{petInitial(activePet.name)}</span>
+              </div>
+            )}
+            <span class="flex-1 text-sm font-semibold text-white truncate">{activePet.name}</span>
+            <svg class="h-3.5 w-3.5 text-white/40 shrink-0 transition-transform" id="pet-chevron-mobile" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>
+          </button>
+
+          <div id="pet-dropdown-mobile" class="hidden mt-1 rounded-xl bg-sidebar border border-white/10 overflow-hidden">
+            {pets.map(p => (
+              <form method="POST" action="/api/pets/switch">
+                <input type="hidden" name="pet_id" value={p.id} />
+                <button type="submit" class="w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-white/8 transition-colors text-left">
+                  {p.photo_url ? (
+                    <img src={p.photo_url} alt={p.name} class="h-6 w-6 rounded-full object-cover shrink-0" />
+                  ) : (
+                    <div class="h-6 w-6 rounded-full bg-accent/30 flex items-center justify-center shrink-0">
+                      <span class="text-xs font-bold text-accent">{petInitial(p.name)}</span>
+                    </div>
+                  )}
+                  <span class="flex-1 text-sm text-white/80 truncate">{p.name}</span>
+                  {p.id === activePet.id && (
+                    <svg class="h-3.5 w-3.5 text-accent shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6 9 17l-5-5"/></svg>
+                  )}
+                </button>
+              </form>
+            ))}
+            <div class="border-t border-white/5">
+              <a href="/onboarding?add=1" class="flex items-center gap-2.5 px-3 py-2.5 hover:bg-white/8 transition-colors">
+                <div class="h-6 w-6 rounded-full bg-white/10 flex items-center justify-center shrink-0">
+                  <svg class="h-3.5 w-3.5 text-white/50" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+                </div>
+                <span class="text-sm text-white/50">Agregar mascota</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
+
     <!-- Nav -->
-    <nav class="flex-1 px-3 py-4 space-y-0.5">
+    <nav class="flex-1 px-3 py-3 space-y-0.5">
       {navItems.map((item) => (
         <a href={item.href} class:list={['sidebar-link', isActive(item.match) && 'active']}>
           <svg class="h-4.5 w-4.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -157,7 +281,7 @@ function isActive(match: string): boolean {
     }
 
     btn.addEventListener('click', () => {
-      overlay!.classList.contains('hidden') ? open() : close();
+      overlay!.style.display === 'none' ? open() : close();
     });
 
     backdrop?.addEventListener('click', close);
@@ -168,6 +292,48 @@ function isActive(match: string): boolean {
     });
   }
 
-  setupMobileMenu();
-  document.addEventListener('astro:page-load', setupMobileMenu);
+  function setupPetSwitcher(triggerId: string, dropdownId: string, chevronId: string, containerId: string) {
+    const trigger = document.getElementById(triggerId) as HTMLButtonElement | null;
+    const dropdown = document.getElementById(dropdownId);
+    const chevron = document.getElementById(chevronId);
+    const container = document.getElementById(containerId);
+    if (!trigger || !dropdown) return;
+
+    // Remove old listener by cloning the trigger node
+    const newTrigger = trigger.cloneNode(true) as HTMLButtonElement;
+    trigger.parentNode!.replaceChild(newTrigger, trigger);
+
+    function closeDropdown() {
+      dropdown!.classList.add('hidden');
+      chevron?.classList.remove('rotate-180');
+      newTrigger.setAttribute('aria-expanded', 'false');
+    }
+
+    newTrigger.addEventListener('click', () => {
+      const isOpen = !dropdown.classList.contains('hidden');
+      if (isOpen) {
+        closeDropdown();
+      } else {
+        dropdown.classList.remove('hidden');
+        chevron?.classList.add('rotate-180');
+        newTrigger.setAttribute('aria-expanded', 'true');
+      }
+    });
+
+    // Close when clicking outside the switcher container
+    document.addEventListener('click', (e) => {
+      if (container && !container.contains(e.target as Node)) {
+        closeDropdown();
+      }
+    }, { capture: false });
+  }
+
+  function setup() {
+    setupMobileMenu();
+    setupPetSwitcher('pet-trigger-desktop', 'pet-dropdown-desktop', 'pet-chevron-desktop', 'pet-switcher-desktop');
+    setupPetSwitcher('pet-trigger-mobile', 'pet-dropdown-mobile', 'pet-chevron-mobile', 'pet-switcher-mobile');
+  }
+
+  setup();
+  document.addEventListener('astro:page-load', setup);
 </script>

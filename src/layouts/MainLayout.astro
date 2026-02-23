@@ -3,6 +3,7 @@ import Sidebar from '../components/Sidebar.astro';
 import FormEnhancements from '../components/ui/FormEnhancements.astro';
 import Toast from '../components/ui/Toast.astro';
 import { ClientRouter } from 'astro:transitions';
+import { getActivePet } from '../lib/pet';
 import '../styles/global.css';
 
 interface Props {
@@ -11,6 +12,14 @@ interface Props {
 }
 
 const { title, description = 'El diario digital de tu mascota' } = Astro.props;
+
+// Fetch pets for sidebar switcher (only if user is authenticated)
+const { user, supabase, activePetId } = Astro.locals;
+const { pet: activePet, pets } = user
+  ? await getActivePet(supabase, user.id, activePetId)
+  : { pet: null, pets: [] };
+
+const petColorIndex = activePet ? pets.findIndex(p => p.id === activePet.id) : 0;
 ---
 
 <!doctype html>
@@ -32,8 +41,8 @@ const { title, description = 'El diario digital de tu mascota' } = Astro.props;
     <title>{title} | PetLog</title>
     <ClientRouter />
   </head>
-  <body class="min-h-screen bg-canvas">
-    <Sidebar />
+  <body class="min-h-screen bg-canvas" data-pet={petColorIndex}>
+    <Sidebar activePet={activePet} pets={pets} />
 
     <!-- Mobile top bar spacer -->
     <div class="h-13 lg:hidden"></div>

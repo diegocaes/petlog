@@ -1,14 +1,11 @@
 ---
 import '../styles/global.css';
 import { calculateAge, formatDate } from '../lib/utils';
+import { getActivePet } from '../lib/pet';
 
-const { supabase, user } = Astro.locals;
+const { supabase, user, activePetId } = Astro.locals;
 
-const { data: pet } = await supabase
-  .from('pets')
-  .select('*')
-  .eq('user_id', user.id)
-  .single();
+const { pet } = await getActivePet(supabase, user.id, activePetId);
 
 if (!pet) return Astro.redirect('/perfil?new=1');
 
@@ -24,6 +21,18 @@ const { data: flights } = await supabase
   .eq('pet_id', pet.id)
   .order('flight_date', { ascending: false });
 
+
+const { data: weightRows } = await supabase
+  .from('weight_records')
+  .select('weight_kg, date')
+  .eq('pet_id', pet.id)
+  .order('date', { ascending: false })
+  .limit(1);
+
+const latestWeight = weightRows?.[0]?.weight_kg ?? pet.weight_kg;
+const petColor = (pet as any).color as string | null;
+const petSpecies = (pet as any).species as string | null;
+const speciesLabel = petSpecies === 'cat' ? 'Felino' : 'Canino';
 const age = pet.birth_date ? calculateAge(pet.birth_date) : null;
 ---
 
@@ -375,16 +384,16 @@ const age = pet.birth_date ? calculateAge(pet.birth_date) : null;
             <p class:list={['field-value', !pet.chip_id && 'empty']}>{pet.chip_id || '—'}</p>
           </div>
           <div class="field-row">
-            <p class="field-label">Peso</p>
-            <p class:list={['field-value', !pet.weight_kg && 'empty']}>{pet.weight_kg ? `${pet.weight_kg} kg` : '—'}</p>
+            <p class="field-label">Peso actual</p>
+            <p class:list={['field-value', !latestWeight && 'empty']}>{latestWeight ? `${latestWeight} kg` : '—'}</p>
           </div>
           <div class="field-row">
             <p class="field-label">Color de pelaje</p>
-            <p class:list={['field-value', !pet.color && 'empty']}>{pet.color || '—'}</p>
+            <p class:list={['field-value', !petColor && 'empty']}>{petColor || '—'}</p>
           </div>
           <div class="field-row">
             <p class="field-label">Especie</p>
-            <p class="field-value">Canino</p>
+            <p class="field-value">{speciesLabel}</p>
           </div>
         </div>
       </div>

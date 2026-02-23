@@ -6,20 +6,19 @@ import Button from '../components/ui/Button.astro';
 import SectionHeader from '../components/ui/SectionHeader.astro';
 import { DOG_BREEDS } from '../lib/breeds';
 import { createSupabaseAdminClient } from '../lib/supabase';
+import { getActivePet } from '../lib/pet';
+import { uploadPetPhoto } from '../lib/storage';
 
-const { supabase, user } = Astro.locals;
+const { supabase, user, activePetId } = Astro.locals;
 const isNew = Astro.url.searchParams.get('new') === '1';
 
 // Extract first name for personalized greeting
 const fullName = user.user_metadata?.full_name || user.user_metadata?.name || '';
 const firstName = fullName.split(' ')[0] || user.email?.split('@')[0] || 'bienvenido';
 
-// Get existing pet
-const { data: pet } = await supabase
-  .from('pets')
-  .select('*')
-  .eq('user_id', user.id)
-  .single();
+// Get existing pet + all pets (to decide delete behavior)
+const { pet, pets } = await getActivePet(supabase, user.id, activePetId);
+const hasMultiplePets = pets.length > 1;
 
 // Profile completion badge logic
 const profileFields = pet ? [
@@ -48,25 +47,39 @@ if (Astro.request.method === 'POST') {
   }
 
   if (action === 'delete_account') {
-    // Delete pet (cascades to all related tables via FK)
-    if (pet) {
+    if (hasMultiplePets && pet) {
+      // Only delete this pet — keep the account and switch to another pet
       await supabase.from('pets').delete().eq('id', pet.id);
+      const remaining = pets.filter(p => p.id !== pet.id);
+      const nextPet = remaining[0];
+      Astro.cookies.set('active_pet_id', nextPet.id, {
+        path: '/',
+        httpOnly: true,
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 24 * 365,
+        secure: import.meta.env.PROD,
+      });
+      return Astro.redirect('/dashboard?deleted=1');
+    } else {
+      // Last pet — delete everything
+      if (pet) {
+        await supabase.from('pets').delete().eq('id', pet.id);
+      }
+      try {
+        const adminClient = createSupabaseAdminClient();
+        await adminClient.auth.admin.deleteUser(user.id);
+      } catch (_e) {
+        // If admin client unavailable, just sign out
+      }
+      await supabase.auth.signOut();
+      return Astro.redirect('/');
     }
-    // Delete auth user via admin client
-    try {
-      const adminClient = createSupabaseAdminClient();
-      await adminClient.auth.admin.deleteUser(user.id);
-    } catch (_e) {
-      // If admin client unavailable, just sign out — data is already deleted
-    }
-    await supabase.auth.signOut();
-    return Astro.redirect('/');
   }
 
-  // Resolve breed: if "Otro" is selected, use the text input
+  // Resolve breed: if "Other" is selected, use the text input
   const breedSelect = formData.get('breed') as string;
   const breedOther = formData.get('breed_other') as string;
-  const breed = breedSelect === 'Otro' && breedOther ? breedOther : breedSelect || null;
+  const breed = breedSelect === 'Other' && breedOther ? breedOther : breedSelect || null;
 
   const newWeight = formData.get('weight_kg') ? Number(formData.get('weight_kg')) : null;
 
@@ -82,23 +95,8 @@ if (Astro.request.method === 'POST') {
   };
 
   // Handle photo upload
-  const photoFile = formData.get('photo') as File;
-  let photo_url = pet?.photo_url || null;
-
-  if (photoFile && photoFile.size > 0) {
-    const ext = photoFile.name.split('.').pop();
-    const filePath = `${user.id}/pet-profile.${ext}`;
-    const { error: uploadError } = await supabase.storage
-      .from('pet-photos')
-      .upload(filePath, photoFile, { upsert: true });
-
-    if (!uploadError) {
-      const { data: publicUrl } = supabase.storage
-        .from('pet-photos')
-        .getPublicUrl(filePath);
-      photo_url = publicUrl.publicUrl;
-    }
-  }
+  const uploaded = await uploadPetPhoto(formData.get('photo') as File, user.id, supabase, 'pet-profile');
+  const photo_url = uploaded ?? pet?.photo_url ?? null;
 
   let petId = pet?.id;
 
@@ -124,7 +122,7 @@ if (Astro.request.method === 'POST') {
   return Astro.redirect('/dashboard?saved=1');
 }
 
-// Check if current breed is in the list (for "Otro" logic)
+// Check if current breed is in the list (for "Other" logic)
 const breedInList = pet?.breed ? DOG_BREEDS.includes(pet.breed as typeof DOG_BREEDS[number]) : false;
 const isOtherBreed = pet?.breed && !breedInList;
 ---
@@ -133,7 +131,7 @@ const isOtherBreed = pet?.breed && !breedInList;
   {isNew ? (
     <div class="mb-6 animate-fade-up">
       <!-- Hero welcome card -->
-      <div class="relative overflow-hidden rounded-3xl bg-[#1E3B1A] px-6 py-8 text-center text-white shadow-xl mb-4">
+      <div class="relative overflow-hidden rounded-3xl px-6 py-8 text-center text-white shadow-xl mb-4" style="background-color: color-mix(in srgb, var(--color-accent) 25%, #0a0f0a);">
         <!-- Decorative circles -->
         <div class="absolute -top-8 -right-8 h-32 w-32 rounded-full bg-white/5"></div>
         <div class="absolute -bottom-6 -left-6 h-24 w-24 rounded-full bg-white/5"></div>
@@ -197,15 +195,15 @@ const isOtherBreed = pet?.breed && !breedInList;
 
         <!-- Breed Dropdown -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1.5">Raza</label>
+          <label class="block text-sm font-medium text-ink mb-1.5">Raza</label>
           <select
             name="breed"
             id="breed-select"
-            class="w-full rounded-xl border border-card-border bg-white px-4 py-3 text-gray-800 transition-all duration-200 hover:border-gray-300 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
+            class="field-input"
           >
             <option value="">Seleccionar raza</option>
             {DOG_BREEDS.map((breed) => (
-              <option value={breed} selected={pet?.breed === breed || (isOtherBreed && breed === 'Otro')}>
+              <option value={breed} selected={pet?.breed === breed || (isOtherBreed && breed === 'Other')}>
                 {breed}
               </option>
             ))}
@@ -217,7 +215,7 @@ const isOtherBreed = pet?.breed && !breedInList;
             placeholder="Escribe la raza"
             value={isOtherBreed ? pet?.breed : ''}
             class:list={[
-              'mt-2 w-full rounded-xl border border-card-border bg-white px-4 py-3 text-gray-800 placeholder-gray-400 transition-all duration-200 hover:border-gray-300 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20',
+              'mt-2 field-input',
               { hidden: !isOtherBreed },
             ]}
           />
@@ -226,10 +224,10 @@ const isOtherBreed = pet?.breed && !breedInList;
         <div class="grid grid-cols-2 gap-4">
           <Input label="Fecha de nacimiento" name="birth_date" type="date" value={pet?.birth_date || ''} />
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1.5">Género</label>
+            <label class="block text-sm font-medium text-ink mb-1.5">Género</label>
             <select
               name="gender"
-              class="w-full rounded-xl border border-card-border bg-white px-4 py-3 text-gray-800 transition-all duration-200 hover:border-gray-300 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
+              class="field-input"
             >
               <option value="">Seleccionar</option>
               <option value="macho" selected={pet?.gender === 'macho'}>Macho ♂️</option>
@@ -317,8 +315,8 @@ const isOtherBreed = pet?.breed && !breedInList;
     <!-- Delete account -->
     <div class="flex items-center justify-between">
       <div>
-        <p class="text-sm font-medium text-red-500">Eliminar cuenta</p>
-        <p class="text-xs text-gray-400 mt-0.5">Borra todos tus datos permanentemente</p>
+        <p class="text-sm font-medium text-red-500">{hasMultiplePets ? `Eliminar a ${pet?.name}` : 'Eliminar cuenta'}</p>
+        <p class="text-xs text-gray-400 mt-0.5">{hasMultiplePets ? 'Borra esta mascota y todos sus datos' : 'Borra todos tus datos permanentemente'}</p>
       </div>
       <button
         type="button"
@@ -336,9 +334,14 @@ const isOtherBreed = pet?.breed && !breedInList;
       <div class="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-red-50 mx-auto text-2xl">
         ⚠️
       </div>
-      <h3 class="text-center text-base font-bold text-ink mb-2">¿Eliminar cuenta?</h3>
+      <h3 class="text-center text-base font-bold text-ink mb-2">
+        {hasMultiplePets ? `¿Eliminar a ${pet?.name}?` : '¿Eliminar cuenta?'}
+      </h3>
       <p class="text-center text-sm text-muted mb-6 leading-relaxed">
-        Se borrarán tu perfil, el de tu mascota, vacunas, aventuras y todos tus datos. <strong class="text-ink">Esta acción no se puede deshacer.</strong>
+        {hasMultiplePets
+          ? <>Se borrarán el perfil de <strong class="text-ink">{pet?.name}</strong>, sus vacunas, aventuras y todos sus datos. <strong class="text-ink">Esta acción no se puede deshacer.</strong></>
+          : <>Se borrarán tu cuenta, tu mascota, vacunas, aventuras y todos tus datos. <strong class="text-ink">Esta acción no se puede deshacer.</strong></>
+        }
       </p>
       <form method="POST" id="delete-account-form">
         <input type="hidden" name="_action" value="delete_account" />
@@ -347,7 +350,7 @@ const isOtherBreed = pet?.breed && !breedInList;
           id="btn-confirm-delete"
           class="w-full rounded-xl bg-red-500 px-6 py-3 text-sm font-semibold text-white transition-all hover:bg-red-600 active:scale-95 mb-3"
         >
-          Sí, eliminar todo
+          {hasMultiplePets ? `Sí, eliminar a ${pet?.name}` : 'Sí, eliminar todo'}
         </button>
       </form>
       <button
@@ -383,12 +386,12 @@ const isOtherBreed = pet?.breed && !breedInList;
       }
     });
 
-    // Breed "Otro" toggle
+    // Breed "Other" toggle
     const select = document.getElementById('breed-select') as HTMLSelectElement;
     const otherInput = document.getElementById('breed-other-input') as HTMLInputElement;
     function toggleOther() {
-      otherInput.classList.toggle('hidden', select.value !== 'Otro');
-      if (select.value !== 'Otro') otherInput.value = '';
+      otherInput.classList.toggle('hidden', select.value !== 'Other');
+      if (select.value !== 'Other') otherInput.value = '';
     }
     select?.addEventListener('change', toggleOther);
 

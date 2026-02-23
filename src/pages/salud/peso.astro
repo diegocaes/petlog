@@ -6,14 +6,11 @@ import SaludTabs from '../../components/SaludTabs.astro';
 import EmptyState from '../../components/ui/EmptyState.astro';
 import WeightChart from '../../components/WeightChart.tsx';
 import { formatDate } from '../../lib/utils';
+import { getActivePet } from '../../lib/pet';
 
-const { supabase, user } = Astro.locals;
+const { supabase, user, activePetId } = Astro.locals;
 
-const { data: pet } = await supabase
-  .from('pets')
-  .select('id, weight_kg')
-  .eq('user_id', user.id)
-  .single();
+const { pet } = await getActivePet(supabase, user.id, activePetId);
 
 if (!pet) return Astro.redirect('/perfil?new=1');
 
@@ -75,7 +72,7 @@ const { data: records } = await supabase
             min="0.1"
             required
             placeholder="12.5"
-            class="w-full rounded-xl border border-card-border bg-white px-4 py-3 text-gray-800 placeholder-gray-400 transition-all duration-200 hover:border-gray-300 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
+            class="field-input"
           />
         </div>
         <div>
@@ -85,7 +82,7 @@ const { data: records } = await supabase
             name="date"
             required
             value={new Date().toISOString().split('T')[0]}
-            class="w-full rounded-xl border border-card-border bg-white px-4 py-3 text-gray-800 transition-all duration-200 hover:border-gray-300 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
+            class="field-input"
           />
         </div>
       </div>
@@ -95,7 +92,7 @@ const { data: records } = await supabase
           name="notes"
           rows="2"
           placeholder="Después del baño, en ayunas..."
-          class="w-full rounded-xl border border-card-border bg-white px-4 py-3 text-gray-800 placeholder-gray-400 transition-all duration-200 hover:border-gray-300 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20 resize-none"
+          class="field-input resize-none"
         ></textarea>
       </div>
       <button type="submit" class="w-full rounded-xl bg-accent px-6 py-2.5 text-sm font-semibold text-white transition-all hover:bg-accent-dark active:scale-95">
@@ -121,7 +118,7 @@ const { data: records } = await supabase
                 <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 12a4 4 0 0 1 8 0"/><line x1="12" y1="12" x2="12" y2="8"/></svg>
               </div>
               <div class="flex-1 min-w-0">
-                <p class="text-lg font-bold text-gray-800">{record.weight_kg} <span class="text-sm font-normal text-gray-400">kg</span></p>
+                <p class="text-lg font-bold text-ink">{record.weight_kg} <span class="text-sm font-normal text-gray-400">kg</span></p>
                 <p class="text-xs text-gray-400">{formatDate(record.date)}</p>
                 {record.notes && <p class="text-xs text-gray-400 mt-0.5">{record.notes}</p>}
               </div>

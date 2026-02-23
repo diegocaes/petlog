@@ -1,5 +1,5 @@
 # 🐾 PetLog - ROADMAP 2026-2027
-**Versión 1.2** | Actualizado: 22 de febrero 2026
+**Versión 1.3** | Actualizado: 22 de febrero 2026
 **Objetivo final:** Convertir PetLog en la app #1 de registro de vida de mascotas en Latinoamérica (empezando por Panamá) y generar ingresos recurrentes vía Freemium + afiliados.
 
 ---
@@ -163,21 +163,33 @@ ALTER TABLE vet_visits ADD COLUMN IF NOT EXISTS reminder_sent BOOLEAN DEFAULT FA
 
 ---
 
-### Fase 2: Multi-Mascota (1-2 semanas)
+### Fase 2: Multi-Mascota ✅ COMPLETADO
 **Objetivo: usuarios con más de un perro/gato pueden usarlo.**
 
-**Cambios:**
-- Selector de mascota activa en el sidebar
-- Dashboard, todas las páginas internas y pasaporte filtran por `active_pet_id` (guardado en cookie/session)
-- Límite: plan gratuito = 1 mascota, Premium = ilimitadas (plantar la semilla aquí)
+**Implementado:**
+- ✅ `src/lib/pet.ts` — helper `getActivePet(supabase, userId, activePetId)`: query única, sin duplicación en 10 páginas
+- ✅ Cookie HTTP `active_pet_id` — middleware la lee e inyecta en `Astro.locals.activePetId`
+- ✅ `src/pages/api/pets/switch.ts` — API route POST para cambiar mascota activa (verifica ownership, sin `.single()`)
+- ✅ Sidebar: dropdown con avatar, check en activa, "Agregar mascota" dentro del dropdown (desktop + mobile)
+- ✅ Dropdown pet-switcher funcional: lógica open/close con `container.contains()` para cerrar al click fuera, sin bloquear submit del form
+- ✅ 10+ páginas: todas usan `getActivePet` en lugar de `.single()` hardcodeado
+- ✅ Onboarding `?add=1`: wizard completo para agregar mascota adicional (sin upgrade wall por ahora)
+  - Paso 1 se salta automáticamente en add-mode (JS detecta `data-add-mode` en body)
+  - "← Atrás" en paso 2 regresa a `/dashboard` en add-mode
+  - Textos adaptativos: "Una más en la familia", celebración personalizada
+  - Cookie `active_pet_id` se actualiza al crear la nueva mascota
+- ✅ Cookie seteada al crear mascota y al login OAuth
+- ✅ Sin cambios de esquema en DB
+- ✅ Hamburger mobile: fix toggle usando `style.display` en lugar de `classList` (bug crítico)
+- ✅ Color de tema por mascota: `data-pet={index}` en body → CSS sobrescribe `--color-accent` (6 paletas: verde, azul, violeta, naranja, rosa, teal)
+- ✅ Hero card del dashboard: usa `color-mix(var(--color-accent), #0a0f0a)` en lugar de `#1E3B1A` hardcodeado
+- ✅ Eliminar desde `/perfil` inteligente:
+  - Si hay 2+ mascotas → solo elimina la mascota activa, cambia cookie al siguiente pet, redirige al dashboard con toast
+  - Si es la única mascota → elimina cuenta completa y redirige a `/`
+  - Modal de confirmación con texto adaptado al caso
+- ✅ Queries defensivas: `.single()` reemplazado por `.limit(1)` + `data?.[0]` en dashboard y login (evita crash en usuarios sin registros)
 
-**DB:**
-```sql
--- pets ya tiene user_id, no hay cambio de esquema
--- Solo lógica de UI/UX
-```
-
-**Milestone:** Un usuario con 2 perros puede alternar entre ellos sin perder datos.
+**Milestone:** ✅ Build limpio. Switcher funcional. Journey completo de agregar mascota. Temas de color por mascota.
 
 ---
 

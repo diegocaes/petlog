@@ -2,39 +2,40 @@
 import MainLayout from '../layouts/MainLayout.astro';
 import { formatDate, isBirthday, calculateAge } from '../lib/utils';
 import { getVaccineBadge } from '../lib/vaccine-badges';
+import { getActivePet } from '../lib/pet';
 
-const { supabase, user } = Astro.locals;
+const { supabase, user, activePetId } = Astro.locals;
 const isNewlyOnboarded = Astro.url.searchParams.get('onboarded') === '1';
 
-const { data: pet } = await supabase
-  .from('pets')
-  .select('*')
-  .eq('user_id', user.id)
-  .single();
+const { pet } = await getActivePet(supabase, user.id, activePetId);
 
 if (!pet) {
   return Astro.redirect('/onboarding');
 }
 
 const [
-  { data: lastGrooming },
-  { data: lastAdventure },
-  { data: lastFlight },
+  { data: groomingRows },
+  { data: adventureRows },
+  { data: flightRows },
   { count: vaccineCount },
   { count: visitCount },
   { count: adventureCount },
   { data: weightRecords },
   { data: recentVaccines },
 ] = await Promise.all([
-  supabase.from('groomings').select('type, date').eq('pet_id', pet.id).order('date', { ascending: false }).limit(1).single(),
-  supabase.from('adventures').select('title, date, photo_url').eq('pet_id', pet.id).order('date', { ascending: false }).limit(1).single(),
-  supabase.from('flights').select('origin, destination, flight_date').eq('pet_id', pet.id).order('flight_date', { ascending: false }).limit(1).single(),
+  supabase.from('groomings').select('type, date').eq('pet_id', pet.id).order('date', { ascending: false }).limit(1),
+  supabase.from('adventures').select('title, date, photo_url').eq('pet_id', pet.id).order('date', { ascending: false }).limit(1),
+  supabase.from('flights').select('origin, destination, flight_date').eq('pet_id', pet.id).order('flight_date', { ascending: false }).limit(1),
   supabase.from('vaccines').select('*', { count: 'exact', head: true }).eq('pet_id', pet.id),
   supabase.from('vet_visits').select('*', { count: 'exact', head: true }).eq('pet_id', pet.id),
   supabase.from('adventures').select('*', { count: 'exact', head: true }).eq('pet_id', pet.id),
   supabase.from('weight_records').select('weight_kg, date').eq('pet_id', pet.id).order('date', { ascending: false }).limit(2),
   supabase.from('vaccines').select('name').eq('pet_id', pet.id).order('date_given', { ascending: false }).limit(4),
 ]);
+
+const lastGrooming = groomingRows?.[0] ?? null;
+const lastAdventure = adventureRows?.[0] ?? null;
+const lastFlight = flightRows?.[0] ?? null;
 
 const birthday = pet.birth_date ? isBirthday(pet.birth_date) : false;
 const age = pet.birth_date ? calculateAge(pet.birth_date) : null;
@@ -153,7 +154,7 @@ const checklistItems = [
 
   {/* ── HERO CARD ── */}
   <a href="/perfil" class="block mb-5 animate-fade-up">
-    <div class="relative rounded-2xl overflow-hidden bg-[#1E3B1A]">
+    <div class="relative rounded-2xl overflow-hidden" style="background-color: color-mix(in srgb, var(--color-accent) 25%, #0a0f0a);">
       {/* Subtle noise/gradient overlay */}
       <div class="absolute inset-0 bg-linear-to-br from-white/5 to-transparent pointer-events-none"></div>
 
@@ -165,8 +166,9 @@ const checklistItems = [
             alt={pet.name}
             class:list={[
               'h-20 w-20 rounded-2xl object-cover',
-              birthday ? 'ring-2 ring-amber ring-offset-2 ring-offset-[#1E3B1A]' : 'ring-1 ring-white/10',
+              birthday ? 'ring-2 ring-amber ring-offset-2' : 'ring-1 ring-white/10',
             ]}
+            style={birthday ? 'ring-offset-color: color-mix(in srgb, var(--color-accent) 25%, #0a0f0a);' : ''}
           />
           {birthday && <span class="absolute -top-2 -right-2 text-base animate-bounce">🎂</span>}
           {pet.gender && !birthday && (

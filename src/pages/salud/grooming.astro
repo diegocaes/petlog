@@ -5,14 +5,12 @@ import SectionHeader from '../../components/ui/SectionHeader.astro';
 import SaludTabs from '../../components/SaludTabs.astro';
 import EmptyState from '../../components/ui/EmptyState.astro';
 import { formatDate } from '../../lib/utils';
+import { getActivePet } from '../../lib/pet';
+import { GROOMING_TYPES } from '../../lib/constants';
 
-const { supabase, user } = Astro.locals;
+const { supabase, user, activePetId } = Astro.locals;
 
-const { data: pet } = await supabase
-  .from('pets')
-  .select('id')
-  .eq('user_id', user.id)
-  .single();
+const { pet } = await getActivePet(supabase, user.id, activePetId);
 
 if (!pet) return Astro.redirect('/perfil?new=1');
 
@@ -59,15 +57,6 @@ const { data: groomings } = await supabase
   .eq('pet_id', pet.id)
   .order('date', { ascending: false });
 
-const groomingTypes: Record<string, string> = {
-  bano: 'Baño',
-  corte: 'Corte de pelo',
-  unas: 'Corte de uñas',
-  oidos: 'Limpieza de oídos',
-  dientes: 'Limpieza dental',
-  completo: 'Grooming completo',
-  otro: 'Otro',
-};
 ---
 
 <MainLayout title="Grooming">
@@ -82,7 +71,7 @@ const groomingTypes: Record<string, string> = {
       <div class="grid grid-cols-2 gap-4">
         <div>
           <label class="block text-sm font-medium text-ink mb-1.5">Tipo <span class="text-red-500">*</span></label>
-          <select name="type" required class="w-full rounded-xl border border-card-border bg-white px-4 py-3 text-gray-800 transition-all duration-200 hover:border-gray-300 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20">
+          <select name="type" required class="field-input">
             <option value="bano">Baño</option>
             <option value="corte">Corte de pelo</option>
             <option value="unas">Corte de uñas</option>
@@ -94,27 +83,27 @@ const groomingTypes: Record<string, string> = {
         </div>
         <div>
           <label class="block text-sm font-medium text-ink mb-1.5">Fecha <span class="text-red-500">*</span></label>
-          <input type="date" name="date" required value={new Date().toISOString().split('T')[0]} class="w-full rounded-xl border border-card-border bg-white px-4 py-3 text-gray-800 transition-all duration-200 hover:border-gray-300 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20" />
+          <input type="date" name="date" required value={new Date().toISOString().split('T')[0]} class="field-input" />
         </div>
       </div>
       <div class="grid grid-cols-2 gap-4">
         <div>
           <label class="block text-sm font-medium text-ink mb-1.5">Groomer / Peluquero</label>
-          <input type="text" name="groomer_name" placeholder="Nombre del groomer" class="w-full rounded-xl border border-card-border bg-white px-4 py-3 text-gray-800 placeholder-gray-400 transition-all duration-200 hover:border-gray-300 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20" />
+          <input type="text" name="groomer_name" placeholder="Nombre del groomer" class="field-input" />
         </div>
         <div>
           <label class="block text-sm font-medium text-ink mb-1.5">Ciudad / Lugar</label>
-          <input type="text" name="location" placeholder="Ej: Pet Spa, Madrid" class="w-full rounded-xl border border-card-border bg-white px-4 py-3 text-gray-800 placeholder-gray-400 transition-all duration-200 hover:border-gray-300 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20" />
+          <input type="text" name="location" placeholder="Ej: Pet Spa, Madrid" class="field-input" />
         </div>
       </div>
       <div class="grid grid-cols-2 gap-4">
         <div>
           <label class="block text-sm font-medium text-ink mb-1.5">Costo</label>
-          <input type="number" name="cost" step="0.01" placeholder="0.00" class="w-full rounded-xl border border-card-border bg-white px-4 py-3 text-gray-800 placeholder-gray-400 transition-all duration-200 hover:border-gray-300 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20" />
+          <input type="number" name="cost" step="0.01" placeholder="0.00" class="field-input" />
         </div>
         <div>
           <label class="block text-sm font-medium text-ink mb-1.5">Notas</label>
-          <input type="text" name="notes" placeholder="Observaciones..." class="w-full rounded-xl border border-card-border bg-white px-4 py-3 text-gray-800 placeholder-gray-400 transition-all duration-200 hover:border-gray-300 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20" />
+          <input type="text" name="notes" placeholder="Observaciones..." class="field-input" />
         </div>
       </div>
       <button type="submit" class="w-full rounded-xl bg-accent px-6 py-2.5 text-sm font-semibold text-white transition-all hover:bg-accent-dark active:scale-95">
@@ -143,7 +132,7 @@ const groomingTypes: Record<string, string> = {
                 </div>
                 <div class="flex-1 min-w-0">
                   <div class="flex items-center gap-2 mb-0.5">
-                    <p class="font-semibold text-gray-800">{groomingTypes[g.type] || g.type}</p>
+                    <p class="font-semibold text-ink">{GROOMING_TYPES[g.type] || g.type}</p>
                     {g.cost && (
                       <span class="shrink-0 rounded-full bg-pink-50 px-2 py-0.5 text-xs font-medium text-pink-600">
                         ${g.cost}
@@ -182,20 +171,20 @@ const groomingTypes: Record<string, string> = {
               <button type="button" class="cancel-edit text-xs text-gray-400 hover:text-gray-600" data-id={g.id}>Cancelar</button>
             </div>
             <div class="grid grid-cols-2 gap-3">
-              <select name="type" required class="w-full rounded-xl border border-card-border bg-white px-3 py-2.5 text-sm text-gray-800 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20">
-                {Object.entries(groomingTypes).map(([val, label]) => (
+              <select name="type" required class="field-input-sm">
+                {Object.entries(GROOMING_TYPES).map(([val, label]) => (
                   <option value={val} selected={g.type === val}>{label}</option>
                 ))}
               </select>
-              <input type="date" name="date" value={g.date} required class="w-full rounded-xl border border-card-border bg-white px-3 py-2.5 text-sm text-gray-800 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20" />
+              <input type="date" name="date" value={g.date} required class="field-input-sm" />
             </div>
             <div class="grid grid-cols-2 gap-3">
-              <input type="text" name="groomer_name" value={g.groomer_name || ''} placeholder="Groomer" class="w-full rounded-xl border border-card-border bg-white px-3 py-2.5 text-sm text-gray-800 placeholder-gray-400 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20" />
-              <input type="text" name="location" value={g.location || ''} placeholder="Ciudad / Lugar" class="w-full rounded-xl border border-card-border bg-white px-3 py-2.5 text-sm text-gray-800 placeholder-gray-400 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20" />
+              <input type="text" name="groomer_name" value={g.groomer_name || ''} placeholder="Groomer" class="field-input-sm" />
+              <input type="text" name="location" value={g.location || ''} placeholder="Ciudad / Lugar" class="field-input-sm" />
             </div>
             <div class="grid grid-cols-2 gap-3">
-              <input type="number" name="cost" step="0.01" value={g.cost || ''} placeholder="Costo" class="w-full rounded-xl border border-card-border bg-white px-3 py-2.5 text-sm text-gray-800 placeholder-gray-400 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20" />
-              <input type="text" name="notes" value={g.notes || ''} placeholder="Notas" class="w-full rounded-xl border border-card-border bg-white px-3 py-2.5 text-sm text-gray-800 placeholder-gray-400 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20" />
+              <input type="number" name="cost" step="0.01" value={g.cost || ''} placeholder="Costo" class="field-input-sm" />
+              <input type="text" name="notes" value={g.notes || ''} placeholder="Notas" class="field-input-sm" />
             </div>
             <button type="submit" class="w-full rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-white transition-all hover:bg-accent-dark active:scale-95">
               Guardar cambios

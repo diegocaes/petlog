@@ -44,11 +44,12 @@ if (Astro.request.method === 'POST') {
     }
     // Route to onboarding if user has no pet yet
     if (loginData.user) {
-      const { data: pet } = await supabase
+      const { data: pets } = await supabase
         .from('pets')
         .select('id')
         .eq('user_id', loginData.user.id)
-        .single();
+        .limit(1);
+      const pet = pets?.[0] ?? null;
       if (!pet) {
         return Astro.redirect('/onboarding');
       }

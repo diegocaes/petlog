@@ -1,17 +1,23 @@
 ---
 import '../styles/global.css';
 import { DOG_BREEDS, BREED_FACTS } from '../lib/breeds';
+import { uploadPetPhoto } from '../lib/storage';
 
 const { supabase, user } = Astro.locals;
 
-// If pet already exists, skip onboarding
-const { data: existingPet } = await supabase
+const isAddMode = Astro.url.searchParams.get('add') === '1';
+
+// Check existing pets
+const { data: existingPets } = await supabase
   .from('pets')
   .select('id')
   .eq('user_id', user.id)
-  .single();
+  .order('created_at', { ascending: true });
 
-if (existingPet) {
+const hasPet = (existingPets?.length ?? 0) > 0;
+
+// If not in add mode and user already has a pet → go to dashboard
+if (!isAddMode && hasPet) {
   return Astro.redirect('/dashboard');
 }
 
@@ -42,23 +48,7 @@ if (Astro.request.method === 'POST') {
   };
 
   // Handle photo upload
-  const photoFile = formData.get('photo') as File;
-  let photo_url: string | null = null;
-
-  if (photoFile && photoFile.size > 0) {
-    const ext = photoFile.name.split('.').pop();
-    const filePath = `${user.id}/pet-profile.${ext}`;
-    const { error: uploadError } = await supabase.storage
-      .from('pet-photos')
-      .upload(filePath, photoFile, { upsert: true });
-
-    if (!uploadError) {
-      const { data: publicUrl } = supabase.storage
-        .from('pet-photos')
-        .getPublicUrl(filePath);
-      photo_url = publicUrl.publicUrl;
-    }
-  }
+  const photo_url = await uploadPetPhoto(formData.get('photo') as File, user.id, supabase, 'pet-profile');
 
   const { data: newPet, error: insertError } = await supabase
     .from('pets')
@@ -67,7 +57,8 @@ if (Astro.request.method === 'POST') {
     .single();
 
   if (insertError || !newPet) {
-    return Astro.redirect('/onboarding?error=save_failed');
+    const qs = isAddMode ? '?add=1&error=save_failed' : '?error=save_failed';
+    return Astro.redirect(`/onboarding${qs}`);
   }
 
   // Auto-log initial weight
@@ -78,6 +69,15 @@ if (Astro.request.method === 'POST') {
       date: new Date().toISOString().split('T')[0],
     });
   }
+
+  // Set the new pet as active via cookie
+  Astro.cookies.set('active_pet_id', newPet.id, {
+    path: '/',
+    httpOnly: true,
+    sameSite: 'lax',
+    maxAge: 60 * 60 * 24 * 365,
+    secure: import.meta.env.PROD,
+  });
 
   return Astro.redirect('/dashboard?onboarded=1');
 }
@@ -99,7 +99,7 @@ const breedFactsB64 = Buffer.from(JSON.stringify(BREED_FACTS)).toString('base64'
     <link rel="icon" href="/icons/icon-192.png" />
     <title>Bienvenido | PetLog</title>
   </head>
-  <body class="min-h-screen bg-canvas flex flex-col">
+  <body class="min-h-screen bg-canvas flex flex-col" data-add-mode={isAddMode ? 'true' : 'false'}>
 
     <!-- Progress bar (hidden on steps 1 & 2) -->
     <div class="fixed top-0 left-0 right-0 z-50" id="progress-bar-wrap" style="display:none">
@@ -171,7 +171,9 @@ const breedFactsB64 = Buffer.from(JSON.stringify(BREED_FACTS)).toString('base64'
         <!-- ───────────── PASO 2: Especie ───────────── -->
         <div data-step="2" class="hidden">
           <div class="mb-6 text-center">
-            <p class="text-xs font-semibold text-accent uppercase tracking-widest mb-1">El primero de muchos</p>
+            <p class="text-xs font-semibold text-accent uppercase tracking-widest mb-1" id="step2-eyebrow">
+              {isAddMode ? 'Una más en la familia' : 'El primero de muchos'}
+            </p>
             <h2 class="text-2xl font-bold text-ink">¿Qué tipo de mascota tienes?</h2>
             <p class="text-sm text-muted mt-1">Cuéntanos un poco sobre tu compañero.</p>
           </div>
@@ -426,8 +428,10 @@ const breedFactsB64 = Buffer.from(JSON.stringify(BREED_FACTS)).toString('base64'
               <h2 class="text-2xl font-bold tracking-tight mt-4 mb-2" id="celebration-title">
                 ¡Listo! El pasaporte está creado 🎉
               </h2>
-              <p class="text-sm text-white/70 leading-relaxed mb-8">
-                Bienvenido a PetLog. Tu mejor amigo ya tiene su historial digital — vacunas, peso, aventuras y más.
+              <p class="text-sm text-white/70 leading-relaxed mb-8" id="celebration-subtitle">
+                {isAddMode
+                  ? 'Tu nueva mascota ya tiene su historial digital en PetLog.'
+                  : 'Bienvenido a PetLog. Tu mejor amigo ya tiene su historial digital — vacunas, peso, aventuras y más.'}
               </p>
 
               <button
@@ -511,6 +515,12 @@ const breedFactsB64 = Buffer.from(JSON.stringify(BREED_FACTS)).toString('base64'
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
 
+      // ── Add-mode: skip step 1, go straight to species selection ──
+      const isAddMode = document.body.dataset.addMode === 'true';
+      if (isAddMode) {
+        goTo(2);
+      }
+
       // ── Step 1 → 2 ──
       document.getElementById('btn-step1-next')?.addEventListener('click', () => goTo(2));
 
@@ -543,7 +553,10 @@ const breedFactsB64 = Buffer.from(JSON.stringify(BREED_FACTS)).toString('base64'
         if (breedSection) breedSection.style.display = selectedSpecies === 'cat' ? 'none' : 'block';
         goTo(3);
       });
-      document.getElementById('btn-step2-back')?.addEventListener('click', () => goTo(1));
+      document.getElementById('btn-step2-back')?.addEventListener('click', () => {
+        if (isAddMode) { window.location.href = '/dashboard'; return; }
+        goTo(1);
+      });
 
       // ── Photo preview ──
       const photoInput = document.getElementById('ob-photo-input') as HTMLInputElement;

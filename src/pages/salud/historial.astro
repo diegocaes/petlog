@@ -5,14 +5,11 @@ import SectionHeader from '../../components/ui/SectionHeader.astro';
 import SaludTabs from '../../components/SaludTabs.astro';
 import EmptyState from '../../components/ui/EmptyState.astro';
 import { formatDate } from '../../lib/utils';
+import { getActivePet } from '../../lib/pet';
 
-const { supabase, user } = Astro.locals;
+const { supabase, user, activePetId } = Astro.locals;
 
-const { data: pet } = await supabase
-  .from('pets')
-  .select('id')
-  .eq('user_id', user.id)
-  .single();
+const { pet } = await getActivePet(supabase, user.id, activePetId);
 
 if (!pet) return Astro.redirect('/perfil?new=1');
 
@@ -76,34 +73,34 @@ const { data: visits } = await supabase
       <div class="grid grid-cols-2 gap-4">
         <div>
           <label class="block text-sm font-medium text-ink mb-1.5">Fecha <span class="text-red-500">*</span></label>
-          <input type="date" name="date" required class="w-full rounded-xl border border-card-border bg-white px-4 py-3 text-gray-800 transition-all duration-200 hover:border-gray-300 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20" />
+          <input type="date" name="date" required class="field-input" />
         </div>
         <div>
           <label class="block text-sm font-medium text-ink mb-1.5">Costo</label>
-          <input type="number" name="cost" step="0.01" placeholder="0.00" class="w-full rounded-xl border border-card-border bg-white px-4 py-3 text-gray-800 placeholder-gray-400 transition-all duration-200 hover:border-gray-300 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20" />
+          <input type="number" name="cost" step="0.01" placeholder="0.00" class="field-input" />
         </div>
       </div>
       <div>
         <label class="block text-sm font-medium text-ink mb-1.5">Motivo <span class="text-red-500">*</span></label>
-        <input type="text" name="reason" required placeholder="Ej: Revisión anual" class="w-full rounded-xl border border-card-border bg-white px-4 py-3 text-gray-800 placeholder-gray-400 transition-all duration-200 hover:border-gray-300 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20" />
+        <input type="text" name="reason" required placeholder="Ej: Revisión anual" class="field-input" />
       </div>
       <div class="grid grid-cols-2 gap-4">
         <div>
           <label class="block text-sm font-medium text-ink mb-1.5">Veterinario</label>
-          <input type="text" name="vet_name" placeholder="Dr. García" class="w-full rounded-xl border border-card-border bg-white px-4 py-3 text-gray-800 placeholder-gray-400 transition-all duration-200 hover:border-gray-300 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20" />
+          <input type="text" name="vet_name" placeholder="Dr. García" class="field-input" />
         </div>
         <div>
           <label class="block text-sm font-medium text-ink mb-1.5">Ciudad / Lugar</label>
-          <input type="text" name="location" placeholder="Ej: Madrid, España" class="w-full rounded-xl border border-card-border bg-white px-4 py-3 text-gray-800 placeholder-gray-400 transition-all duration-200 hover:border-gray-300 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20" />
+          <input type="text" name="location" placeholder="Ej: Madrid, España" class="field-input" />
         </div>
       </div>
       <div>
         <label class="block text-sm font-medium text-ink mb-1.5">Diagnóstico</label>
-        <textarea name="diagnosis" rows="2" placeholder="¿Qué encontró el veterinario?" class="w-full rounded-xl border border-card-border bg-white px-4 py-3 text-gray-800 placeholder-gray-400 transition-all duration-200 hover:border-gray-300 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20 resize-none"></textarea>
+        <textarea name="diagnosis" rows="2" placeholder="¿Qué encontró el veterinario?" class="field-input resize-none"></textarea>
       </div>
       <div>
         <label class="block text-sm font-medium text-ink mb-1.5">Tratamiento</label>
-        <textarea name="treatment" rows="2" placeholder="Medicamentos, indicaciones..." class="w-full rounded-xl border border-card-border bg-white px-4 py-3 text-gray-800 placeholder-gray-400 transition-all duration-200 hover:border-gray-300 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20 resize-none"></textarea>
+        <textarea name="treatment" rows="2" placeholder="Medicamentos, indicaciones..." class="field-input resize-none"></textarea>
       </div>
       <button type="submit" class="w-full rounded-xl bg-accent px-6 py-2.5 text-sm font-semibold text-white transition-all hover:bg-accent-dark active:scale-95">
         Registrar visita
@@ -127,7 +124,7 @@ const { data: visits } = await supabase
             <div class="flex items-start justify-between gap-3">
               <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-2 mb-1">
-                  <p class="font-semibold text-gray-800">{visit.reason}</p>
+                  <p class="font-semibold text-ink">{visit.reason}</p>
                   {visit.cost && (
                     <span class="shrink-0 rounded-full bg-amber/10 px-2 py-0.5 text-xs font-medium text-amber-dark">
                       ${visit.cost}
@@ -169,17 +166,17 @@ const { data: visits } = await supabase
               <button type="button" class="cancel-edit text-xs text-gray-400 hover:text-gray-600" data-id={visit.id}>Cancelar</button>
             </div>
             <div class="grid grid-cols-2 gap-3">
-              <input type="date" name="date" value={visit.date} required class="w-full rounded-xl border border-card-border bg-white px-3 py-2.5 text-sm text-gray-800 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20" />
-              <input type="number" name="cost" step="0.01" value={visit.cost || ''} placeholder="Costo" class="w-full rounded-xl border border-card-border bg-white px-3 py-2.5 text-sm text-gray-800 placeholder-gray-400 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20" />
+              <input type="date" name="date" value={visit.date} required class="field-input-sm" />
+              <input type="number" name="cost" step="0.01" value={visit.cost || ''} placeholder="Costo" class="field-input-sm" />
             </div>
-            <input type="text" name="reason" value={visit.reason} required placeholder="Motivo" class="w-full rounded-xl border border-card-border bg-white px-3 py-2.5 text-sm text-gray-800 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20" />
+            <input type="text" name="reason" value={visit.reason} required placeholder="Motivo" class="field-input-sm" />
             <div class="grid grid-cols-2 gap-3">
-              <input type="text" name="vet_name" value={visit.vet_name || ''} placeholder="Veterinario" class="w-full rounded-xl border border-card-border bg-white px-3 py-2.5 text-sm text-gray-800 placeholder-gray-400 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20" />
-              <input type="text" name="location" value={visit.location || ''} placeholder="Ciudad / Lugar" class="w-full rounded-xl border border-card-border bg-white px-3 py-2.5 text-sm text-gray-800 placeholder-gray-400 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20" />
+              <input type="text" name="vet_name" value={visit.vet_name || ''} placeholder="Veterinario" class="field-input-sm" />
+              <input type="text" name="location" value={visit.location || ''} placeholder="Ciudad / Lugar" class="field-input-sm" />
             </div>
-            <textarea name="diagnosis" rows="2" placeholder="Diagnóstico" class="w-full rounded-xl border border-card-border bg-white px-3 py-2.5 text-sm text-gray-800 placeholder-gray-400 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20 resize-none">{visit.diagnosis || ''}</textarea>
-            <textarea name="treatment" rows="2" placeholder="Tratamiento" class="w-full rounded-xl border border-card-border bg-white px-3 py-2.5 text-sm text-gray-800 placeholder-gray-400 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20 resize-none">{visit.treatment || ''}</textarea>
-            <textarea name="notes" rows="1" placeholder="Notas" class="w-full rounded-xl border border-card-border bg-white px-3 py-2.5 text-sm text-gray-800 placeholder-gray-400 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20 resize-none">{visit.notes || ''}</textarea>
+            <textarea name="diagnosis" rows="2" placeholder="Diagnóstico" class="field-input-sm resize-none">{visit.diagnosis || ''}</textarea>
+            <textarea name="treatment" rows="2" placeholder="Tratamiento" class="field-input-sm resize-none">{visit.treatment || ''}</textarea>
+            <textarea name="notes" rows="1" placeholder="Notas" class="field-input-sm resize-none">{visit.notes || ''}</textarea>
             <button type="submit" class="w-full rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-white transition-all hover:bg-accent-dark active:scale-95">
               Guardar cambios
             </button>

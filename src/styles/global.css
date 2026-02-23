@@ -19,19 +19,33 @@
   --color-coral: #F87171;
   --color-sky: #38BDF8;
 
-  /* Legacy aliases — kept so existing pages don't break during migration */
-  --color-cream: #F7F8FA;
-  --color-cream-dark: #EAECF0;
-  --color-forest: #7CB974;
-  --color-forest-light: #8CC884;
-  --color-forest-dark: #5FA356;
-
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
 @layer base {
   body {
     @apply bg-canvas text-ink font-sans antialiased;
+  }
+
+  /* Pet color themes — index assigned by creation order */
+  body[data-pet="0"] { --color-accent: #7CB974; --color-accent-dark: #5FA356; --color-accent-light: #EAF5E8; }
+  body[data-pet="1"] { --color-accent: #60A5FA; --color-accent-dark: #3B82F6; --color-accent-light: #EFF6FF; }
+  body[data-pet="2"] { --color-accent: #A78BFA; --color-accent-dark: #7C3AED; --color-accent-light: #F5F3FF; }
+  body[data-pet="3"] { --color-accent: #FB923C; --color-accent-dark: #EA580C; --color-accent-light: #FFF7ED; }
+  body[data-pet="4"] { --color-accent: #F472B6; --color-accent-dark: #DB2777; --color-accent-light: #FDF2F8; }
+  body[data-pet="5"] { --color-accent: #2DD4BF; --color-accent-dark: #0D9488; --color-accent-light: #F0FDFA; }
+}
+
+@layer components {
+  /* Shared input/select/textarea style — use instead of repeating classes */
+  .field-input {
+    @apply w-full rounded-xl border border-card-border bg-white px-4 py-3 text-ink placeholder-muted transition-all duration-200 hover:border-gray-300 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20;
+  }
+  .field-input-sm {
+    @apply w-full rounded-xl border border-card-border bg-white px-3 py-2.5 text-sm text-ink placeholder-muted focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20;
+  }
+  .field-input-textarea {
+    @apply w-full rounded-xl border border-card-border bg-white px-4 py-3 text-ink placeholder-muted transition-all duration-200 hover:border-gray-300 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20 resize-none;
   }
 }
 
