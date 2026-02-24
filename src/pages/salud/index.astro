@@ -1,0 +1,429 @@
+---
+import MainLayout from '../../layouts/MainLayout.astro';
+import { getActivePet } from '../../lib/pet';
+import { calculateVitalityScore } from '../../lib/vitality-score';
+import type { ScoreInput } from '../../lib/vitality-score';
+import { getBreedProfile } from '../../lib/breed-data';
+
+const { supabase, user, activePetId } = Astro.locals;
+const { pet } = await getActivePet(supabase, user.id, activePetId);
+
+if (!pet) return Astro.redirect('/onboarding');
+
+// Cargamos todos los datos necesarios para el score en paralelo
+const [
+  { data: weightRecords },
+  { data: vaccines },
+  { data: vetVisits },
+  { data: groomings },
+  { data: adventures },
+  { data: foods },
+] = await Promise.all([
+  supabase.from('weight_records').select('weight_kg, date').eq('pet_id', pet.id).order('date', { ascending: false }),
+  supabase.from('vaccines').select('name, date_given').eq('pet_id', pet.id).order('date_given', { ascending: false }),
+  supabase.from('vet_visits').select('visit_date').eq('pet_id', pet.id).order('visit_date', { ascending: false }),
+  supabase.from('groomings').select('date').eq('pet_id', pet.id).order('date', { ascending: false }),
+  supabase.from('adventures').select('date').eq('pet_id', pet.id).order('date', { ascending: false }),
+  supabase.from('foods').select('brand, daily_grams, bag_size, bag_unit, food_type').eq('pet_id', pet.id).order('created_at', { ascending: false }),
+]);
+
+const scoreInput: ScoreInput = {
+  pet: {
+    breed: pet.breed ?? null,
+    birth_date: pet.birth_date ?? null,
+    weight_kg: pet.weight_kg ?? null,
+    gender: pet.gender ?? null,
+    is_neutered: (pet as any).is_neutered ?? null,
+  },
+  weightRecords: weightRecords ?? [],
+  vaccines: vaccines ?? [],
+  vetVisits: vetVisits ?? [],
+  groomings: groomings ?? [],
+  adventures: adventures ?? [],
+  foods: foods ?? [],
+};
+
+const score = calculateVitalityScore(scoreInput);
+const breedProfile = getBreedProfile(pet.breed);
+
+// Gauge SVG — arco de 270° (stroke-dasharray manual)
+const R = 44;
+const FULL_ARC = Math.PI * R * 270 / 180; // 270° en px
+const filled = (score.total / 100) * FULL_ARC;
+
+const pillarColors: Record<string, string> = {
+  'Peso': '#7CB974',
+  'Cuidado preventivo': '#60A5FA',
+  'Raza y edad': '#A78BFA',
+  'Actividad': '#F59E0B',
+  'Nutrición': '#F97316',
+};
+
+const riskLabels: Record<string, string> = {
+  hip_dysplasia: 'Displasia de cadera',
+  elbow_dysplasia: 'Displasia de codo',
+  cardiac_disease: 'Enfermedad cardíaca',
+  degenerative_myelopathy: 'Mielopatía deg.',
+  brachycephalic_syndrome: 'S. braquicéfalo',
+  dental_disease: 'Enfermedad dental',
+  epilepsy: 'Epilepsia',
+  cancer: 'Cáncer',
+  obesity: 'Obesidad',
+  eye_disease: 'Enfermedad ocular',
+  skin_disease: 'Enfermedad cutánea',
+  bloat: 'Torsión gástrica',
+  patellar_luxation: 'Luxación patelar',
+  hypothyroidism: 'Hipotiroidismo',
+  tracheal_collapse: 'Colapso traqueal',
+  exercise_induced_collapse: 'Colapso por ejercicio',
+  progressive_retinal_atrophy: 'Atrofia retinal',
+  intervertebral_disc_disease: 'Enf. disco intervertebral',
+  von_willebrand_disease: 'Enf. von Willebrand',
+  addisons_disease: 'Enf. de Addison',
+  cushings_disease: 'Enf. de Cushing',
+  luxating_patella: 'Luxación patelar',
+  laryngeal_paralysis: 'Parálisis laríngea',
+  portosystemic_shunt: 'Shunt portosistémico',
+  legg_calve_perthes: 'Legg-Calvé-Perthes',
+};
+
+const subNavItems = [
+  { href: '/salud', label: 'Resumen', icon: 'M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z' },
+  { href: '/salud/vacunas', label: 'Vacunas', icon: 'm14.5 2-8.5 8.5v4h4l8.5-8.5a2.83 2.83 0 0 0-4-4zm3.5 0 4 4' },
+  { href: '/salud/historial', label: 'Historial', icon: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M16 13H8M16 17H8M10 9H8' },
+  { href: '/salud/peso', label: 'Peso', icon: 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zM8 12a4 4 0 0 1 8 0M12 12V8' },
+  { href: '/salud/grooming', label: 'Grooming', icon: 'M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2zM14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2z' },
+];
+---
+
+<MainLayout title="Salud">
+
+  {/* ── SUB-NAV ── */}
+  <div class="flex gap-2 mb-6 overflow-x-auto pb-1 -mx-4 px-4 scrollbar-hide">
+    {subNavItems.map(item => (
+      <a
+        href={item.href}
+        class:list={[
+          'flex items-center gap-1.5 shrink-0 rounded-full px-3.5 py-2 text-xs font-semibold transition-colors',
+          item.href === '/salud'
+            ? 'bg-accent text-white'
+            : 'bg-card border border-card-border text-muted hover:text-ink',
+        ]}
+      >
+        <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d={item.icon} />
+        </svg>
+        {item.label}
+      </a>
+    ))}
+  </div>
+
+  {/* ── VITALITY SCORE HERO ── */}
+  <div class="rounded-2xl bg-card border border-card-border p-6 mb-5 animate-fade-up">
+
+    {/* Header */}
+    <div class="flex items-center justify-between mb-5">
+      <div>
+        <p class="text-xs font-semibold text-muted uppercase tracking-widest">Vitality Score</p>
+        <h1 class="text-lg font-bold text-ink mt-0.5">{pet.name}</h1>
+      </div>
+      <div
+        class="h-10 w-10 rounded-full flex items-center justify-center text-white text-xs font-bold"
+        style={`background-color: ${score.color};`}
+      >
+        {score.total}
+      </div>
+    </div>
+
+    {/* Gauge SVG */}
+    <div class="relative flex flex-col items-center mb-5">
+      <svg viewBox="0 0 120 80" class="w-56 overflow-visible" aria-hidden="true">
+        <!-- Arco de fondo -->
+        <path
+          d="M 16 74 A 44 44 0 1 1 104 74"
+          fill="none"
+          stroke="#EAECF0"
+          stroke-width="10"
+          stroke-linecap="round"
+        />
+        <!-- Arco del score -->
+        <path
+          d="M 16 74 A 44 44 0 1 1 104 74"
+          fill="none"
+          stroke={score.color}
+          stroke-width="10"
+          stroke-linecap="round"
+          stroke-dasharray={`${filled.toFixed(1)} ${FULL_ARC.toFixed(1)}`}
+          style="transition: stroke-dasharray 0.8s ease-out;"
+        />
+        <!-- Número central -->
+        <text x="60" y="62" text-anchor="middle" font-size="22" font-weight="900" fill="#0F1117" font-family="system-ui">{score.total}</text>
+        <text x="60" y="74" text-anchor="middle" font-size="7" fill="#6B7280" font-family="system-ui">de 100</text>
+      </svg>
+
+      <!-- Etiquetas del gauge -->
+      <div class="flex justify-between w-56 -mt-3 px-1">
+        <span class="text-[9px] text-muted">0</span>
+        <span class="text-[9px] text-muted">100</span>
+      </div>
+
+      <!-- Headline -->
+      <div class="mt-3 text-center">
+        <p class="text-base font-bold" style={`color: ${score.color};`}>{score.headline}</p>
+        <p class="text-xs text-muted mt-0.5">{score.subline}</p>
+      </div>
+    </div>
+
+    {/* Barra de pilares compacta */}
+    <div class="flex gap-1 h-2 rounded-full overflow-hidden mb-4">
+      {score.pillars.map(p => (
+        <div
+          class="h-full rounded-full transition-all"
+          style={`width: ${p.pct}%; background-color: ${pillarColors[p.name] ?? '#7CB974'}; opacity: 0.85;`}
+          title={`${p.name}: ${p.score}/${p.max}`}
+        />
+      ))}
+    </div>
+    <div class="flex gap-3 flex-wrap">
+      {score.pillars.map(p => (
+        <div class="flex items-center gap-1">
+          <div class="h-2 w-2 rounded-full" style={`background-color: ${pillarColors[p.name] ?? '#7CB974'};`} />
+          <span class="text-[10px] text-muted">{p.name} <span class="font-semibold text-ink">{p.score}</span></span>
+        </div>
+      ))}
+    </div>
+
+  </div>
+
+  {/* ── ESTADO: RECOLECTANDO DATOS ── */}
+  {score.dataSufficiency !== 'ready' && (
+    <div class="mb-5 animate-fade-up animate-fade-up-delay-1">
+      <div class="rounded-2xl border border-accent/30 bg-accent/5 px-4 py-4">
+        <div class="flex items-start gap-3">
+          <span class="text-xl shrink-0">📊</span>
+          <div class="flex-1">
+            <p class="text-sm font-bold text-ink">
+              {score.dataSufficiency === 'too_early' ? 'Comenzando a recolectar datos' : `${score.pilarsWithData} de 5 áreas con datos`}
+            </p>
+            <p class="text-xs text-muted mt-1 leading-relaxed">
+              {score.dataSufficiency === 'too_early'
+                ? 'El Vitality Score se vuelve más preciso a medida que agregas registros. Empieza por el peso y las vacunas.'
+                : `Faltan ${score.missingDataCount} área${score.missingDataCount > 1 ? 's' : ''} de datos para completar el análisis. El score actual es una estimación parcial.`}
+            </p>
+            {/* Barra de progreso de datos */}
+            <div class="mt-3 flex gap-1.5">
+              {[0,1,2,3,4].map(i => (
+                <div class:list={[
+                  'h-1.5 flex-1 rounded-full transition-all',
+                  i < score.pilarsWithData ? 'bg-accent' : 'bg-accent/20'
+                ]} />
+              ))}
+            </div>
+            <p class="text-[10px] text-muted mt-1.5">{score.pilarsWithData}/5 áreas completas</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  )}
+
+  {/* ── SUGERENCIAS ── */}
+  {score.flags.length > 0 && (
+    <div class="mb-5 animate-fade-up animate-fade-up-delay-1">
+      <p class="text-xs font-semibold text-muted uppercase tracking-widest mb-3">Recomendaciones</p>
+      <div class="space-y-2">
+        {score.flags.map(flag => {
+          const borderColor = flag.severity === 'suggestion' ? 'border-amber/40' : flag.severity === 'reminder' ? 'border-blue-200' : 'border-card-border';
+          const bgColor = flag.severity === 'suggestion' ? 'bg-amber/5' : flag.severity === 'reminder' ? 'bg-blue-50' : 'bg-card';
+          const dotColor = flag.severity === 'suggestion' ? 'bg-amber-dark' : flag.severity === 'reminder' ? 'bg-blue-400' : 'bg-muted/50';
+          const textColor = flag.severity === 'suggestion' ? 'text-amber-dark' : flag.severity === 'reminder' ? 'text-blue-700' : 'text-ink';
+          return (
+            <a href={flag.href} class:list={['flex items-start gap-3 rounded-2xl border p-4 transition-all active:scale-95', borderColor, bgColor]}>
+              <div class:list={['mt-1.5 h-2 w-2 shrink-0 rounded-full', dotColor]} />
+              <div class="flex-1 min-w-0">
+                <p class:list={['text-xs font-medium leading-snug', textColor]}>{flag.message}</p>
+                <p class="text-[11px] text-muted mt-0.5">{flag.action} →</p>
+              </div>
+            </a>
+          );
+        })}
+      </div>
+    </div>
+  )}
+
+  {/* ── DESGLOSE POR PILARES ── */}
+  <p class="text-xs font-semibold text-muted uppercase tracking-widest mb-3 animate-fade-up animate-fade-up-delay-1">Desglose del score</p>
+  <div class="space-y-3 mb-5 animate-fade-up animate-fade-up-delay-1">
+    {score.pillars.map(p => {
+      const color = pillarColors[p.name] ?? '#7CB974';
+      return (
+        <div class="rounded-2xl bg-card border border-card-border p-4">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2.5">
+              <span class="text-xl" aria-hidden="true">{p.emoji}</span>
+              <div>
+                <p class="text-sm font-semibold text-ink">{p.name}</p>
+                <p class="text-[11px] text-muted">{p.status}</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              {p.isEstimated && (
+                <span class="rounded-full bg-canvas border border-card-border px-2 py-0.5 text-[9px] text-muted font-medium">estimado</span>
+              )}
+              <div class="flex items-baseline gap-0.5">
+                <span class:list={['text-lg font-black', p.isEstimated ? 'text-muted' : 'text-ink']}>{p.score}</span>
+                <span class="text-xs text-muted">/{p.max}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Barra de progreso */}
+          <div class="h-1.5 w-full rounded-full bg-canvas overflow-hidden">
+            <div
+              class="h-full rounded-full transition-all duration-700"
+              style={`width: ${p.pct}%; background-color: ${color};`}
+            />
+          </div>
+
+          {/* Sugerencias */}
+          {p.tips.length > 0 && (
+            <div class="mt-3 space-y-1.5">
+              {p.tips.map((tip: string) => (
+                <div class="flex items-start gap-2">
+                  <div class="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-muted/40" />
+                  <p class="text-[11px] text-muted leading-snug">{tip}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      );
+    })}
+  </div>
+
+  {/* ── PERFIL DE RAZA ── */}
+  {pet.breed && pet.breed !== 'Other' && (
+    <div class="mb-5 animate-fade-up animate-fade-up-delay-2">
+      <p class="text-xs font-semibold text-muted uppercase tracking-widest mb-3">Perfil de raza</p>
+      <div class="rounded-2xl bg-card border border-card-border p-4">
+        <div class="flex items-start justify-between mb-4">
+          <div>
+            <p class="text-sm font-bold text-ink">{breedProfile.displayName}</p>
+            <p class="text-[11px] text-muted capitalize">{breedProfile.sizeCategory} · vida promedio {breedProfile.lifespanYears} años</p>
+          </div>
+          <span class:list={[
+            'rounded-full px-2.5 py-1 text-[10px] font-semibold',
+            score.isSenior ? 'bg-amber/10 text-amber-dark' : 'bg-accent/10 text-accent-dark'
+          ]}>
+            {score.isSenior ? 'Senior' : score.ageYears !== null ? `${score.ageYears} año${score.ageYears !== 1 ? 's' : ''}` : 'Adulto'}
+          </span>
+        </div>
+
+        {/* Stats de la raza */}
+        <div class="grid grid-cols-3 gap-3 mb-4">
+          <div class="text-center rounded-xl bg-canvas p-3">
+            <p class="text-sm font-black text-ink">{breedProfile.idealWeightKgMin}–{breedProfile.idealWeightKgMax}</p>
+            <p class="text-[9px] text-muted font-medium mt-0.5">kg ideal</p>
+          </div>
+          <div class="text-center rounded-xl bg-canvas p-3">
+            <p class:list={[
+              'text-sm font-black',
+              breedProfile.dentalRisk === 'very_high' ? 'text-red-500' :
+              breedProfile.dentalRisk === 'high' ? 'text-amber-dark' : 'text-accent'
+            ]}>
+              {breedProfile.dentalRisk === 'very_high' ? 'Muy alto' :
+               breedProfile.dentalRisk === 'high' ? 'Alto' :
+               breedProfile.dentalRisk === 'medium' ? 'Medio' : 'Bajo'}
+            </p>
+            <p class="text-[9px] text-muted font-medium mt-0.5">riesgo dental</p>
+          </div>
+          <div class="text-center rounded-xl bg-canvas p-3">
+            <p class:list={[
+              'text-sm font-black',
+              breedProfile.obesityRisk === 'very_high' ? 'text-red-500' :
+              breedProfile.obesityRisk === 'high' ? 'text-amber-dark' : 'text-accent'
+            ]}>
+              {breedProfile.obesityRisk === 'very_high' ? 'Muy alto' :
+               breedProfile.obesityRisk === 'high' ? 'Alto' :
+               breedProfile.obesityRisk === 'medium' ? 'Medio' : 'Bajo'}
+            </p>
+            <p class="text-[9px] text-muted font-medium mt-0.5">riesgo obesidad</p>
+          </div>
+        </div>
+
+        {/* Predisposiciones */}
+        {breedProfile.risks.length > 0 && (
+          <div>
+            <p class="text-[10px] font-semibold text-muted uppercase tracking-wider mb-2">Predisposiciones conocidas</p>
+            <div class="flex flex-wrap gap-1.5">
+              {breedProfile.risks.map(risk => {
+                return (
+                  <span class="rounded-full bg-canvas border border-card-border px-2.5 py-1 text-[10px] text-muted font-medium">
+                    {riskLabels[risk] ?? risk.replace(/_/g, ' ')}
+                  </span>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  )}
+
+  {/* ── ACCESOS RÁPIDOS A SUBSECCIONES ── */}
+  <p class="text-xs font-semibold text-muted uppercase tracking-widest mb-3 animate-fade-up animate-fade-up-delay-2">Registros de salud</p>
+  <div class="grid grid-cols-2 gap-3 animate-fade-up animate-fade-up-delay-2">
+    <a href="/salud/vacunas" class="flex items-center gap-3 rounded-2xl bg-card border border-card-border px-4 py-3.5 transition-all hover:border-accent/30 hover:shadow-sm active:scale-95">
+      <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent/10">
+        <svg class="h-4.5 w-4.5 text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m14.5 2-8.5 8.5v4h4l8.5-8.5a2.83 2.83 0 0 0-4-4z"/><path d="m18 2 4 4"/></svg>
+      </div>
+      <div>
+        <p class="text-sm font-semibold text-ink">Vacunas</p>
+        <p class="text-[11px] text-muted">Historial y próximas</p>
+      </div>
+    </a>
+
+    <a href="/salud/historial" class="flex items-center gap-3 rounded-2xl bg-card border border-card-border px-4 py-3.5 transition-all hover:border-blue-200 hover:shadow-sm active:scale-95">
+      <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-50">
+        <svg class="h-4.5 w-4.5 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+      </div>
+      <div>
+        <p class="text-sm font-semibold text-ink">Historial Vet.</p>
+        <p class="text-[11px] text-muted">Citas y consultas</p>
+      </div>
+    </a>
+
+    <a href="/salud/peso" class="flex items-center gap-3 rounded-2xl bg-card border border-card-border px-4 py-3.5 transition-all hover:border-sky-200 hover:shadow-sm active:scale-95">
+      <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-sky-50">
+        <svg class="h-4.5 w-4.5 text-sky-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 12a4 4 0 0 1 8 0"/><line x1="12" y1="12" x2="12" y2="8"/></svg>
+      </div>
+      <div>
+        <p class="text-sm font-semibold text-ink">Peso</p>
+        <p class="text-[11px] text-muted">Historial y tendencia</p>
+      </div>
+    </a>
+
+    <a href="/salud/grooming" class="flex items-center gap-3 rounded-2xl bg-card border border-card-border px-4 py-3.5 transition-all hover:border-pink-200 hover:shadow-sm active:scale-95">
+      <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-pink-50">
+        <svg class="h-4.5 w-4.5 text-pink-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2z"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2z"/></svg>
+      </div>
+      <div>
+        <p class="text-sm font-semibold text-ink">Grooming</p>
+        <p class="text-[11px] text-muted">Baños y estética</p>
+      </div>
+    </a>
+  </div>
+
+  {/* ── DISCLAIMER + FAQ ── */}
+  <div class="mt-6 animate-fade-up animate-fade-up-delay-3">
+    <div class="rounded-2xl border border-card-border bg-card px-4 py-4 text-center">
+      <p class="text-[11px] text-muted leading-relaxed">
+        El Vitality Score es una estimación informativa basada en los datos que registras. <strong class="text-ink">No es un diagnóstico médico</strong> y no reemplaza la opinión de tu veterinario.
+      </p>
+      <a href="/faq" class="mt-3 inline-flex items-center gap-1.5 text-[11px] font-semibold text-accent hover:text-accent-dark transition-colors">
+        <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        ¿Cómo funciona el score? Ver preguntas frecuentes
+      </a>
+    </div>
+  </div>
+
+</MainLayout>

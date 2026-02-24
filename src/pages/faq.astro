@@ -1,0 +1,198 @@
+---
+import MainLayout from '../layouts/MainLayout.astro';
+
+const sections = [
+  {
+    title: 'Sobre el Vitality Score',
+    emoji: '🐾',
+    questions: [
+      {
+        q: '¿Qué es el Vitality Score?',
+        a: 'Es un indicador de 0 a 100 que resume el estado de bienestar estimado de tu mascota en base a los datos que registras en PetLog. Funciona de forma similar al "Body Battery" de Garmin o el "Recovery Score" de WHOOP, pero adaptado específicamente para perros usando referencias veterinarias validadas. No es un diagnóstico: es una brújula para ayudarte a tomar mejores decisiones de cuidado.',
+      },
+      {
+        q: '¿Por qué el score empieza bajo o dice "estimado"?',
+        a: 'El score necesita datos para calcularse bien. Cuando acabas de crear la cuenta, muchos pilares no tienen información suficiente y aparecen como "estimado". A medida que registras peso, vacunas, visitas al vet y alimentación, el score se vuelve más preciso y representativo. Es normal que al principio sea bajo — no indica que tu mascota esté mal, sino que el sistema aún está aprendiendo sobre ella.',
+      },
+      {
+        q: '¿Qué significa cada categoría del score?',
+        a: `Las categorías son:
+• 85–100 — En excelente forma: los datos registrados apuntan a un estado de salud muy bueno.
+• 70–84 — Muy buen estado: hay pequeñas oportunidades de mejora.
+• 55–69 — Buen comienzo: el score mejorará con más registros.
+• 40–54 — Perfil en construcción: faltan datos para un análisis completo.
+• 0–39 — Comenzando el historial: es el punto de partida para todos.
+
+Ninguna categoría equivale a "tu mascota está enferma". El score baja principalmente cuando faltan datos, no cuando hay un problema de salud real.`,
+      },
+      {
+        q: '¿El score puede bajar de un día para otro?',
+        a: 'Puede variar levemente a medida que pasa el tiempo sin nuevos registros (por ejemplo, si pasan meses sin anotar una visita al vet). También puede mejorar rápidamente cuando agregas datos nuevos. Lo importante es la tendencia a lo largo del tiempo, no el número exacto de hoy.',
+      },
+      {
+        q: '¿Es un diagnóstico médico?',
+        a: 'No. El Vitality Score es una herramienta informativa basada en datos que tú registras. Ningún algoritmo puede reemplazar la exploración física de un veterinario, ni tiene acceso a análisis de sangre, auscultación cardíaca o cualquier examen clínico real. Úsalo como una referencia general para priorizar el cuidado, no como un diagnóstico.',
+      },
+      {
+        q: '¿Por qué el score nunca dice "crítico"?',
+        a: 'Porque ese lenguaje generaría ansiedad innecesaria. Un score bajo casi siempre significa "faltan datos", no "hay una emergencia". Si tu mascota tiene síntomas preocupantes, acude directamente al veterinario — el score no está diseñado para detectar emergencias en tiempo real.',
+      },
+    ],
+  },
+  {
+    title: 'Los 5 pilares del score',
+    emoji: '📊',
+    questions: [
+      {
+        q: '¿Cómo se calcula el pilar de Peso?',
+        a: 'Comparamos el peso registrado con el rango ideal documentado para la raza (fuente: AKC, Pet Obesity Prevention, WSAVA). Si el peso está dentro del ±5% del ideal, obtienes el puntaje máximo. Además, analizamos la tendencia: si el peso viene bajando cuando estaba por encima del ideal, eso suma puntos. Si viene subiendo y ya está sobre el límite, resta. La penalización es gradual — no hay un corte abrupto.',
+      },
+      {
+        q: '¿Cómo se calcula el pilar de Cuidado Preventivo?',
+        a: 'Tiene dos componentes: vacunas (10 pts) y visitas al veterinario (10 pts). Para vacunas, revisamos si están registradas las vacunas core según AVMA/WSAVA: rabia, parvovirus, moquillo y adenovirus. Para visitas, la última registrada hace menos de 12 meses da el puntaje completo. A medida que pasa el tiempo, decae gradualmente. Si no hay datos registrados, el pilar se marca como "estimado" con un puntaje neutro, no como cero.',
+      },
+      {
+        q: '¿Qué es el pilar de Raza y Edad?',
+        a: 'Es el pilar de riesgo contextual. Cada raza tiene predisposiciones documentadas (fuente: Gough/Thomas "Breed Predispositions to Disease", VetCompass UK). Usamos esa información para generar recordatorios personalizados: por ejemplo, los Cavalier King Charles Spaniels mayores de 5 años tienen muy alta predisposición cardíaca — el pilar lo refleja como una sugerencia de revisión, no como una alarma. Si no tienes la raza especificada, el pilar usa valores genéricos.',
+      },
+      {
+        q: '¿Cómo se mide la Actividad sin un collar o wearable?',
+        a: 'La actividad se aproxima usando dos señales: la frecuencia de aventuras/salidas registradas en el último mes, y la recencia del último grooming. Es una aproximación, no una medición exacta de pasos o calorías. A futuro, PetLog podrá integrarse con collares GPS o wearables para mayor precisión. Por ahora, registrar paseos y salidas — aunque sean breves — ya aporta al score.',
+      },
+      {
+        q: '¿Cómo funciona el análisis de Nutrición?',
+        a: 'Tiene dos partes: calidad del alimento (¿tiene marca registrada? ¿es veterinario/premium?) y precisión de la porción. Para la porción, usamos la fórmula MER (Metabolic Energy Requirement) de Purina: 132 × peso_kg^0.75 kcal/día. Si la ración registrada en gramos se aproxima a esa necesidad calórica estimada, el puntaje es alto. Si difiere mucho, aparece una sugerencia. Es un estimado — la ración exacta depende del nivel de actividad y metabolismo individual de cada perro.',
+      },
+    ],
+  },
+  {
+    title: 'Las recomendaciones y sugerencias',
+    emoji: '💡',
+    questions: [
+      {
+        q: '¿Qué diferencia hay entre una "sugerencia" y un "recordatorio"?',
+        a: `En PetLog usamos tres niveles, siempre en tono amable:
+• Sugerencia (naranja): hay algo que vale la pena revisar, como el peso por encima del rango o una raza con predisposición específica a cierta edad.
+• Recordatorio (azul): algo rutinario que puede estar próximo, como un chequeo anual o el seguimiento en la etapa senior.
+• Tip (gris suave): oportunidad de mejora, como registrar el alimento o anotar más actividades.
+
+Ninguno de los tres es una alarma. Son guías, no diagnósticos.`,
+      },
+      {
+        q: '¿Por qué aparece una sugerencia si mi perro está sano?',
+        a: 'Las sugerencias se generan en base a datos estadísticos de poblaciones de perros, no de tu perro en particular. Por ejemplo, si tu Bulldog Francés tiene 2 años, aparecerá una sugerencia sobre salud dental porque estadísticamente el 80% de los perros tiene algún grado de enfermedad periodontal a esa edad (fuente: Cornell). Eso no significa que tu perro la tenga — significa que es un buen momento para preguntarle al vet en la próxima visita.',
+      },
+      {
+        q: '¿Las sugerencias desaparecen solas?',
+        a: 'Sí. Las sugerencias se recalculan cada vez que entras a la sección de Salud, usando los datos más recientes. Si registras una visita al vet, el recordatorio de chequeo desaparece. Si agregas un grooming, la sugerencia dental se actualiza. El sistema siempre refleja el estado actual de tu historial.',
+      },
+    ],
+  },
+  {
+    title: 'Datos y privacidad',
+    emoji: '🔒',
+    questions: [
+      {
+        q: '¿Qué datos son necesarios para el score?',
+        a: `El score funciona con datos parciales desde el inicio. Para el score más completo necesitas:
+• Peso actual (o historial de peso)
+• Raza y fecha de nacimiento del perfil
+• Al menos una vacuna registrada
+• Al menos una visita al vet registrada
+• Datos de alimentación (marca + gramos diarios)
+
+Con solo 2 o 3 de estos ya puedes ver un score parcial. El score no se bloquea, sino que se muestra con contexto de cuántos datos están completos.`,
+      },
+      {
+        q: '¿Mis datos se comparten con terceros?',
+        a: 'No. Toda la información que registras en PetLog está almacenada en tu cuenta personal en Supabase con acceso exclusivo a tu usuario. El score se calcula en el servidor al momento de abrir la página — no se envía a ningún servicio externo ni se usa para entrenar modelos de IA.',
+      },
+      {
+        q: '¿Puedo tener varias mascotas?',
+        a: 'Sí. PetLog soporta múltiples perros en la misma cuenta. Cada mascota tiene su propio perfil, historial y Vitality Score. Puedes cambiar entre ellas desde el menú lateral — cada una tiene incluso su propio color de tema para identificarla visualmente.',
+      },
+    ],
+  },
+  {
+    title: 'Sobre PetLog',
+    emoji: '🐶',
+    questions: [
+      {
+        q: '¿Para qué sirve PetLog exactamente?',
+        a: 'PetLog es tu diario de salud y vida para perros. Centraliza todo lo que necesitas recordar: vacunas, citas al vet, historial de peso, grooming, alimentación, aventuras y viajes. El objetivo es que nunca pierdas información importante de tu mascota y que puedas llevarla organizada a cualquier cita veterinaria o al cruzar fronteras con tu perro.',
+      },
+      {
+        q: '¿PetLog reemplaza al veterinario?',
+        a: 'No, y nunca pretendemos serlo. PetLog es una herramienta de registro y seguimiento. El veterinario sigue siendo indispensable para diagnósticos, tratamientos y decisiones médicas. Lo que PetLog sí puede hacer es ayudarte a llegar a esas citas con información más organizada y completa.',
+      },
+      {
+        q: '¿Habrá app para iPhone y Android?',
+        a: 'Sí, está en el roadmap. La versión web actual ya está diseñada para ser completamente mobile-friendly (funciona muy bien desde el navegador del celular). La app nativa para iOS y Android usará la misma base de datos, así que todos tus datos migrarán automáticamente cuando esté disponible.',
+      },
+      {
+        q: '¿Cómo puedo dar feedback o reportar un problema?',
+        a: 'PetLog está en desarrollo activo y tu feedback es muy valioso. Si algo no funciona como esperas o tienes una sugerencia, escríbenos. Cada reporte ayuda a mejorar la experiencia para todos los dueños de mascotas.',
+      },
+    ],
+  },
+];
+---
+
+<MainLayout title="Preguntas frecuentes">
+
+  {/* ── HEADER ── */}
+  <div class="mb-6 animate-fade-up">
+    <div class="flex items-center gap-3 mb-1">
+      <a href="/salud" class="text-muted hover:text-ink transition-colors">
+        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
+      </a>
+      <p class="text-xs font-semibold text-muted uppercase tracking-widest">Centro de ayuda</p>
+    </div>
+    <h1 class="text-2xl font-black text-ink tracking-tight">Preguntas frecuentes</h1>
+    <p class="text-sm text-muted mt-1">Todo lo que necesitas saber sobre PetLog y el Vitality Score.</p>
+  </div>
+
+  {/* ── SECCIONES DE FAQ ── */}
+  <div class="space-y-6 animate-fade-up animate-fade-up-delay-1">
+    {sections.map(section => (
+      <div>
+        {/* Encabezado de sección */}
+        <div class="flex items-center gap-2 mb-3">
+          <span class="text-lg" aria-hidden="true">{section.emoji}</span>
+          <p class="text-xs font-bold text-ink uppercase tracking-wider">{section.title}</p>
+        </div>
+
+        {/* Acordeón de preguntas */}
+        <div class="rounded-2xl border border-card-border bg-card overflow-hidden divide-y divide-card-border">
+          {section.questions.map((item, idx) => (
+            <details class="group" id={`q-${section.title.toLowerCase().replace(/\s+/g, '-')}-${idx}`}>
+              <summary class="flex items-start justify-between gap-3 px-4 py-4 cursor-pointer list-none select-none hover:bg-canvas transition-colors">
+                <p class="text-sm font-semibold text-ink leading-snug pr-2">{item.q}</p>
+                <svg
+                  class="h-4 w-4 shrink-0 text-muted mt-0.5 transition-transform duration-200 group-open:rotate-180"
+                  viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                >
+                  <path d="m6 9 6 6 6-6"/>
+                </svg>
+              </summary>
+              <div class="px-4 pb-4 pt-0">
+                <p class="text-sm text-muted leading-relaxed whitespace-pre-line">{item.a}</p>
+              </div>
+            </details>
+          ))}
+        </div>
+      </div>
+    ))}
+  </div>
+
+  {/* ── FOOTER ── */}
+  <div class="mt-8 rounded-2xl border border-accent/30 bg-accent/5 px-4 py-4 text-center animate-fade-up animate-fade-up-delay-2">
+    <p class="text-sm font-semibold text-accent-dark mb-1">¿No encontraste lo que buscabas?</p>
+    <p class="text-xs text-muted">El Vitality Score mejora constantemente. Si tienes una pregunta específica o encuentras algo que no funciona como esperas, tu feedback nos ayuda a mejorar.</p>
+    <a href="/salud" class="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-accent hover:text-accent-dark transition-colors">
+      <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+      Volver a Salud
+    </a>
+  </div>
+
+</MainLayout>
