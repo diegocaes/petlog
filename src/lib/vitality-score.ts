@@ -190,6 +190,18 @@ function scorePeso(input: ScoreInput): PillarScore {
   const { pet, weightRecords } = input;
   const breed = getBreedProfile(pet.breed);
   const tips: string[] = [];
+
+  // Cachorros < 1 año: no evaluar peso ideal (están creciendo)
+  const petAge = ageInYears(pet.birth_date);
+  if (petAge !== null && petAge < 1) {
+    return {
+      name: 'Peso', emoji: '⚖️', score: 10, max: 20, pct: 50,
+      status: 'En crecimiento',
+      tips: ['Los cachorros están en fase de crecimiento — el peso ideal se evalúa a partir del año'],
+      isEstimated: true,
+    };
+  }
+
   const latestWeight = weightRecords[0]?.weight_kg ?? pet.weight_kg;
 
   if (!latestWeight) {

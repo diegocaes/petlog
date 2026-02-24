@@ -1,20 +1,26 @@
 ---
 const currentPath = Astro.url.pathname;
 const tabs = [
+  { href: '/salud', label: 'Resumen' },
   { href: '/salud/vacunas', label: 'Vacunas' },
-  { href: '/salud/historial', label: 'Veterinario' },
+  { href: '/salud/historial', label: 'Historial' },
   { href: '/salud/peso', label: 'Peso' },
   { href: '/salud/grooming', label: 'Grooming' },
 ];
+
+const isActive = (href: string) =>
+  href === '/salud'
+    ? currentPath === '/salud' || currentPath === '/salud/'
+    : currentPath === href;
 ---
 
-<div class="flex gap-0 mb-6 border-b border-card-border animate-fade-up animate-fade-up-delay-1">
+<div class="flex gap-0 mb-6 border-b border-card-border animate-fade-up animate-fade-up-delay-1 overflow-x-auto scrollbar-hide -mx-4 px-4">
   {tabs.map((tab) => (
     <a
       href={tab.href}
       class:list={[
-        'px-4 py-2.5 text-sm font-medium transition-all duration-200 border-b-2 -mb-px',
-        currentPath === tab.href
+        'shrink-0 px-4 py-2.5 text-sm font-medium transition-all duration-200 border-b-2 -mb-px',
+        isActive(tab.href)
           ? 'border-accent text-accent'
           : 'border-transparent text-muted hover:text-ink',
       ]}
