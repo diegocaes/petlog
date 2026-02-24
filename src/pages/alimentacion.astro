@@ -13,32 +13,38 @@ const { pet } = await getActivePet(supabase, user.id, activePetId);
 
 if (!pet) return Astro.redirect('/perfil?new=1');
 
+// Convert bag size to grams for calculations
+function bagToGrams(size: number, unit: string): number {
+  if (unit === 'kg') return size * 1000;
+  if (unit === 'lb') return size * 453.592;
+  return size; // 'g'
+}
+
 if (Astro.request.method === 'POST') {
   const formData = await Astro.request.formData();
   const action = formData.get('_action') as string;
 
+  const fields = {
+    brand:       formData.get('brand') as string,
+    type:        formData.get('type') as string,
+    daily_grams: formData.get('daily_grams') ? Number(formData.get('daily_grams')) : null,
+    frequency:   (formData.get('frequency') as string) || null,
+    bag_size:    formData.get('bag_size') ? Number(formData.get('bag_size')) : null,
+    bag_unit:    (formData.get('bag_unit') as string) || 'kg',
+    price:       formData.get('price') ? Number(formData.get('price')) : null,
+    start_date:  (formData.get('start_date') as string) || null,
+    notes:       (formData.get('notes') as string) || null,
+    // Keep amount_grams in sync with daily_grams for backward compat
+    amount_grams: formData.get('daily_grams') ? Number(formData.get('daily_grams')) : null,
+  };
+
   if (action === 'add') {
-    await supabase.from('foods').insert({
-      pet_id: pet.id,
-      brand: formData.get('brand') as string,
-      type: formData.get('type') as string,
-      amount_grams: formData.get('amount_grams') ? Number(formData.get('amount_grams')) : null,
-      frequency: (formData.get('frequency') as string) || null,
-      start_date: (formData.get('start_date') as string) || null,
-      notes: (formData.get('notes') as string) || null,
-    });
+    await supabase.from('foods').insert({ pet_id: pet.id, ...fields });
   }
 
   if (action === 'edit') {
     const foodId = formData.get('food_id') as string;
-    await supabase.from('foods').update({
-      brand: formData.get('brand') as string,
-      type: formData.get('type') as string,
-      amount_grams: formData.get('amount_grams') ? Number(formData.get('amount_grams')) : null,
-      frequency: (formData.get('frequency') as string) || null,
-      start_date: (formData.get('start_date') as string) || null,
-      notes: (formData.get('notes') as string) || null,
-    }).eq('id', foodId);
+    await supabase.from('foods').update(fields).eq('id', foodId);
   }
 
   if (action === 'delete') {
@@ -50,63 +56,97 @@ if (Astro.request.method === 'POST') {
   return Astro.redirect('/alimentacion?saved=1');
 }
 
-const { data: foods } = await supabase
+const { data: rawFoods } = await supabase
   .from('foods')
   .select('*')
   .eq('pet_id', pet.id)
   .order('created_at', { ascending: false });
 
+// Enrich each food with computed stats
+const foods = (rawFoods ?? []).map(food => {
+  const totalGrams = food.bag_size ? bagToGrams(food.bag_size, food.bag_unit ?? 'kg') : null;
+  const daysTotal  = (totalGrams && food.daily_grams) ? Math.floor(totalGrams / food.daily_grams) : null;
+  const costPerDay = (food.price && daysTotal && daysTotal > 0)
+    ? (food.price / daysTotal).toFixed(2) : null;
+  return { ...food, totalGrams, daysTotal, costPerDay };
+});
 ---
 
 <MainLayout title="Alimentación">
-  <SectionHeader title="Alimentación" subtitle="Control de dieta de tu mascota" />
+  <SectionHeader title="Alimentación" subtitle={`Dieta y control de comida de ${pet.name}`} />
 
   <!-- Add Food Form -->
   <Card class="mb-5 animate-fade-up animate-fade-up-delay-1">
     <h2 class="text-xs font-semibold text-muted uppercase tracking-widest mb-4">Registrar alimento</h2>
     <form method="POST" class="space-y-4">
       <input type="hidden" name="_action" value="add" />
-      <div>
-        <label class="block text-sm font-medium text-ink mb-1">Marca <span class="text-red-500">*</span></label>
-        <input type="text" name="brand" required placeholder="Ej: Royal Canin" class="w-full rounded-xl border border-card-border bg-white px-4 py-3 text-ink placeholder-muted focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20" />
-      </div>
+
+      <!-- Marca + Tipo -->
       <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-ink mb-1">Marca <span class="text-red-500">*</span></label>
+          <input type="text" name="brand" required placeholder="Ej: Royal Canin" class="field-input" />
+        </div>
         <div>
           <label class="block text-sm font-medium text-ink mb-1">Tipo <span class="text-red-500">*</span></label>
-          <select name="type" required class="w-full rounded-xl border border-card-border bg-white px-4 py-3 text-ink focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20">
-            <option value="croquetas">Croquetas</option>
-            <option value="humedo">Húmedo / Lata</option>
-            <option value="barf">BARF / Natural</option>
-            <option value="mixto">Mixto</option>
-            <option value="snacks">Snacks</option>
-            <option value="otro">Otro</option>
+          <select name="type" required class="field-input">
+            {Object.entries(FOOD_TYPES).map(([val, label]) => (
+              <option value={val}>{label}</option>
+            ))}
           </select>
         </div>
-        <div>
-          <label class="block text-sm font-medium text-ink mb-1">Cantidad (g)</label>
-          <input type="number" name="amount_grams" placeholder="Ej: 200" class="w-full rounded-xl border border-card-border bg-white px-4 py-3 text-ink placeholder-muted focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20" />
-        </div>
       </div>
+
+      <!-- Ración diaria + Frecuencia -->
       <div class="grid grid-cols-2 gap-4">
         <div>
+          <label class="block text-sm font-medium text-ink mb-1">Ración diaria (g)</label>
+          <input type="number" name="daily_grams" placeholder="Ej: 200" min="1" class="field-input" />
+        </div>
+        <div>
           <label class="block text-sm font-medium text-ink mb-1">Frecuencia</label>
-          <select name="frequency" class="w-full rounded-xl border border-card-border bg-white px-4 py-3 text-ink focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20">
-            <option value="">Seleccionar</option>
+          <select name="frequency" class="field-input">
+            <option value="">— Sin especificar</option>
             <option value="1x">1 vez al día</option>
             <option value="2x">2 veces al día</option>
             <option value="3x">3 veces al día</option>
             <option value="libre">Libre acceso</option>
           </select>
         </div>
-        <div>
-          <label class="block text-sm font-medium text-ink mb-1">Desde</label>
-          <input type="date" name="start_date" class="w-full rounded-xl border border-card-border bg-white px-4 py-3 text-ink focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20" />
+      </div>
+
+      <!-- Bolsa: tamaño + unidad + precio -->
+      <div class="grid grid-cols-3 gap-3">
+        <div class="col-span-1">
+          <label class="block text-sm font-medium text-ink mb-1">Tamaño bolsa</label>
+          <input type="number" name="bag_size" placeholder="Ej: 10" min="0" step="0.1" class="field-input" />
+        </div>
+        <div class="col-span-1">
+          <label class="block text-sm font-medium text-ink mb-1">Unidad</label>
+          <select name="bag_unit" class="field-input">
+            <option value="kg">kg</option>
+            <option value="g">g</option>
+            <option value="lb">lb</option>
+          </select>
+        </div>
+        <div class="col-span-1">
+          <label class="block text-sm font-medium text-ink mb-1">Precio ($)</label>
+          <input type="number" name="price" placeholder="Ej: 45.00" min="0" step="0.01" class="field-input" />
         </div>
       </div>
-      <div>
-        <label class="block text-sm font-medium text-ink mb-1">Notas</label>
-        <textarea name="notes" rows="2" placeholder="Observaciones, alergias..." class="w-full rounded-xl border border-card-border bg-white px-4 py-3 text-ink placeholder-muted focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20 resize-none"></textarea>
+
+      <!-- Fecha + Notas -->
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-ink mb-1">Fecha de inicio</label>
+          <input type="date" name="start_date" class="field-input" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-ink mb-1">Notas</label>
+          <input type="text" name="notes" placeholder="Alergias, marca anterior..." class="field-input" />
+        </div>
       </div>
+
       <button type="submit" class="w-full rounded-xl bg-accent px-6 py-2.5 text-sm font-semibold text-white transition-all hover:bg-accent-dark active:scale-95">
         Registrar alimento
       </button>
@@ -114,17 +154,18 @@ const { data: foods } = await supabase
   </Card>
 
   <!-- Food List -->
-  {(!foods || foods.length === 0) ? (
+  {foods.length === 0 ? (
     <EmptyState
       icon="food"
       title="Sin alimentos registrados"
-      description="Registra el primer alimento de tu mascota"
+      description={`Registra qué come ${pet.name} para hacer seguimiento de su dieta`}
     />
   ) : (
     <div class="space-y-3">
       {foods.map((food, i) => (
         <Card variant="elevated" class:list={['animate-fade-up', i < 5 && `animate-fade-up-delay-${Math.min(i + 1, 5)}`]}>
-          {/* View */}
+
+          {/* ── VIEW ── */}
           <div class="item-view" data-id={food.id}>
             <div class="flex items-start justify-between gap-3">
               <div class="flex items-start gap-3 flex-1 min-w-0">
@@ -132,20 +173,54 @@ const { data: foods } = await supabase
                   <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/></svg>
                 </div>
                 <div class="flex-1 min-w-0">
-                  <p class="font-semibold text-ink">{food.brand}</p>
-                  <p class="text-xs text-gray-400 mt-0.5">
-                    {FOOD_TYPES[food.type] || food.type}
-                    {food.amount_grams && ` · ${food.amount_grams}g`}
-                    {food.frequency && ` · ${food.frequency}`}
-                  </p>
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <p class="font-semibold text-ink">{food.brand}</p>
+                    <span class="rounded-full bg-canvas px-2 py-0.5 text-xs font-medium text-muted">
+                      {FOOD_TYPES[food.type] || food.type}
+                    </span>
+                  </div>
+
+                  {/* Days remaining — only if we can calculate */}
+                  {food.daysTotal && (
+                    <div class="mt-2.5 mb-2">
+                      <div class="flex items-baseline gap-1.5 mb-1">
+                        <span class="text-xl font-bold text-ink">≈ {food.daysTotal}</span>
+                        <span class="text-sm text-muted">días por bolsa</span>
+                      </div>
+                      <div class="h-1.5 w-full rounded-full bg-canvas overflow-hidden">
+                        <div class="h-full rounded-full bg-accent" style="width: 100%"></div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Stats row */}
+                  <div class="flex flex-wrap gap-x-3 gap-y-0.5 mt-1.5">
+                    {food.daily_grams && (
+                      <span class="text-xs text-muted">{food.daily_grams}g/día</span>
+                    )}
+                    {food.bag_size && (
+                      <span class="text-xs text-muted">{food.bag_size} {food.bag_unit ?? 'kg'}</span>
+                    )}
+                    {food.costPerDay && (
+                      <span class="text-xs font-semibold text-accent">${food.costPerDay}/día</span>
+                    )}
+                    {food.price && (
+                      <span class="text-xs text-muted">${food.price} bolsa</span>
+                    )}
+                    {food.frequency && (
+                      <span class="text-xs text-muted">{food.frequency === '1x' ? '1x/día' : food.frequency === '2x' ? '2x/día' : food.frequency === '3x' ? '3x/día' : 'Libre acceso'}</span>
+                    )}
+                  </div>
+
                   {food.start_date && (
-                    <p class="text-xs text-gray-400 mt-0.5">Desde: {formatDate(food.start_date)}</p>
+                    <p class="text-xs text-muted mt-1">Desde {formatDate(food.start_date)}</p>
                   )}
                   {food.notes && (
-                    <p class="text-xs text-gray-400 mt-1">{food.notes}</p>
+                    <p class="text-xs text-muted mt-1 italic">{food.notes}</p>
                   )}
                 </div>
               </div>
+
               <div class="flex gap-1 shrink-0">
                 <button type="button" class="edit-btn rounded-xl p-2 text-gray-300 transition-colors hover:bg-accent/10 hover:text-accent" data-id={food.id} title="Editar">
                   <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
@@ -161,38 +236,50 @@ const { data: foods } = await supabase
             </div>
           </div>
 
-          {/* Edit */}
+          {/* ── EDIT ── */}
           <form method="POST" class="item-edit hidden space-y-3" data-id={food.id}>
             <input type="hidden" name="_action" value="edit" />
             <input type="hidden" name="food_id" value={food.id} />
             <div class="flex items-center justify-between mb-2">
               <p class="text-xs font-semibold text-accent uppercase tracking-wider">Editando</p>
-              <button type="button" class="cancel-edit text-xs text-gray-400 hover:text-gray-600" data-id={food.id}>Cancelar</button>
+              <button type="button" class="cancel-edit text-xs text-muted hover:text-ink" data-id={food.id}>Cancelar</button>
             </div>
-            <input type="text" name="brand" value={food.brand} required placeholder="Marca" class="field-input-sm" />
             <div class="grid grid-cols-2 gap-3">
+              <input type="text" name="brand" value={food.brand} required placeholder="Marca" class="field-input-sm" />
               <select name="type" required class="field-input-sm">
                 {Object.entries(FOOD_TYPES).map(([val, label]) => (
                   <option value={val} selected={food.type === val}>{label}</option>
                 ))}
               </select>
-              <input type="number" name="amount_grams" value={food.amount_grams || ''} placeholder="Gramos" class="field-input-sm" />
             </div>
             <div class="grid grid-cols-2 gap-3">
+              <input type="number" name="daily_grams" value={food.daily_grams || ''} placeholder="Ración/día (g)" min="1" class="field-input-sm" />
               <select name="frequency" class="field-input-sm">
                 <option value="">Frecuencia</option>
-                <option value="1x" selected={food.frequency === '1x'}>1 vez/día</option>
-                <option value="2x" selected={food.frequency === '2x'}>2 veces/día</option>
-                <option value="3x" selected={food.frequency === '3x'}>3 veces/día</option>
+                <option value="1x" selected={food.frequency === '1x'}>1x/día</option>
+                <option value="2x" selected={food.frequency === '2x'}>2x/día</option>
+                <option value="3x" selected={food.frequency === '3x'}>3x/día</option>
                 <option value="libre" selected={food.frequency === 'libre'}>Libre</option>
               </select>
-              <input type="date" name="start_date" value={food.start_date || ''} class="field-input-sm" />
             </div>
-            <textarea name="notes" rows="2" placeholder="Notas" class="field-input-sm resize-none">{food.notes || ''}</textarea>
+            <div class="grid grid-cols-3 gap-2">
+              <input type="number" name="bag_size" value={food.bag_size || ''} placeholder="Bolsa" step="0.1" class="field-input-sm" />
+              <select name="bag_unit" class="field-input-sm">
+                <option value="kg" selected={food.bag_unit === 'kg'}>kg</option>
+                <option value="g" selected={food.bag_unit === 'g'}>g</option>
+                <option value="lb" selected={food.bag_unit === 'lb'}>lb</option>
+              </select>
+              <input type="number" name="price" value={food.price || ''} placeholder="Precio $" step="0.01" class="field-input-sm" />
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <input type="date" name="start_date" value={food.start_date || ''} class="field-input-sm" />
+              <input type="text" name="notes" value={food.notes || ''} placeholder="Notas" class="field-input-sm" />
+            </div>
             <button type="submit" class="w-full rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-white transition-all hover:bg-accent-dark active:scale-95">
               Guardar cambios
             </button>
           </form>
+
         </Card>
       ))}
     </div>
