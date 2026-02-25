@@ -1,7 +1,6 @@
 ---
 import MainLayout from '../../layouts/MainLayout.astro';
 import Card from '../../components/ui/Card.astro';
-import SectionHeader from '../../components/ui/SectionHeader.astro';
 import SaludTabs from '../../components/SaludTabs.astro';
 import EmptyState from '../../components/ui/EmptyState.astro';
 import WeightChart from '../../components/WeightChart.tsx';
@@ -48,7 +47,6 @@ const maxWeight = records && records.length > 0 ? Math.max(...records.map(r => r
 ---
 
 <MainLayout title="Control de Peso">
-  <SectionHeader title="Salud" subtitle="Control integral de tu mascota" />
   <SaludTabs />
 
   {/* ── ANALYTICS ── */}

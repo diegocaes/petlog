@@ -103,9 +103,16 @@ export interface ScoreFlag {
   href: string;
 }
 
+export interface PendingArea {
+  label: string;   // ej. "Agrega su peso"
+  href: string;    // ruta a donde ir
+}
+
 export interface VitalityScoreResult {
   /** Score total 0–100 */
   total: number;
+  /** true = hay suficientes datos para mostrar el número; false = mostrar estado "completando" */
+  showScore: boolean;
   /** Categoría cualitativa */
   category: ScoreCategory;
   /** Color hex del indicador */
@@ -124,6 +131,8 @@ export interface VitalityScoreResult {
   pilarsWithData: number;
   /** Cuántos datos más faltan para score completo */
   missingDataCount: number;
+  /** Áreas pendientes con CTA — solo cuando showScore = false */
+  pendingAreas: PendingArea[];
   /** Edad calculada en años */
   ageYears: number | null;
   /** Si es considerado senior según raza */
@@ -579,7 +588,7 @@ function evaluateDataSufficiency(input: ScoreInput): {
 
   const hasWeight = !!(weightRecords[0]?.weight_kg ?? pet.weight_kg);
   const hasVaccinesOrVet = vaccines.length > 0 || vetVisits.length > 0;
-  const hasBreedOrAge = !!(pet.breed && pet.breed !== 'Other') || !!pet.birth_date;
+  const hasBreedOrAge = !!(pet.breed && pet.breed !== 'Other' && pet.breed !== 'mixed') || !!pet.birth_date;
   const hasActivity = adventures.length > 0 || groomings.length > 0;
   const hasFood = foods.length > 0;
 
@@ -602,7 +611,7 @@ function evaluateDataSufficiency(input: ScoreInput): {
 // ─── Flags de sugerencias (siempre en tono amable) ───────────────────────────
 
 function buildFlags(input: ScoreInput): ScoreFlag[] {
-  const { pet, weightRecords, vaccines, vetVisits, groomings, adventures, foods } = input;
+  const { pet, weightRecords, vaccines, vetVisits, groomings, foods } = input;
   const breed = getBreedProfile(pet.breed);
   const age = ageInYears(pet.birth_date);
   const flags: ScoreFlag[] = [];
@@ -769,42 +778,83 @@ export function calculateVitalityScore(input: ScoreInput): VitalityScoreResult {
   const pillars = [p1, p2, p3, p4, p5];
   const { sufficiency, pilarsWithData, missingDataCount } = evaluateDataSufficiency(input);
 
-  // Score bruto
+  const { pet, weightRecords, vaccines, vetVisits, groomings, adventures, foods } = input;
+
+  // ── Áreas pendientes con CTA amigable ─────────────────────────────────────
+  // IMPORTANTE: debe ser exactamente paralelo a los 5 checks de evaluateDataSufficiency
+  // para que pendingAreas.length == missingDataCount siempre.
+  const pendingAreas: PendingArea[] = [];
+
+  // Pilar 1: Peso
+  if (!(weightRecords[0]?.weight_kg ?? pet.weight_kg)) {
+    pendingAreas.push({ label: 'Registra el peso actual', href: '/salud/peso' });
+  }
+
+  // Pilar 2: Vacunas / Vet
+  if (vaccines.length === 0 && vetVisits.length === 0) {
+    pendingAreas.push({ label: 'Registra vacunas o visitas al vet', href: '/salud/vacunas' });
+  }
+
+  // Pilar 3: Raza y edad
+  const hasBreedOrAgePending = !(pet.breed && pet.breed !== 'Other' && pet.breed !== 'mixed') && !pet.birth_date;
+  if (hasBreedOrAgePending) {
+    pendingAreas.push({ label: 'Completa raza y fecha de nacimiento en el perfil', href: '/perfil' });
+  }
+
+  // Pilar 4: Actividad (aventuras o grooming)
+  if (adventures.length === 0 && groomings.length === 0) {
+    pendingAreas.push({ label: 'Registra paseos o sesiones de grooming', href: '/aventuras' });
+  }
+
+  // Pilar 5: Alimentación
+  if (foods.length === 0) {
+    pendingAreas.push({ label: 'Agrega el alimento actual', href: '/alimentacion' });
+  }
+
+  // ── Score numérico solo si hay datos suficientes ───────────────────────────
+  // Con < 2 áreas con datos, el número no significa nada — mejor no mostrarlo.
+  const showScore = sufficiency !== 'too_early';
   const rawTotal = clamp(pillars.reduce((sum, p) => sum + p.score, 0), 0, 100);
+  const total = showScore ? rawTotal : 0;
 
-  // Si hay muy pocos datos, no mostrar score numérico realista
-  // Mostramos el score pero con contexto claro de "construyendo"
-  const total = sufficiency === 'too_early'
-    ? Math.min(rawTotal, 55) // cap en 55 si hay muy pocos datos
-    : rawTotal;
-
-  const cat = SCORE_CATEGORIES.find(c => total >= c.min) ?? SCORE_CATEGORIES[SCORE_CATEGORIES.length - 1];
+  const cat = SCORE_CATEGORIES.find(c => rawTotal >= c.min) ?? SCORE_CATEGORIES[SCORE_CATEGORIES.length - 1];
   const flags = buildFlags(input);
-
   const age = ageInYears(input.pet.birth_date);
 
-  // Subline contextual según estado de datos
+  // ── Headline y subline adaptados al estado ─────────────────────────────────
+  let headline: string;
   let subline: string;
-  if (sufficiency === 'too_early') {
-    subline = 'Agrega más datos para ver el análisis completo';
+  let color: string;
+
+  if (!showScore) {
+    headline = 'Completando el perfil';
+    subline = 'Agrega unos datos más para ver el estado de salud de ' + (pet.breed?.split(' ')[0] ?? 'tu perro');
+    color = '#94A3B8';
   } else if (sufficiency === 'building') {
-    subline = `Score basado en ${pilarsWithData} de 5 áreas — ${missingDataCount} pendientes`;
+    headline = cat.headline;
+    subline = missingDataCount === 1
+      ? 'Falta 1 área para el análisis completo'
+      : `Faltan ${missingDataCount} áreas para el análisis completo`;
+    color = cat.color;
   } else {
-    const sublines = cat.sublines;
-    subline = sublines[Math.floor(Math.random() * sublines.length)];
+    headline = cat.headline;
+    subline = cat.sublines[0];
+    color = cat.color;
   }
 
   return {
     total,
+    showScore,
     category: cat.category,
-    color: cat.color,
-    headline: cat.headline,
+    color,
+    headline,
     subline,
     pillars,
     flags,
     dataSufficiency: sufficiency,
     pilarsWithData,
     missingDataCount,
+    pendingAreas,
     ageYears: age,
     isSenior: age !== null ? isSenior(input.pet.breed, age) : false,
   };

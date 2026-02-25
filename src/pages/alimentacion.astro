@@ -25,7 +25,7 @@ if (Astro.request.method === 'POST') {
 
   const fields = {
     brand:       formData.get('brand') as string,
-    type:        formData.get('type') as string,
+    food_type:   (formData.get('type') as string) || null,
     daily_grams: formData.get('daily_grams') ? Number(formData.get('daily_grams')) : null,
     frequency:   (formData.get('frequency') as string) || null,
     bag_size:    formData.get('bag_size') ? Number(formData.get('bag_size')) : null,
@@ -33,7 +33,6 @@ if (Astro.request.method === 'POST') {
     price:       formData.get('price') ? Number(formData.get('price')) : null,
     start_date:  (formData.get('start_date') as string) || null,
     notes:       (formData.get('notes') as string) || null,
-    amount_grams: formData.get('daily_grams') ? Number(formData.get('daily_grams')) : null,
   };
 
   if (action === 'add') {
@@ -65,7 +64,19 @@ const foods = (rawFoods ?? []).map(food => {
   const daysTotal  = (totalGrams && food.daily_grams) ? Math.floor(totalGrams / food.daily_grams) : null;
   const costPerDay = (food.price && daysTotal && daysTotal > 0)
     ? (food.price / daysTotal).toFixed(2) : null;
-  return { ...food, totalGrams, daysTotal, costPerDay };
+  // Días restantes basado en start_date
+  const daysElapsed = food.start_date
+    ? Math.floor((Date.now() - new Date(food.start_date + 'T00:00:00').getTime()) / 86400000)
+    : null;
+  const daysRemaining = (daysTotal && daysElapsed !== null)
+    ? Math.max(0, daysTotal - daysElapsed)
+    : null;
+  const progressPct = (daysTotal && daysRemaining !== null)
+    ? Math.round((daysRemaining / daysTotal) * 100)
+    : null;
+  // Normalizar food_type (acepta tanto food_type como type del campo legacy)
+  const foodType = food.food_type ?? food.type ?? null;
+  return { ...food, totalGrams, daysTotal, costPerDay, daysElapsed, daysRemaining, progressPct, foodType };
 });
 
 // Analytics
@@ -73,6 +84,13 @@ const currentFood = foods[0] ?? null;
 const avgDaysPerBag = foods.filter(f => f.daysTotal).length > 0
   ? Math.round(foods.filter(f => f.daysTotal).reduce((s, f) => s + f.daysTotal!, 0) / foods.filter(f => f.daysTotal).length)
   : null;
+
+function bagStatusText(daysRemaining: number | null, daysElapsed: number | null): string | null {
+  if (daysRemaining === null) return null;
+  if (daysRemaining === 0) return 'La bolsa se terminó — hora de comprar';
+  if (daysRemaining <= 3) return `Quedan ${daysRemaining} días — ¡casi se acaba!`;
+  return `${daysElapsed} días desde que se abrió`;
+}
 ---
 
 <MainLayout title="Alimentación">
@@ -87,18 +105,35 @@ const avgDaysPerBag = foods.filter(f => f.daysTotal).length > 0
         <div class="flex items-center justify-between">
           <div>
             <p class="text-xl font-bold text-white">{currentFood.brand}</p>
-            <p class="text-sm text-white/50">{FOOD_TYPES[currentFood.type] || currentFood.type}{currentFood.daily_grams ? ` · ${currentFood.daily_grams}g/día` : ''}</p>
+            <p class="text-sm text-white/50">{FOOD_TYPES[currentFood.foodType] || currentFood.foodType || '—'}{currentFood.daily_grams ? ` · ${currentFood.daily_grams}g/día` : ''}</p>
           </div>
           {currentFood.daysTotal && (
-            <div class="text-right">
-              <p class="text-2xl font-black text-white">≈{currentFood.daysTotal}</p>
-              <p class="text-xs text-white/50">días/bolsa</p>
+            <div class="text-right shrink-0">
+              {currentFood.daysRemaining !== null ? (
+                <>
+                  <p class="text-2xl font-black text-white">≈{currentFood.daysRemaining}</p>
+                  <p class="text-xs text-white/50">días restantes</p>
+                </>
+              ) : (
+                <>
+                  <p class="text-2xl font-black text-white">≈{currentFood.daysTotal}</p>
+                  <p class="text-xs text-white/50">días/bolsa</p>
+                </>
+              )}
             </div>
           )}
         </div>
         {currentFood.daysTotal && (
-          <div class="mt-3 h-1 w-full rounded-full bg-white/10 overflow-hidden">
-            <div class="h-full rounded-full bg-white/40" style="width: 100%"></div>
+          <div class="mt-3">
+            <div class="h-1.5 w-full rounded-full bg-white/10 overflow-hidden">
+              <div
+                class="h-full rounded-full transition-all"
+                style={`width: ${currentFood.progressPct ?? 100}%; background-color: ${(currentFood.progressPct ?? 100) < 20 ? '#F97316' : (currentFood.progressPct ?? 100) < 40 ? '#F59E0B' : 'rgba(255,255,255,0.5)'};`}
+              />
+            </div>
+            {bagStatusText(currentFood.daysRemaining, currentFood.daysElapsed) && (
+              <p class="text-[11px] text-white/40 mt-1">{bagStatusText(currentFood.daysRemaining, currentFood.daysElapsed)}</p>
+            )}
           </div>
         )}
       </div>
@@ -242,19 +277,36 @@ const avgDaysPerBag = foods.filter(f => f.daysTotal).length > 0
                 <div class="flex-1 min-w-0">
                   <div class="flex items-center gap-2 flex-wrap">
                     <p class="font-semibold text-ink">{food.brand}</p>
-                    <span class="rounded-full bg-canvas px-2 py-0.5 text-xs font-medium text-muted">
-                      {FOOD_TYPES[food.type] || food.type}
-                    </span>
+                    {food.foodType && (
+                      <span class="rounded-full bg-canvas px-2 py-0.5 text-xs font-medium text-muted">
+                        {FOOD_TYPES[food.foodType] || food.foodType}
+                      </span>
+                    )}
                   </div>
                   {food.daysTotal && (
                     <div class="mt-2.5 mb-2">
                       <div class="flex items-baseline gap-1.5 mb-1">
-                        <span class="text-xl font-bold text-ink">≈ {food.daysTotal}</span>
-                        <span class="text-sm text-muted">días por bolsa</span>
+                        {food.daysRemaining !== null ? (
+                          <>
+                            <span class="text-xl font-bold text-ink">≈ {food.daysRemaining}</span>
+                            <span class="text-sm text-muted">días restantes de {food.daysTotal}</span>
+                          </>
+                        ) : (
+                          <>
+                            <span class="text-xl font-bold text-ink">≈ {food.daysTotal}</span>
+                            <span class="text-sm text-muted">días por bolsa</span>
+                          </>
+                        )}
                       </div>
                       <div class="h-1.5 w-full rounded-full bg-canvas overflow-hidden">
-                        <div class="h-full rounded-full bg-accent" style="width: 100%"></div>
+                        <div
+                          class="h-full rounded-full bg-accent transition-all"
+                          style={`width: ${food.progressPct ?? 100}%;`}
+                        />
                       </div>
+                      {bagStatusText(food.daysRemaining, food.daysElapsed) && (
+                        <p class="text-[11px] text-muted mt-1">{bagStatusText(food.daysRemaining, food.daysElapsed)}</p>
+                      )}
                     </div>
                   )}
                   <div class="flex flex-wrap gap-x-3 gap-y-0.5 mt-1.5">
@@ -297,7 +349,7 @@ const avgDaysPerBag = foods.filter(f => f.daysTotal).length > 0
               <input type="text" name="brand" value={food.brand} required placeholder="Marca" class="field-input-sm" />
               <select name="type" required class="field-input-sm">
                 {Object.entries(FOOD_TYPES).map(([val, label]) => (
-                  <option value={val} selected={food.type === val}>{label}</option>
+                  <option value={val} selected={food.foodType === val}>{label}</option>
                 ))}
               </select>
             </div>

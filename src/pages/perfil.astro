@@ -29,7 +29,7 @@ const profileFields = pet ? [
   !!pet.photo_url,
   !!pet.weight_kg,
   !!pet.chip_id,
-  !!(pet as any).color,
+  !!pet.color,
 ] : [];
 const completedFields = profileFields.filter(Boolean).length;
 const totalFields = profileFields.length;
@@ -251,7 +251,7 @@ const isOtherBreed = pet?.breed && !breedInList;
           <Input label="Nº Microchip" name="chip_id" value={pet?.chip_id || ''} placeholder="Ej: 123456789" />
         </div>
         <p class="text-xs text-gray-400 -mt-2">Al cambiar el peso se guarda automáticamente en el historial</p>
-        <Input label="Color de pelaje" name="color" value={(pet as any)?.color || ''} placeholder="Ej: Dorado, Negro, Blanco..." />
+        <Input label="Color de pelaje" name="color" value={pet?.color || ''} placeholder="Ej: Dorado, Negro, Blanco..." />
       </div>
 
       <Button type="submit" variant="primary" size="lg" class="w-full">

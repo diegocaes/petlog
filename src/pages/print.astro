@@ -30,7 +30,7 @@ const { data: weightRows } = await supabase
   .limit(1);
 
 const latestWeight = weightRows?.[0]?.weight_kg ?? pet.weight_kg;
-const petColor = (pet as any).color as string | null;
+const petColor = pet.color;
 const petSpecies = (pet as any).species as string | null;
 const speciesLabel = petSpecies === 'cat' ? 'Felino' : 'Canino';
 const age = pet.birth_date ? calculateAge(pet.birth_date) : null;

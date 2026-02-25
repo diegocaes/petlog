@@ -115,7 +115,7 @@ const { data: adventures } = await supabase
               {adv.photo_url ? (
                 <button
                   type="button"
-                  class="lightbox-trigger h-24 w-24 shrink-0 rounded-2xl overflow-hidden ring-0 transition-all hover:ring-2 hover:ring-forest/30 active:scale-95"
+                  class="lightbox-trigger h-24 w-24 shrink-0 rounded-2xl overflow-hidden ring-0 transition-all hover:ring-2 hover:ring-accent/30 active:scale-95"
                   data-src={adv.photo_url}
                   data-title={adv.title}
                   data-date={adv.date}

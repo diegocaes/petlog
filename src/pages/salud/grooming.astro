@@ -1,7 +1,6 @@
 ---
 import MainLayout from '../../layouts/MainLayout.astro';
 import Card from '../../components/ui/Card.astro';
-import SectionHeader from '../../components/ui/SectionHeader.astro';
 import SaludTabs from '../../components/SaludTabs.astro';
 import EmptyState from '../../components/ui/EmptyState.astro';
 import { formatDate } from '../../lib/utils';
@@ -61,7 +60,6 @@ const avgCost = groomings && groomings.filter(g => g.cost).length > 0
 ---
 
 <MainLayout title="Grooming">
-  <SectionHeader title="Salud" subtitle="Control integral de tu mascota" />
   <SaludTabs />
 
   {/* ── ANALYTICS ── */}
@@ -97,8 +95,8 @@ const avgCost = groomings && groomings.filter(g => g.cost).length > 0
       class="w-full flex items-center justify-between rounded-2xl bg-card border border-card-border px-4 py-3.5 transition-all hover:border-accent/30 active:scale-95"
     >
       <div class="flex items-center gap-2.5">
-        <div class="flex h-7 w-7 items-center justify-center rounded-lg" style="background-color: #F9F0FB;">
-          <svg class="h-3.5 w-3.5" style="color: #A855F7;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+        <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-purple-50">
+          <svg class="h-3.5 w-3.5 text-purple-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
         </div>
         <p class="text-sm font-semibold text-ink">Registrar grooming</p>
       </div>

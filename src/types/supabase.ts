@@ -8,6 +8,8 @@ export interface Pet {
   weight_kg: number | null;
   photo_url: string | null;
   chip_id: string | null;
+  color: string | null;
+  is_neutered: boolean | null;
   created_at: string;
 }
 
@@ -52,7 +54,12 @@ export interface Food {
   id: string;
   pet_id: string;
   brand: string;
-  type: string;
+  food_type: string | null;
+  /** @deprecated use food_type */
+  type: string | null;
+  daily_grams: number | null;
+  bag_size: number | null;
+  bag_unit: string | null;
   amount_grams: number | null;
   frequency: string | null;
   start_date: string | null;
