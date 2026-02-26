@@ -11,6 +11,10 @@ import { uploadPetPhoto } from '../lib/storage';
 
 const { supabase, user, activePetId } = Astro.locals;
 const isNew = Astro.url.searchParams.get('new') === '1';
+const savedParam = Astro.url.searchParams.get('saved');
+const errorParam = Astro.url.searchParams.get('error');
+// Google/OAuth users don't have a password — check identities
+const hasPasswordLogin = user.identities?.some((i: { provider: string }) => i.provider === 'email') ?? true;
 
 // Extract first name for personalized greeting
 const fullName = user.user_metadata?.full_name || user.user_metadata?.name || '';
@@ -44,6 +48,22 @@ if (Astro.request.method === 'POST') {
   if (action === 'logout') {
     await supabase.auth.signOut();
     return Astro.redirect('/login');
+  }
+
+  if (action === 'change_password') {
+    const newPassword = formData.get('new_password') as string;
+    const confirmPassword = formData.get('confirm_password') as string;
+    if (!newPassword || newPassword.length < 8) {
+      return Astro.redirect('/perfil?error=password_short');
+    }
+    if (newPassword !== confirmPassword) {
+      return Astro.redirect('/perfil?error=password_mismatch');
+    }
+    const { error: pwError } = await supabase.auth.updateUser({ password: newPassword });
+    if (pwError) {
+      return Astro.redirect('/perfil?error=password_failed');
+    }
+    return Astro.redirect('/perfil?saved=password');
   }
 
   if (action === 'delete_account') {
@@ -312,6 +332,83 @@ const isOtherBreed = pet?.breed && !breedInList;
 
     <hr class="border-card-border/50 my-4" />
 
+    <!-- Change password -->
+    {hasPasswordLogin && (
+      <>
+        {savedParam === 'password' && (
+          <div class="mb-3 rounded-xl bg-accent/10 border border-accent/20 px-4 py-3 text-sm text-accent-dark font-medium">
+            Contraseña actualizada correctamente.
+          </div>
+        )}
+        {errorParam === 'password_mismatch' && (
+          <div class="mb-3 rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+            Las contraseñas no coinciden.
+          </div>
+        )}
+        {errorParam === 'password_short' && (
+          <div class="mb-3 rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+            La contraseña debe tener al menos 8 caracteres.
+          </div>
+        )}
+        {errorParam === 'password_failed' && (
+          <div class="mb-3 rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+            No se pudo actualizar la contraseña. Intenta de nuevo.
+          </div>
+        )}
+
+        <div>
+          <button
+            type="button"
+            id="btn-toggle-password"
+            class="flex w-full items-center justify-between text-left"
+          >
+            <div>
+              <p class="text-sm font-medium text-ink">Cambiar contraseña</p>
+              <p class="text-xs text-gray-400 mt-0.5">Actualiza tu contraseña de acceso</p>
+            </div>
+            <svg id="icon-password-toggle" class="h-4 w-4 text-muted transition-transform shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+          </button>
+
+          <div id="password-form-body" class="hidden mt-4">
+            <form method="POST" class="space-y-3" id="password-form">
+              <input type="hidden" name="_action" value="change_password" />
+              <div>
+                <label class="block text-sm font-medium text-ink mb-1.5">Nueva contraseña</label>
+                <input
+                  type="password"
+                  name="new_password"
+                  required
+                  minlength="8"
+                  placeholder="Mínimo 8 caracteres"
+                  class="w-full rounded-xl border border-card-border bg-white px-4 py-2.5 text-ink placeholder-muted text-sm transition-all focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
+                />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-ink mb-1.5">Confirmar contraseña</label>
+                <input
+                  type="password"
+                  name="confirm_password"
+                  required
+                  minlength="8"
+                  placeholder="Repite la nueva contraseña"
+                  class="w-full rounded-xl border border-card-border bg-white px-4 py-2.5 text-ink placeholder-muted text-sm transition-all focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
+                />
+              </div>
+              <button
+                type="submit"
+                id="btn-save-password"
+                class="w-full rounded-xl bg-accent px-6 py-2.5 text-sm font-semibold text-white transition-all hover:bg-accent-dark active:scale-95"
+              >
+                Guardar contraseña
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <hr class="border-card-border/50 my-4" />
+      </>
+    )}
+
     <!-- Delete account -->
     <div class="flex items-center justify-between">
       <div>
@@ -394,6 +491,20 @@ const isOtherBreed = pet?.breed && !breedInList;
       if (select.value !== 'Other') otherInput.value = '';
     }
     select?.addEventListener('change', toggleOther);
+
+    // Change password toggle
+    const btnTogglePassword = document.getElementById('btn-toggle-password');
+    const passwordFormBody = document.getElementById('password-form-body');
+    const iconPasswordToggle = document.getElementById('icon-password-toggle');
+    btnTogglePassword?.addEventListener('click', () => {
+      const isHidden = passwordFormBody?.classList.toggle('hidden');
+      iconPasswordToggle?.classList.toggle('rotate-180', !isHidden);
+    });
+    document.getElementById('password-form')?.addEventListener('submit', () => {
+      const btn = document.getElementById('btn-save-password') as HTMLButtonElement;
+      btn.textContent = 'Guardando...';
+      btn.disabled = true;
+    });
 
     // Delete account modal
     const modal = document.getElementById('delete-modal') as HTMLDivElement;
