@@ -6,24 +6,30 @@ export const GET: APIRoute = async ({ request, cookies, redirect }) => {
   const code = url.searchParams.get('code');
   const tokenHash = url.searchParams.get('token_hash');
   const type = url.searchParams.get('type');
+  // Custom param we append to redirectTo so we know where to send the user after auth
+  const next = url.searchParams.get('next');
 
   const supabase = createSupabaseClient(request, cookies);
 
   if (tokenHash && type) {
-    // Email confirmation flow (signup, recovery, magiclink, etc.)
+    // Email OTP flow (signup confirmation, recovery, magiclink)
     const { error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type: type as any });
     if (error) {
       return redirect('/login?error=link_expired');
     }
-    // Password recovery: send user to update-password page (session is now active)
-    if (type === 'recovery') {
+    // Password recovery: session is now active, send to update-password
+    if (type === 'recovery' || next === 'update-password') {
       return redirect('/update-password');
     }
   } else if (code) {
-    // OAuth flow (Google, etc.)
+    // PKCE flow: OAuth (Google) or email recovery via PKCE
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (error) {
       return redirect('/login?error=auth_failed');
+    }
+    // If our custom next param is present, use it
+    if (next === 'update-password') {
+      return redirect('/update-password');
     }
   } else {
     return redirect('/login?error=no_code');
