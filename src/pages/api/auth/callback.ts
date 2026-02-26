@@ -10,10 +10,14 @@ export const GET: APIRoute = async ({ request, cookies, redirect }) => {
   const supabase = createSupabaseClient(request, cookies);
 
   if (tokenHash && type) {
-    // Email confirmation flow (signup, recovery, etc.)
+    // Email confirmation flow (signup, recovery, magiclink, etc.)
     const { error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type: type as any });
     if (error) {
-      return redirect('/login?error=auth_failed');
+      return redirect('/login?error=link_expired');
+    }
+    // Password recovery: send user to update-password page (session is now active)
+    if (type === 'recovery') {
+      return redirect('/update-password');
     }
   } else if (code) {
     // OAuth flow (Google, etc.)

@@ -119,6 +119,7 @@ if (Astro.request.method === 'POST') {
               {error === 'email_not_confirmed' && 'Confirma tu correo antes de entrar. Revisa tu bandeja de entrada.'}
               {error === 'auth_failed' && 'Error de autenticación. Intenta de nuevo.'}
               {error === 'no_code' && 'Código de autenticación no encontrado.'}
+              {error === 'link_expired' && 'El enlace ha expirado. Solicita uno nuevo.'}
             </div>
           )}
           <!-- Google OAuth -->
@@ -158,7 +159,10 @@ if (Astro.request.method === 'POST') {
               />
             </div>
             <div>
-              <label class="block text-sm font-medium text-ink mb-1.5">Contraseña</label>
+              <div class="flex items-center justify-between mb-1.5">
+                <label class="block text-sm font-medium text-ink">Contraseña</label>
+                <a href="/forgot-password" class="text-xs text-muted hover:text-accent transition-colors">¿Olvidaste tu contraseña?</a>
+              </div>
               <input
                 type="password"
                 name="password"
