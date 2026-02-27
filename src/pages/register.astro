@@ -10,7 +10,6 @@ if (user) {
 }
 
 const error = Astro.url.searchParams.get('error');
-const errorDetail = Astro.url.searchParams.get('detail');
 const success = Astro.url.searchParams.get('success');
 
 if (Astro.request.method === 'POST') {
@@ -32,17 +31,31 @@ if (Astro.request.method === 'POST') {
   }
 
   if (action === 'register') {
-    const { data: signUpData, error: registerError } = await supabase.auth.signUp({ email, password });
+    const cleanEmail = email?.trim().toLowerCase();
+    const cleanPassword = password?.trim();
+    const confirmPassword = (formData.get('confirm_password') as string)?.trim();
+
+    if (!cleanPassword || cleanPassword.length < 8) {
+      return Astro.redirect('/register?error=weak_password');
+    }
+    if (cleanPassword !== confirmPassword) {
+      return Astro.redirect('/register?error=password_mismatch');
+    }
+
+    const { data: signUpData, error: registerError } = await supabase.auth.signUp({
+      email: cleanEmail,
+      password: cleanPassword,
+    });
     if (registerError) {
       const msg = registerError.message?.toLowerCase() ?? '';
       const code = msg.includes('already registered') || msg.includes('already exists') || msg.includes('user already')
         ? 'email_exists'
         : 'register_failed';
-      return Astro.redirect(`/register?error=${code}&detail=${encodeURIComponent(registerError.message)}`);
+      return Astro.redirect(`/register?error=${code}`);
     }
     // Supabase sometimes returns no error but user is null (rate limit or email confirmation issue)
     if (!signUpData.user) {
-      return Astro.redirect('/register?error=register_failed&detail=no_user_returned');
+      return Astro.redirect('/register?error=register_failed');
     }
     return Astro.redirect('/register?success=check_email');
   }
@@ -149,16 +162,18 @@ if (Astro.request.method === 'POST') {
                   <span>Este email ya tiene una cuenta. <a href="/login" class="font-semibold underline">Inicia sesión →</a></span>
                 )}
                 {error === 'auth_failed' && 'Error al conectar con Google. Intenta de nuevo.'}
-                {errorDetail && <p class="mt-1 text-xs opacity-70">Detalle: {errorDetail}</p>}
+                {error === 'weak_password' && 'La contraseña debe tener al menos 8 caracteres.'}
+                {error === 'password_mismatch' && 'Las contraseñas no coinciden.'}
               </div>
             )}
 
             <!-- Google OAuth -->
-            <form method="POST">
+            <form method="POST" id="google-form-reg">
               <button
                 type="submit"
                 name="action"
                 value="google"
+                id="btn-google-reg"
                 class="flex w-full items-center justify-center gap-3 rounded-xl border border-card-border bg-white px-4 py-2.5 text-sm font-semibold text-ink shadow-sm transition-all duration-200 hover:bg-gray-50 hover:border-gray-300 active:scale-95"
               >
                 <svg width="18" height="18" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -196,8 +211,19 @@ if (Astro.request.method === 'POST') {
                   type="password"
                   name="password"
                   required
-                  minlength="6"
-                  placeholder="Mínimo 6 caracteres"
+                  minlength="8"
+                  placeholder="Mínimo 8 caracteres"
+                  class="w-full rounded-xl border border-card-border bg-white px-4 py-2.5 text-ink placeholder-muted text-sm transition-all duration-200 hover:border-gray-300 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
+                />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-ink mb-1.5">Confirmar contraseña</label>
+                <input
+                  type="password"
+                  name="confirm_password"
+                  required
+                  minlength="8"
+                  placeholder="Repite tu contraseña"
                   class="w-full rounded-xl border border-card-border bg-white px-4 py-2.5 text-ink placeholder-muted text-sm transition-all duration-200 hover:border-gray-300 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
                 />
               </div>
@@ -221,8 +247,39 @@ if (Astro.request.method === 'POST') {
     </div>
 
     <script>
+      // Google loading state
+      // Must inject hidden input BEFORE disabling the button,
+      // because a disabled submit button does not send its name/value.
+      const googleFormReg = document.getElementById('google-form-reg') as HTMLFormElement;
+      const btnGoogleReg = document.getElementById('btn-google-reg') as HTMLButtonElement;
+      googleFormReg?.addEventListener('submit', () => {
+        const hidden = document.createElement('input');
+        hidden.type = 'hidden';
+        hidden.name = 'action';
+        hidden.value = 'google';
+        googleFormReg.appendChild(hidden);
+        if (btnGoogleReg) {
+          btnGoogleReg.classList.add('btn-loading');
+          btnGoogleReg.setAttribute('disabled', '');
+        }
+      });
+
+      // Register form: client-side password match check before submit
       const form = document.getElementById('register-form') as HTMLFormElement;
-      form?.addEventListener('submit', () => {
+      form?.addEventListener('submit', (e) => {
+        const password = (form.querySelector('input[name="password"]') as HTMLInputElement)?.value;
+        const confirm = (form.querySelector('input[name="confirm_password"]') as HTMLInputElement)?.value;
+        if (password !== confirm) {
+          e.preventDefault();
+          const existing = form.querySelector('.client-error') as HTMLElement | null;
+          if (!existing) {
+            const msg = document.createElement('p');
+            msg.className = 'client-error text-xs text-red-500 mt-1';
+            msg.textContent = 'Las contraseñas no coinciden.';
+            form.querySelector('input[name="confirm_password"]')?.insertAdjacentElement('afterend', msg);
+          }
+          return;
+        }
         const btn = document.getElementById('btn-register') as HTMLButtonElement;
         if (btn) {
           btn.classList.add('btn-loading');

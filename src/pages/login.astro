@@ -32,8 +32,8 @@ if (Astro.request.method === 'POST') {
 
   if (action === 'login') {
     const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
+      email: email?.trim().toLowerCase(),
+      password: password?.trim(),
     });
     if (loginError) {
       const msg = loginError.message?.toLowerCase() ?? '';
@@ -119,11 +119,12 @@ if (Astro.request.method === 'POST') {
             </div>
           )}
           <!-- Google OAuth -->
-          <form method="POST">
+          <form method="POST" id="google-form">
             <button
               type="submit"
               name="action"
               value="google"
+              id="btn-google"
               class="flex w-full items-center justify-center gap-3 rounded-xl border border-card-border bg-white px-4 py-2.5 text-sm font-semibold text-ink shadow-sm transition-all duration-200 hover:bg-gray-50 hover:border-gray-300 active:scale-95"
             >
               <svg width="18" height="18" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -191,7 +192,22 @@ if (Astro.request.method === 'POST') {
     </div>
 
     <script>
-      // Loading state — preserve action value before disabling buttons
+      // Google form loading state
+      // Must inject hidden input BEFORE disabling the button,
+      // because a disabled submit button does not send its name/value.
+      const googleForm = document.getElementById('google-form') as HTMLFormElement;
+      const btnGoogle = document.getElementById('btn-google') as HTMLButtonElement;
+      googleForm?.addEventListener('submit', () => {
+        const hidden = document.createElement('input');
+        hidden.type = 'hidden';
+        hidden.name = 'action';
+        hidden.value = 'google';
+        googleForm.appendChild(hidden);
+        btnGoogle.classList.add('btn-loading');
+        btnGoogle.setAttribute('disabled', '');
+      });
+
+      // Email/password form loading state — preserve action value before disabling buttons
       const form = document.getElementById('login-form') as HTMLFormElement;
       let clickedAction = '';
 

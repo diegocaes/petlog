@@ -26,6 +26,8 @@ const [
   { data: weightRecords },
   { data: recentVaccines },
   { data: foods },
+  { data: lastAntipulgas },
+  { data: lastDesparasitante },
 ] = await Promise.all([
   supabase.from('groomings').select('type, date').eq('pet_id', pet.id).order('date', { ascending: false }).limit(1),
   supabase.from('adventures').select('title, date, photo_url').eq('pet_id', pet.id).order('date', { ascending: false }).limit(1),
@@ -34,8 +36,10 @@ const [
   supabase.from('vet_visits').select('*', { count: 'exact', head: true }).eq('pet_id', pet.id),
   supabase.from('adventures').select('*', { count: 'exact', head: true }).eq('pet_id', pet.id),
   supabase.from('weight_records').select('weight_kg, date').eq('pet_id', pet.id).order('date', { ascending: false }).limit(2),
-  supabase.from('vaccines').select('name').eq('pet_id', pet.id).order('date_given', { ascending: false }).limit(4),
-  supabase.from('foods').select('brand, daily_grams, bag_size, bag_unit, price, food_type').eq('pet_id', pet.id).order('created_at', { ascending: false }),
+  supabase.from('vaccines').select('name, date_given').eq('pet_id', pet.id).order('date_given', { ascending: false }).limit(4),
+  supabase.from('foods').select('brand, daily_grams, bag_size, bag_unit, price, food_type, start_date, created_at').eq('pet_id', pet.id).order('created_at', { ascending: false }),
+  supabase.from('preventive_treatments').select('date_given, product_name').eq('pet_id', pet.id).eq('type', 'antipulgas').order('date_given', { ascending: false }).limit(1),
+  supabase.from('preventive_treatments').select('date_given, product_name').eq('pet_id', pet.id).eq('type', 'desparasitante').order('date_given', { ascending: false }).limit(1),
 ]);
 
 const lastGrooming = groomingRows?.[0] ?? null;
@@ -52,20 +56,20 @@ function bagToGrams(size: number, unit: string): number {
 const activeFoods = (foods ?? []).filter(f => f.daily_grams && f.bag_size);
 const currentFood = activeFoods[0] ?? null;
 
-// Days remaining on current bag
-const currentDays = currentFood
+const totalDays = currentFood
   ? Math.floor(bagToGrams(currentFood.bag_size, currentFood.bag_unit ?? 'kg') / currentFood.daily_grams)
   : null;
 
-// Average bag duration across all foods with enough data
-const allDurations = activeFoods.map(f =>
-  Math.floor(bagToGrams(f.bag_size, f.bag_unit ?? 'kg') / f.daily_grams)
-);
-const avgDays = allDurations.length
-  ? Math.round(allDurations.reduce((a, b) => a + b, 0) / allDurations.length)
+// Days elapsed since bag was opened (use start_date if set, else created_at)
+const bagStartStr = currentFood?.start_date || currentFood?.created_at || null;
+const daysElapsed = bagStartStr
+  ? Math.floor((Date.now() - new Date(bagStartStr).getTime()) / (1000 * 60 * 60 * 24))
+  : null;
+const daysLeft = totalDays !== null && daysElapsed !== null
+  ? Math.max(0, totalDays - daysElapsed)
   : null;
 
-// Average cost per day across foods that have price + enough data
+
 const foodsWithCost = activeFoods.filter(f => f.price);
 const avgCostPerDay = foodsWithCost.length
   ? (foodsWithCost.reduce((sum, f) => {
@@ -74,9 +78,7 @@ const avgCostPerDay = foodsWithCost.length
     }, 0) / foodsWithCost.length).toFixed(2)
   : null;
 
-const showFoodCard = !!(currentDays || avgDays || avgCostPerDay);
-
-// Vitality Score (mini-widget para dashboard)
+// Vitality Score
 const vitalityInput: ScoreInput = {
   pet: {
     breed: pet.breed ?? null,
@@ -92,9 +94,32 @@ const vitalityInput: ScoreInput = {
   adventures: lastAdventure ? [{ date: lastAdventure.date }] : [],
   foods: activeFoods,
 };
-// Para el score del dashboard usamos una versión rápida con los datos ya cargados
-// (datos completos en /salud)
 const dashScore = calculateVitalityScore(vitalityInput);
+
+// Short pillar names for the compact bar display
+const SHORT_PILLAR: Record<string, string> = {
+  'Peso': 'Peso',
+  'Cuidado preventivo': 'Preventivo',
+  'Raza y edad': 'Raza',
+  'Actividad': 'Actividad',
+  'Nutrición': 'Nutrición',
+};
+
+// Preventive treatment reminders (30-day cycle)
+function daysUntilNext(lastDateStr: string | null | undefined): { daysLeft: number; overdue: boolean; lastDate: string | null } {
+  if (!lastDateStr) return { daysLeft: 0, overdue: true, lastDate: null };
+  const last = new Date(lastDateStr);
+  const next = new Date(last);
+  next.setDate(next.getDate() + 30);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  next.setHours(0, 0, 0, 0);
+  const daysLeft = Math.ceil((next.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  return { daysLeft, overdue: daysLeft < 0, lastDate: lastDateStr };
+}
+
+const antipulgasInfo = daysUntilNext(lastAntipulgas?.[0]?.date_given);
+const desparasitanteInfo = daysUntilNext(lastDesparasitante?.[0]?.date_given);
 
 const birthday = pet.birth_date ? isBirthday(pet.birth_date) : false;
 const age = pet.birth_date ? calculateAge(pet.birth_date) : null;
@@ -105,7 +130,7 @@ const latestWeight = weightRecords?.[0]?.weight_kg ?? pet.weight_kg;
 const prevWeight = weightRecords?.[1]?.weight_kg;
 const weightDiff = latestWeight && prevWeight ? +(latestWeight - prevWeight).toFixed(1) : null;
 
-// Checklist — only show items the user hasn't completed yet
+// Checklist
 const profileComplete = !!(pet.photo_url && pet.chip_id && pet.color);
 const checklistItems = [
   { done: (vaccineCount ?? 0) > 0,   href: '/salud/vacunas?new=1', label: 'Agregar vacuna',           sub: 'Rabia, Parvovirus, Moquillo u otras',           iconColor: 'bg-accent/10', iconStroke: 'text-accent',    icon: '<path d="m14.5 2-8.5 8.5v4h4l8.5-8.5a2.83 2.83 0 0 0-4-4z"/><path d="m18 2 4 4"/>' },
@@ -118,10 +143,9 @@ const checklistItems = [
 
 <MainLayout title="Inicio">
 
-  {/* ── QUICK START CHECKLIST (smart: only pending items, hidden when all done or dismissed) ── */}
+  {/* ── QUICK START CHECKLIST ── */}
   {checklistItems.length > 0 && (
     <div class="mb-5 animate-fade-up" id="onboarding-checklist">
-      {/* Header */}
       <div class="rounded-t-2xl border border-b-0 border-accent/30 bg-accent/10 px-5 py-4">
         <div class="flex items-center gap-3">
           <span class="text-xl">🚀</span>
@@ -131,8 +155,6 @@ const checklistItems = [
           </div>
         </div>
       </div>
-
-      {/* Adult dog message — only post-onboarding */}
       {isNewlyOnboarded && age && !age.includes('mes') && !age.startsWith('0') && (
         <div class="border-x border-accent/30 bg-amber/5 px-5 py-3">
           <div class="flex items-start gap-2">
@@ -143,8 +165,6 @@ const checklistItems = [
           </div>
         </div>
       )}
-
-      {/* Checklist items — server-rendered, only pending */}
       <div class="rounded-b-2xl border border-t-0 border-accent/30 bg-white divide-y divide-card-border">
         {checklistItems.map(item => (
           <a href={item.href} class="flex items-center gap-3 px-5 py-3.5 hover:bg-canvas transition-colors active:scale-95">
@@ -159,13 +179,7 @@ const checklistItems = [
           </a>
         ))}
       </div>
-
-      {/* Dismiss — persists via localStorage */}
-      <button
-        type="button"
-        id="btn-dismiss-checklist"
-        class="mt-2 w-full text-xs text-muted hover:text-ink transition-colors py-1"
-      >
+      <button type="button" id="btn-dismiss-checklist" class="mt-2 w-full text-xs text-muted hover:text-ink transition-colors py-1">
         Ya lo sé, no mostrar de nuevo →
       </button>
     </div>
@@ -187,7 +201,7 @@ const checklistItems = [
     });
   </script>
 
-  {/* Confetti — only on first arrival after onboarding */}
+  {/* ── CONFETTI ── */}
   {isNewlyOnboarded && (
     <script is:inline>
       (function() {
@@ -204,7 +218,7 @@ const checklistItems = [
     </script>
   )}
 
-  {/* Birthday Banner */}
+  {/* ── BIRTHDAY BANNER ── */}
   {birthday && (
     <div class="mb-5 rounded-2xl border border-amber/30 bg-amber/10 px-4 py-3 text-center animate-fade-up">
       <p class="text-sm font-semibold text-amber-dark">🎂 ¡Hoy es el cumpleaños de {pet.name}! 🎉</p>
@@ -214,11 +228,8 @@ const checklistItems = [
   {/* ── HERO CARD ── */}
   <a href="/perfil" class="block mb-5 animate-fade-up">
     <div class="relative rounded-2xl overflow-hidden" style="background-color: color-mix(in srgb, var(--color-accent) 25%, #0a0f0a);">
-      {/* Subtle noise/gradient overlay */}
       <div class="absolute inset-0 bg-linear-to-br from-white/5 to-transparent pointer-events-none"></div>
-
       <div class="relative flex items-center gap-4 p-5">
-        {/* Avatar */}
         <div class="relative shrink-0">
           <img
             src={photoUrl}
@@ -227,7 +238,6 @@ const checklistItems = [
               'h-20 w-20 rounded-2xl object-cover',
               birthday ? 'ring-2 ring-amber ring-offset-2' : 'ring-1 ring-white/10',
             ]}
-            style={birthday ? 'ring-offset-color: color-mix(in srgb, var(--color-accent) 25%, #0a0f0a);' : ''}
           />
           {birthday && <span class="absolute -top-2 -right-2 text-base animate-bounce">🎂</span>}
           {pet.gender && !birthday && (
@@ -236,8 +246,6 @@ const checklistItems = [
             </span>
           )}
         </div>
-
-        {/* Info */}
         <div class="flex-1 min-w-0">
           <p class="text-xs font-medium text-white/40 uppercase tracking-widest mb-0.5">Mi mascota</p>
           <h1 class="text-2xl font-bold text-white tracking-tight truncate">{pet.name}</h1>
@@ -247,16 +255,12 @@ const checklistItems = [
             {age && <span class="text-sm text-white/60">{age}</span>}
           </div>
         </div>
-
-        {/* Arrow */}
         <div class="shrink-0 text-white/20">
           <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="m9 18 6-6-6-6"/>
           </svg>
         </div>
       </div>
-
-      {/* Chips row */}
       {(pet.weight_kg || pet.chip_id) && (
         <div class="relative flex gap-2 px-5 pb-4">
           {pet.weight_kg && (
@@ -276,229 +280,289 @@ const checklistItems = [
     </div>
   </a>
 
-  {/* ── VITALITY SCORE WIDGET ── */}
-  <a href="/salud" class="block mb-5 animate-fade-up animate-fade-up-delay-1">
-    <div class="rounded-2xl bg-card border border-card-border p-4 transition-all duration-200 hover:shadow-sm active:scale-95">
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-3">
+  {/* ── MIDDLE ROW: Score + Peso/Alimentación ── */}
+  <div class="grid grid-cols-5 gap-3 mb-5 animate-fade-up animate-fade-up-delay-1">
 
-          {/* Sin score todavía: icono neutro */}
-          {!dashScore.showScore && (
-            <div class="h-12 w-12 shrink-0 rounded-full bg-canvas border-2 border-dashed border-card-border flex items-center justify-center">
-              <span class="text-lg">🐾</span>
-            </div>
-          )}
+    {/* Score de Bienestar — dark card (3/5) */}
+    <div class="col-span-5 sm:col-span-3 self-stretch">
+      <a href="/salud" class="block h-full">
+        <div class="h-full rounded-2xl p-4 flex flex-col gap-3" style="background-color: #1C1C1E;">
 
-          {/* Con score: círculo con número */}
-          {dashScore.showScore && (
-            <div class="relative h-12 w-12 shrink-0" aria-label={`Score: ${dashScore.total} de 100`}>
-              <svg viewBox="0 0 36 36" class="h-12 w-12 -rotate-90" aria-hidden="true">
-                <circle cx="18" cy="18" r="15.5" fill="none" stroke="#EAECF0" stroke-width="3" />
-                <circle
-                  cx="18" cy="18" r="15.5"
-                  fill="none"
-                  stroke={dashScore.color}
-                  stroke-width="3"
-                  stroke-linecap="round"
-                  stroke-dasharray={`${(dashScore.total / 100) * 97.4} 97.4`}
-                />
+          {/* Icon + title */}
+          <div class="flex items-start gap-3">
+            <div class="shrink-0 flex h-10 w-10 items-center justify-center rounded-xl" style="background-color: rgba(124,185,116,0.18);">
+              <svg class="h-5 w-5" viewBox="0 0 24 24" fill="#7CB974" stroke="none">
+                <path d="M12 21.593c-5.63-5.539-11-10.297-11-14.402 0-3.791 3.068-5.191 5.281-5.191 1.312 0 4.151.501 5.719 4.457 1.59-3.968 4.464-4.447 5.726-4.447 2.54 0 5.274 1.621 5.274 5.181 0 4.069-5.136 8.625-11 14.402z"/>
               </svg>
-              <span class="absolute inset-0 flex items-center justify-center text-xs font-black text-ink">
-                {dashScore.total}
-              </span>
             </div>
-          )}
-
-          <div>
-            <p class="text-sm font-bold text-ink">Score de bienestar</p>
-            <p class="text-[11px]" style={`color: ${dashScore.color};`}>{dashScore.headline}</p>
-            {dashScore.showScore && dashScore.flags.length > 0 && (
-              <p class="text-[10px] text-muted mt-0.5">
-                {dashScore.flags.length} {dashScore.flags.length === 1 ? 'aviso' : 'avisos'}
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-bold text-white">Score de Bienestar</p>
+              <p class="text-[11px] leading-relaxed mt-0.5" style="color: rgba(255,255,255,0.45);">
+                Un número del 0 al 100 que resume la salud de {pet.name} en 5 pilares: nutrición, actividad, peso, veterinario y vacunas.
               </p>
-            )}
-            {!dashScore.showScore && (
-              <p class="text-[10px] text-muted mt-0.5">Completa el perfil para verlo →</p>
-            )}
+            </div>
           </div>
+
+          {/* Circle + bars */}
+          <div class="flex items-start gap-4">
+
+            {/* Score circle */}
+            {dashScore.showScore ? (
+              <div class="relative shrink-0 h-16 w-16" aria-label={`Score: ${dashScore.total}`}>
+                <svg viewBox="0 0 36 36" class="h-16 w-16 -rotate-90" aria-hidden="true">
+                  <circle cx="18" cy="18" r="15.5" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="3"/>
+                  <circle
+                    cx="18" cy="18" r="15.5"
+                    fill="none"
+                    stroke={dashScore.color}
+                    stroke-width="3"
+                    stroke-linecap="round"
+                    stroke-dasharray={`${(dashScore.total / 100) * 97.4} 97.4`}
+                  />
+                </svg>
+                <div class="absolute inset-0 flex flex-col items-center justify-center">
+                  <span class="text-xl font-black text-white leading-none">{dashScore.total}</span>
+                  <span class="text-[8px] font-semibold uppercase tracking-widest" style="color: rgba(255,255,255,0.35);">Score</span>
+                </div>
+              </div>
+            ) : (
+              <div class="shrink-0 h-16 w-16 rounded-full flex items-center justify-center" style="border: 2.5px dashed rgba(255,255,255,0.15);">
+                <span class="text-xl">🐾</span>
+              </div>
+            )}
+
+            {/* 5 pillar bars */}
+            <div class="flex-1 flex flex-col justify-center gap-2">
+              {dashScore.pillars.map(pillar => (
+                <div class="flex items-center gap-2">
+                  <p class="text-[10px] shrink-0 w-14 truncate" style="color: rgba(255,255,255,0.5);">
+                    {SHORT_PILLAR[pillar.name] ?? pillar.name}
+                  </p>
+                  <div class="flex-1 rounded-full h-1.5 overflow-hidden" style="background-color: rgba(255,255,255,0.08);">
+                    <div
+                      class="h-1.5 rounded-full"
+                      style={`width: ${dashScore.showScore ? pillar.pct : 0}%; background-color: #7CB974; transition: width 0.6s ease;`}
+                    />
+                  </div>
+                  <p class="text-[10px] w-4 text-right font-semibold shrink-0" style={`color: ${dashScore.showScore ? '#7CB974' : 'rgba(255,255,255,0.2)'};`}>
+                    {pillar.score}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+          </div>
+
+          {/* Footer status */}
+          <p class="text-[11px] font-medium mt-auto" style={`color: ${dashScore.color};`}>
+            {dashScore.headline} →
+          </p>
+
         </div>
-
-        <svg class="h-4 w-4 text-muted/40 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
-      </div>
+      </a>
     </div>
-  </a>
 
-  {/* ── WEIGHT CARD (dark) ── */}
-  <a href="/salud/peso" class="block mb-5 animate-fade-up animate-fade-up-delay-1">
-    <div class="relative rounded-2xl bg-accent overflow-hidden">
-      <div class="absolute inset-0 bg-linear-to-br from-white/10 to-transparent pointer-events-none"></div>
-      <div class="relative flex items-center justify-between px-5 py-4">
-        <div>
-          <p class="text-xs font-medium text-white/60 uppercase tracking-widest mb-1">Peso actual</p>
+    {/* Right column: Peso + Alimentación (2/5) */}
+    <div class="col-span-5 sm:col-span-2 flex flex-col gap-3">
+
+      {/* Peso compact */}
+      <a href="/salud/peso" class="block rounded-2xl bg-accent overflow-hidden active:scale-95 transition-transform">
+        <div class="relative px-4 py-4">
+          <div class="absolute inset-0 bg-linear-to-br from-white/10 to-transparent pointer-events-none"></div>
+          <p class="relative text-[10px] font-semibold text-white/50 uppercase tracking-widest mb-1">Peso actual</p>
           {latestWeight ? (
-            <div class="flex items-baseline gap-2">
-              <p class="text-4xl font-black text-white tracking-tight">{latestWeight}</p>
-              <p class="text-lg font-medium text-white/60">kg</p>
-              {weightDiff !== null && (
-                <span class:list={[
-                  'inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-xs font-semibold',
-                  weightDiff > 0 ? 'bg-white/15 text-white' : weightDiff < 0 ? 'bg-white/15 text-white' : 'bg-white/10 text-white/60'
-                ]}>
-                  {weightDiff > 0 ? '↑' : weightDiff < 0 ? '↓' : '—'} {Math.abs(weightDiff)} kg
-                </span>
-              )}
+            <div class="relative flex items-baseline gap-1.5">
+              <span class="text-3xl font-black text-white leading-none">{latestWeight}</span>
+              <span class="text-sm text-white/60">kg</span>
             </div>
           ) : (
-            <p class="text-2xl font-bold text-white/60">Sin registrar</p>
+            <p class="relative text-sm font-semibold text-white/60">Sin registrar</p>
+          )}
+          {weightDiff !== null && (
+            <p class="relative text-xs text-white/60 mt-1">
+              {weightDiff > 0 ? '↑' : '↓'} {Math.abs(weightDiff)} kg
+            </p>
           )}
         </div>
-        <div class="flex items-center justify-center h-12 w-12 rounded-2xl bg-white/15">
-          <svg class="h-6 w-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 12a4 4 0 0 1 8 0"/><line x1="12" y1="12" x2="12" y2="8"/></svg>
+      </a>
+
+      {/* Alimentación compact */}
+      <a href="/alimentacion" class="flex-1 block rounded-2xl bg-card border border-card-border px-4 py-4 active:scale-95 transition-transform hover:border-amber/30">
+        <div class="flex items-center gap-2 mb-2">
+          <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-amber/10">
+            <svg class="h-3.5 w-3.5 text-amber-dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/></svg>
+          </div>
+          <p class="text-xs font-semibold text-ink">Alimentación</p>
         </div>
-      </div>
+        {currentFood ? (
+          <>
+            <p class="text-sm font-bold text-ink truncate">{currentFood.brand}</p>
+            {avgCostPerDay ? (
+              <p class="text-xs text-muted mt-0.5">${avgCostPerDay}/día</p>
+            ) : null}
+            {daysLeft !== null && totalDays !== null ? (
+              <p class="text-xs text-muted mt-0.5">{daysLeft}d restantes / {totalDays}d total</p>
+            ) : null}
+          </>
+        ) : (
+          <p class="text-xs text-muted/60">Agregar alimento →</p>
+        )}
+      </a>
+
     </div>
-  </a>
+  </div>
 
-  {/* ── FOOD INSIGHTS CARD ── */}
-  {showFoodCard && (
-    <a href="/alimentacion" class="block mb-5 animate-fade-up animate-fade-up-delay-1">
-      <div class="rounded-2xl bg-card border border-card-border p-4 transition-all duration-200 hover:shadow-sm hover:border-amber/30 active:scale-95">
-        <div class="flex items-center justify-between mb-3">
-          <div class="flex items-center gap-2.5">
-            <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-amber/10">
-              <svg class="h-4.5 w-4.5 text-amber-dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/></svg>
-            </div>
-            <div>
-              <p class="text-sm font-semibold text-ink">Alimentación</p>
-              {currentFood && <p class="text-[11px] text-muted truncate max-w-40">{currentFood.brand}</p>}
-            </div>
-          </div>
-          <svg class="h-4 w-4 text-muted/40 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
-        </div>
-
-        <div class="grid grid-cols-3 gap-3 pt-2 border-t border-card-border">
-          <div class="text-center">
-            <p class:list={['text-xl font-black tracking-tight', currentDays ? 'text-ink' : 'text-muted/40']}>
-              {currentDays ? `≈${currentDays}` : '—'}
-            </p>
-            <p class="text-[10px] text-muted font-medium mt-0.5 leading-tight">días<br/>restantes</p>
-          </div>
-          <div class="text-center border-x border-card-border">
-            <p class:list={['text-xl font-black tracking-tight', avgDays ? 'text-ink' : 'text-muted/40']}>
-              {avgDays ?? '—'}
-            </p>
-            <p class="text-[10px] text-muted font-medium mt-0.5 leading-tight">días<br/>por bolsa</p>
-          </div>
-          <div class="text-center">
-            <p class:list={['text-xl font-black tracking-tight', avgCostPerDay ? 'text-ink' : 'text-muted/40']}>
-              {avgCostPerDay ? `$${avgCostPerDay}` : '—'}
-            </p>
-            <p class="text-[10px] text-muted font-medium mt-0.5 leading-tight">costo<br/>por día</p>
-          </div>
-        </div>
-      </div>
-    </a>
-  )}
-
-  {/* ── RECENT ACTIVITY GRID ── */}
-  <p class="text-xs font-semibold text-muted uppercase tracking-widest mb-3 animate-fade-up animate-fade-up-delay-2">Actividad reciente</p>
+  {/* ── BOTTOM ROW: Vacunas + Alimentación detalle ── */}
   <div class="grid grid-cols-2 gap-3 mb-5 animate-fade-up animate-fade-up-delay-2">
 
-    {/* Grooming */}
-    <a href="/salud/grooming" class="rounded-2xl bg-card border border-card-border p-4 transition-all duration-200 active:scale-95">
+    {/* Vacunas list */}
+    <a href="/salud/vacunas" class="rounded-2xl bg-card border border-card-border p-4 transition-all active:scale-95 hover:shadow-sm">
       <div class="flex items-center justify-between mb-3">
-        <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-purple-50">
-          <svg class="h-4 w-4 text-purple-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2Z"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2Z"/></svg>
-        </div>
+        <p class="text-xs font-semibold text-ink">Vacunas</p>
         <svg class="h-4 w-4 text-muted/30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
       </div>
-      <p class="text-[11px] text-muted font-medium mb-0.5">Grooming</p>
-      {lastGrooming ? (
-        <>
-          <p class="text-sm font-semibold text-ink leading-tight truncate">{GROOMING_TYPES[lastGrooming.type] || lastGrooming.type}</p>
-          <p class="text-[11px] text-muted mt-0.5">{formatDate(lastGrooming.date)}</p>
-        </>
-      ) : (
-        <p class="text-sm text-muted">Sin registros</p>
-      )}
-    </a>
-
-    {/* Aventura */}
-    <a href="/aventuras" class="rounded-2xl bg-card border border-card-border p-4 transition-all duration-200 active:scale-95 overflow-hidden relative">
-      {lastAdventure?.photo_url && (
-        <div class="absolute inset-0">
-          <img src={lastAdventure.photo_url} alt="" class="h-full w-full object-cover opacity-10" />
-          <div class="absolute inset-0 bg-linear-to-t from-card via-card/80 to-card/20"></div>
-        </div>
-      )}
-      <div class="relative flex items-center justify-between mb-3">
-        <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50">
-          <svg class="h-4 w-4 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
-        </div>
-        <svg class="h-4 w-4 text-muted/30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
-      </div>
-      <p class="relative text-[11px] text-muted font-medium mb-0.5">Aventura</p>
-      {lastAdventure ? (
-        <>
-          <p class="relative text-sm font-semibold text-ink leading-tight truncate">{lastAdventure.title}</p>
-          <p class="relative text-[11px] text-muted mt-0.5">{formatDate(lastAdventure.date)}</p>
-        </>
-      ) : (
-        <p class="relative text-sm text-muted">Sin aventuras</p>
-      )}
-    </a>
-
-    {/* Vacunas badges */}
-    <a href="/salud/vacunas" class="rounded-2xl bg-card border border-card-border p-4 transition-all duration-200 active:scale-95">
-      <div class="flex items-center justify-between mb-3">
-        <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-green-50">
-          <svg class="h-4 w-4 text-green-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m14.5 2-8.5 8.5v4h4l8.5-8.5a2.83 2.83 0 0 0-4-4z"/><path d="m18 2 4 4"/></svg>
-        </div>
-        <svg class="h-4 w-4 text-muted/30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
-      </div>
-      <p class="text-[11px] text-muted font-medium mb-2">Vacunas</p>
       {recentVaccines && recentVaccines.length > 0 ? (
-        <div class="flex gap-2">
-          {recentVaccines.map((v) => {
+        <div class="space-y-2.5">
+          {recentVaccines.map(v => {
             const { src, label } = getVaccineBadge(v.name);
             return (
-              <div class="flex flex-col items-center gap-0.5">
+              <div class="flex items-center gap-2">
                 {src ? (
-                  <img src={src} alt={label} class="h-9 w-9 object-contain drop-shadow-sm" />
+                  <img src={src} alt={label} class="h-7 w-7 object-contain shrink-0 drop-shadow-sm" />
                 ) : (
-                  <div class="h-9 w-9 rounded-xl flex items-center justify-center bg-green-50">
-                    <svg class="h-4 w-4 text-green-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m14.5 2-8.5 8.5v4h4l8.5-8.5a2.83 2.83 0 0 0-4-4z"/><path d="m18 2 4 4"/></svg>
+                  <div class="h-7 w-7 shrink-0 flex items-center justify-center rounded-lg bg-accent/10">
+                    <svg class="h-3.5 w-3.5 text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m14.5 2-8.5 8.5v4h4l8.5-8.5a2.83 2.83 0 0 0-4-4z"/><path d="m18 2 4 4"/></svg>
                   </div>
                 )}
-                <p class="text-[9px] text-muted text-center leading-tight truncate max-w-10">{label}</p>
+                <div class="flex-1 min-w-0">
+                  <p class="text-[11px] font-semibold text-ink truncate">{label}</p>
+                  {v.date_given && (
+                    <p class="text-[10px] text-muted">{formatDate(v.date_given)}</p>
+                  )}
+                </div>
               </div>
             );
           })}
         </div>
       ) : (
-        <p class="text-sm text-muted">Sin vacunas</p>
+        <div class="flex flex-col items-center justify-center py-3 text-center">
+          <span class="text-2xl mb-1">💉</span>
+          <p class="text-xs text-muted">Sin vacunas</p>
+        </div>
       )}
     </a>
 
-    {/* Vuelos */}
-    <a href="/viajes" class="rounded-2xl bg-card border border-card-border p-4 transition-all duration-200 active:scale-95">
+    {/* Alimentación detalle */}
+    <a href="/alimentacion" class="rounded-2xl bg-card border border-card-border p-4 transition-all active:scale-95 hover:shadow-sm hover:border-amber/30">
       <div class="flex items-center justify-between mb-3">
-        <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-50">
-          <svg class="h-4 w-4 text-violet-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/></svg>
-        </div>
+        <p class="text-xs font-semibold text-ink">Alimentación</p>
         <svg class="h-4 w-4 text-muted/30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
       </div>
-      <p class="text-[11px] text-muted font-medium mb-0.5">Vuelo</p>
-      {lastFlight ? (
+      {currentFood ? (
         <>
-          <p class="text-sm font-semibold text-ink leading-tight">{lastFlight.origin} → {lastFlight.destination}</p>
-          <p class="text-[11px] text-muted mt-0.5">{formatDate(lastFlight.flight_date)}</p>
+          <div class="flex items-center gap-2 mb-3">
+            <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-amber/10">
+              <svg class="h-4 w-4 text-amber-dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/></svg>
+            </div>
+            <p class="text-sm font-bold text-ink truncate">{currentFood.brand}</p>
+          </div>
+          {avgCostPerDay && (
+            <div class="flex items-baseline gap-1">
+              <p class="text-xl font-black text-ink">${avgCostPerDay}</p>
+              <p class="text-[11px] text-muted">/día</p>
+            </div>
+          )}
+          {daysLeft !== null && totalDays !== null && (
+            <div class="mt-2">
+              <div class="flex items-center justify-between mb-1">
+                <p class="text-[11px] text-muted">{daysLeft}d restantes de {totalDays}d</p>
+                <p class="text-[11px] font-semibold text-ink">{Math.round((daysLeft / totalDays) * 100)}%</p>
+              </div>
+              <div class="h-1.5 rounded-full bg-card-border overflow-hidden">
+                <div
+                  class="h-1.5 rounded-full transition-all"
+                  style={`width: ${Math.round((daysLeft / totalDays) * 100)}%; background-color: ${daysLeft <= 5 ? '#EF4444' : daysLeft <= 10 ? '#F59E0B' : '#7CB974'};`}
+                />
+              </div>
+            </div>
+          )}
         </>
       ) : (
-        <p class="text-sm text-muted">Sin vuelos</p>
+        <div class="flex flex-col items-center justify-center py-3 text-center">
+          <span class="text-2xl mb-1">🍖</span>
+          <p class="text-xs text-muted">Agregar alimento</p>
+        </div>
       )}
     </a>
+
   </div>
+
+  {/* ── REMINDERS: Antipulgas + Desparasitante ── */}
+  <a href="/salud/preventivos" class="block mb-5 animate-fade-up animate-fade-up-delay-2">
+    <div class="rounded-2xl bg-card border border-card-border overflow-hidden transition-all duration-200 hover:shadow-sm active:scale-95">
+      <div class="flex items-center justify-between px-4 py-3 border-b border-card-border">
+        <p class="text-xs font-semibold text-muted uppercase tracking-widest">Recordatorios</p>
+        <svg class="h-4 w-4 text-muted/40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+      </div>
+      <div class="divide-y divide-card-border">
+
+        <div class="flex items-center gap-3 px-4 py-3">
+          <div class:list={[
+            'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-base',
+            antipulgasInfo.overdue || !antipulgasInfo.lastDate ? 'bg-red-50' : antipulgasInfo.daysLeft <= 5 ? 'bg-amber/10' : 'bg-green-50'
+          ]}>🐛</div>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-semibold text-ink">Antipulgas</p>
+            {lastAntipulgas?.[0]?.product_name && (
+              <p class="text-[11px] text-muted truncate">{lastAntipulgas[0].product_name}</p>
+            )}
+          </div>
+          <div class="text-right shrink-0">
+            {!antipulgasInfo.lastDate ? (
+              <p class="text-xs font-semibold text-red-500">Nunca</p>
+            ) : antipulgasInfo.overdue ? (
+              <p class="text-xs font-semibold text-red-500">Vencido</p>
+            ) : antipulgasInfo.daysLeft === 0 ? (
+              <p class="text-xs font-semibold text-amber-600">¡Hoy!</p>
+            ) : (
+              <p class:list={['text-xs font-semibold', antipulgasInfo.daysLeft <= 5 ? 'text-amber-600' : 'text-accent-dark']}>
+                {antipulgasInfo.daysLeft}d
+              </p>
+            )}
+            <p class="text-[10px] text-muted">próximo</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-3 px-4 py-3">
+          <div class:list={[
+            'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-base',
+            desparasitanteInfo.overdue || !desparasitanteInfo.lastDate ? 'bg-red-50' : desparasitanteInfo.daysLeft <= 5 ? 'bg-amber/10' : 'bg-green-50'
+          ]}>💊</div>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-semibold text-ink">Desparasitante</p>
+            {lastDesparasitante?.[0]?.product_name && (
+              <p class="text-[11px] text-muted truncate">{lastDesparasitante[0].product_name}</p>
+            )}
+          </div>
+          <div class="text-right shrink-0">
+            {!desparasitanteInfo.lastDate ? (
+              <p class="text-xs font-semibold text-red-500">Nunca</p>
+            ) : desparasitanteInfo.overdue ? (
+              <p class="text-xs font-semibold text-red-500">Vencido</p>
+            ) : desparasitanteInfo.daysLeft === 0 ? (
+              <p class="text-xs font-semibold text-amber-600">¡Hoy!</p>
+            ) : (
+              <p class:list={['text-xs font-semibold', desparasitanteInfo.daysLeft <= 5 ? 'text-amber-600' : 'text-accent-dark']}>
+                {desparasitanteInfo.daysLeft}d
+              </p>
+            )}
+            <p class="text-[10px] text-muted">próximo</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </a>
 
   {/* ── QUICK ACTIONS ── */}
   <p class="text-xs font-semibold text-muted uppercase tracking-widest mb-3 animate-fade-up animate-fade-up-delay-3">Acciones rápidas</p>

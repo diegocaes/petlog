@@ -1,11 +1,12 @@
 ---
 const currentPath = Astro.url.pathname;
 const tabs = [
-  { href: '/salud',          label: 'Resumen'   },
-  { href: '/salud/vacunas',  label: 'Vacunas'   },
-  { href: '/salud/historial', label: 'Historial' },
-  { href: '/salud/peso',     label: 'Peso'      },
-  { href: '/salud/grooming', label: 'Grooming'  },
+  { href: '/salud',               label: 'Resumen'     },
+  { href: '/salud/vacunas',       label: 'Vacunas'     },
+  { href: '/salud/preventivos',   label: 'Preventivos' },
+  { href: '/salud/historial',     label: 'Historial'   },
+  { href: '/salud/peso',          label: 'Peso'        },
+  { href: '/salud/grooming',      label: 'Grooming'    },
 ];
 
 const isActive = (href: string) =>

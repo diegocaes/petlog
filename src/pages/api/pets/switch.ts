@@ -29,6 +29,14 @@ export const POST: APIRoute = async ({ request, cookies, redirect, locals }) => 
     secure: import.meta.env.PROD,
   });
 
-  const referer = request.headers.get('referer') ?? '/dashboard';
-  return redirect(referer);
+  // Only redirect to same-origin paths to prevent open redirect via Referer header
+  const referer = request.headers.get('referer') ?? '';
+  let redirectTo = '/dashboard';
+  try {
+    const refUrl = new URL(referer);
+    if (refUrl.origin === new URL(request.url).origin) {
+      redirectTo = refUrl.pathname + refUrl.search;
+    }
+  } catch { /* invalid referer — use default */ }
+  return redirect(redirectTo);
 };
