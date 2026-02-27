@@ -34,11 +34,8 @@ function petInitial(name: string) {
 <!-- ─── DESKTOP SIDEBAR ─────────────────────────────── -->
 <aside class="no-print hidden lg:flex flex-col fixed top-0 left-0 h-full w-55 bg-sidebar z-40">
   <!-- Logo -->
-  <a href="/" class="flex items-center gap-3 px-5 py-5 border-b border-white/5 hover:opacity-80 transition-opacity">
-    <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-accent/20">
-      <span class="text-base">🐾</span>
-    </div>
-    <span class="text-white font-bold text-base tracking-tight">PetLog</span>
+  <a href="/" class="flex items-center px-5 py-4 border-b border-white/5 hover:opacity-80 transition-opacity">
+    <img src="/PetLog-logo.svg" alt="PetLog" style="height:80px;width:auto;filter:brightness(0) invert(1);" />
   </a>
 
   <!-- Pet switcher -->
@@ -153,11 +150,8 @@ function petInitial(name: string) {
   <aside class="absolute top-0 left-0 h-full w-64 bg-sidebar flex flex-col transition-transform duration-300 ease-out" id="mobile-drawer" style="transform:translateX(-100%)">
     <!-- Logo -->
     <div class="flex items-center justify-between px-5 py-5 border-b border-white/5">
-      <div class="flex items-center gap-2.5">
-        <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-accent/20">
-          <span class="text-sm">🐾</span>
-        </div>
-        <span class="text-white font-bold text-sm tracking-tight">PetLog</span>
+      <div class="flex items-center">
+        <img src="/PetLog-logo.svg" alt="PetLog" style="height:80px;width:auto;filter:brightness(0) invert(1);" />
       </div>
     </div>
 
