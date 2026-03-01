@@ -39,7 +39,6 @@ if (Astro.url.searchParams.has('code') || Astro.url.searchParams.has('token_hash
         --muted: #6B7280;
         --card-border: #EAECF0;
         --canvas: #F7F8FA;
-        --green: #7CB974;
       }
       html { scroll-behavior: smooth; }
       body {
@@ -83,9 +82,11 @@ if (Astro.url.searchParams.has('code') || Astro.url.searchParams.has('token_hash
         background-image: url('/PetLog.png');
         background-size: 420px auto;
         background-repeat: repeat;
-        opacity: 0.055;
+        opacity: 0.15;
         pointer-events: none;
+        mix-blend-mode: multiply;
       }
+
       .hero-badge {
         position: relative;
         display: inline-flex; align-items: center; gap: 8px;
@@ -159,10 +160,10 @@ if (Astro.url.searchParams.has('code') || Astro.url.searchParams.has('token_hash
       .mockup-header-title { font-size: 18px; font-weight: 900; color: white; line-height: 1; }
       .mockup-score-badge {
         display: inline-flex; align-items: center; gap: 4px;
-        background: rgba(124,185,116,0.25); border-radius: 20px;
+        background: rgba(249,115,22,0.20); border-radius: 20px;
         padding: 4px 10px; margin-top: 8px;
       }
-      .mockup-score-badge span { font-size: 11px; font-weight: 800; color: #7CB974; }
+      .mockup-score-badge span { font-size: 11px; font-weight: 800; color: #F97316; }
       .mockup-body { padding: 12px; flex: 1; overflow: hidden; display: flex; flex-direction: column; gap: 8px; }
       .mockup-pillars {
         background: white; border-radius: 14px; padding: 10px 12px;
@@ -173,19 +174,19 @@ if (Astro.url.searchParams.has('code') || Astro.url.searchParams.has('token_hash
       .mkp-row:last-child { margin-bottom: 0; }
       .mkp-name { font-size: 7.5px; color: #374151; width: 42px; flex-shrink: 0; }
       .mkp-bar-bg { flex: 1; height: 4px; background: #E5E7EB; border-radius: 2px; overflow: hidden; }
-      .mkp-bar-fill { height: 100%; border-radius: 2px; background: #7CB974; }
+      .mkp-bar-fill { height: 100%; border-radius: 2px; background: #F97316; }
       .mkp-bar-fill.warn { background: #F59E0B; }
       .mockup-flags { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
       .mkp-flag {
         border-radius: 10px; padding: 7px 8px;
         border: 1px solid #E8EDF2;
       }
-      .mkp-flag.ok { background: rgba(124,185,116,0.08); border-color: rgba(124,185,116,0.2); }
+      .mkp-flag.ok { background: rgba(249,115,22,0.08); border-color: rgba(249,115,22,0.2); }
       .mkp-flag.warn { background: rgba(245,158,11,0.08); border-color: rgba(245,158,11,0.2); }
       .mkp-flag-icon { font-size: 10px; margin-bottom: 2px; }
       .mkp-flag-label { font-size: 5.5px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); }
       .mkp-flag-value { font-size: 7.5px; font-weight: 700; color: var(--ink); }
-      .mkp-flag.ok .mkp-flag-value { color: #5FA356; }
+      .mkp-flag.ok .mkp-flag-value { color: #EA580C; }
       .mkp-flag.warn .mkp-flag-value { color: #D97706; }
 
       /* ── FEATURES SECTION ── */
@@ -200,7 +201,7 @@ if (Astro.url.searchParams.has('code') || Astro.url.searchParams.has('token_hash
         background-image: url('/PetLog.png');
         background-size: 480px auto;
         background-repeat: repeat;
-        opacity: 0.04;
+        opacity: 0.03;
         pointer-events: none;
       }
       .section-inner { max-width: 1040px; margin: 0 auto; position: relative; }
@@ -258,17 +259,17 @@ if (Astro.url.searchParams.has('code') || Astro.url.searchParams.has('token_hash
       }
       .score-circle {
         width: 80px; height: 80px; border-radius: 50%;
-        border: 3px solid #7CB974;
+        border: 3px solid #F97316;
         display: flex; flex-direction: column; align-items: center; justify-content: center;
         margin-bottom: 16px;
       }
-      .score-circle-n { font-size: 28px; font-weight: 900; color: #7CB974; line-height: 1; }
+      .score-circle-n { font-size: 28px; font-weight: 900; color: #F97316; line-height: 1; }
       .score-circle-l { font-size: 7px; text-transform: uppercase; letter-spacing: 1px; color: rgba(255,255,255,0.4); }
       .score-bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; }
       .score-bar-row:last-child { margin-bottom: 0; }
       .score-bar-name { font-size: 9px; color: rgba(255,255,255,0.5); width: 52px; }
       .score-bar-bg { flex: 1; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden; }
-      .score-bar-fill { height: 100%; background: #7CB974; border-radius: 2px; }
+      .score-bar-fill { height: 100%; background: #F97316; border-radius: 2px; }
       .score-bar-val { font-size: 9px; color: rgba(255,255,255,0.4); width: 16px; text-align: right; }
 
       @media (max-width: 768px) {
@@ -303,7 +304,7 @@ if (Astro.url.searchParams.has('code') || Astro.url.searchParams.has('token_hash
         position: relative;
       }
       .pp-cover {
-        background: linear-gradient(160deg, #1C4D2E, #3D8B58);
+        background: linear-gradient(160deg, #7C2D12, #EA580C);
         padding: 22px 20px; text-align: center;
       }
       .pp-cover p { color: rgba(255,255,255,0.5); font-size: 9px; letter-spacing: 3px; text-transform: uppercase; }
@@ -326,7 +327,7 @@ if (Astro.url.searchParams.has('code') || Astro.url.searchParams.has('token_hash
         background-image: url('/PetLog.png');
         background-size: 400px auto;
         background-repeat: repeat;
-        opacity: 0.05;
+        opacity: 0.15;
         pointer-events: none;
       }
       .cta-section h2 {
@@ -364,9 +365,12 @@ if (Astro.url.searchParams.has('code') || Astro.url.searchParams.has('token_hash
     <!-- ── NAV ── -->
     <nav>
       <a href="/" class="nav-logo">
-        <img src="/PetLog-logo.svg" alt="PetLog" style="height:48px;width:auto;" />
+        <img src="/PetLog-logo.svg" alt="PetLog" style="height:72px;width:auto;" />
       </a>
-      <a href="/register" class="nav-cta">Empezar gratis</a>
+      <div style="display:flex;align-items:center;gap:16px;">
+        <a href="/login" style="font-size:14px;font-weight:600;color:var(--ink);text-decoration:none;opacity:0.6;transition:opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.6'">Entrar</a>
+        <a href="/register" class="nav-cta">Empezar gratis</a>
+      </div>
     </nav>
 
     <!-- ── HERO ── -->
@@ -379,48 +383,106 @@ if (Astro.url.searchParams.has('code') || Astro.url.searchParams.has('token_hash
         <a href="#features" class="btn-secondary">Ver funciones</a>
       </div>
 
-      <!-- Phone mockup -->
+      <!-- Phone mockup — dashboard preview -->
       <div class="mockup-wrapper">
         <div class="mockup-phone">
           <div class="mockup-screen">
-            <div class="mockup-header">
-              <div class="mockup-header-label">Score de</div>
-              <div class="mockup-header-title">Bienestar</div>
-              <div class="mockup-score-badge">
-                <span>82 pts</span>
+            <!-- Status bar -->
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 14px 0;flex-shrink:0;">
+              <span style="font-size:7px;font-weight:700;color:#374151;">9:41</span>
+              <div style="display:flex;gap:3px;align-items:center;">
+                <div style="width:10px;height:5px;border:1px solid #374151;border-radius:1px;position:relative;"><div style="position:absolute;inset:1px;right:2px;background:#374151;border-radius:0.5px;"></div><div style="position:absolute;right:-2px;top:1.5px;width:1px;height:2px;background:#374151;border-radius:0 1px 1px 0;"></div></div>
               </div>
             </div>
-            <div class="mockup-body">
-              <div class="mockup-pillars">
-                <div class="mockup-pillars-label">Pilares</div>
-                <div class="mkp-row">
-                  <span class="mkp-name">Nutrición</span>
-                  <div class="mkp-bar-bg"><div class="mkp-bar-fill" style="width:90%"></div></div>
-                </div>
-                <div class="mkp-row">
-                  <span class="mkp-name">Vacunas</span>
-                  <div class="mkp-bar-bg"><div class="mkp-bar-fill" style="width:85%"></div></div>
-                </div>
-                <div class="mkp-row">
-                  <span class="mkp-name">Peso</span>
-                  <div class="mkp-bar-bg"><div class="mkp-bar-fill" style="width:80%"></div></div>
-                </div>
-                <div class="mkp-row">
-                  <span class="mkp-name">Vet</span>
-                  <div class="mkp-bar-bg"><div class="mkp-bar-fill warn" style="width:55%"></div></div>
+            <!-- Hero pet card -->
+            <div style="margin:6px 8px 0;padding:10px 10px 8px;border-radius:14px;background:#F97316;position:relative;overflow:hidden;">
+              <div style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,0.08),transparent);"></div>
+              <div style="position:relative;display:flex;align-items:center;gap:8px;">
+                <div style="width:28px;height:28px;border-radius:8px;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-size:14px;">🐕</div>
+                <div>
+                  <div style="font-size:5px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:1px;">Mi mascota</div>
+                  <div style="font-size:11px;font-weight:800;color:white;line-height:1;">Luna</div>
+                  <div style="font-size:5.5px;color:rgba(255,255,255,0.6);margin-top:1px;">Golden Retriever · 3 años</div>
                 </div>
               </div>
-              <div class="mockup-flags">
-                <div class="mkp-flag ok">
-                  <div class="mkp-flag-icon">✅</div>
-                  <div class="mkp-flag-label">Vacunas</div>
-                  <div class="mkp-flag-value">Al día</div>
+              <div style="position:relative;display:flex;gap:4px;margin-top:6px;">
+                <span style="font-size:5px;background:rgba(255,255,255,0.12);color:rgba(255,255,255,0.7);padding:2px 6px;border-radius:8px;font-weight:600;">28.5 kg</span>
+                <span style="font-size:5px;background:rgba(255,255,255,0.12);color:rgba(255,255,255,0.7);padding:2px 6px;border-radius:8px;font-weight:600;">Chip ✓</span>
+              </div>
+            </div>
+            <!-- Score + Peso row -->
+            <div style="display:flex;gap:5px;margin:5px 8px 0;">
+              <!-- Score -->
+              <div style="flex:3;background:white;border-radius:10px;padding:7px 8px;border:1px solid #EAECF0;">
+                <div style="display:flex;align-items:center;gap:4px;margin-bottom:5px;">
+                  <div style="width:12px;height:12px;border-radius:4px;background:rgba(249,115,22,0.12);display:flex;align-items:center;justify-content:center;">
+                    <svg width="7" height="7" viewBox="0 0 24 24" fill="#F97316"><path d="M12 21.593c-5.63-5.539-11-10.297-11-14.402 0-3.791 3.068-5.191 5.281-5.191 1.312 0 4.151.501 5.719 4.457 1.59-3.968 4.464-4.447 5.726-4.447 2.54 0 5.274 1.621 5.274 5.181 0 4.069-5.136 8.625-11 14.402z"/></svg>
+                  </div>
+                  <span style="font-size:6px;font-weight:700;color:#0F1117;">Score</span>
                 </div>
-                <div class="mkp-flag warn">
-                  <div class="mkp-flag-icon">⚠️</div>
-                  <div class="mkp-flag-label">Vet</div>
-                  <div class="mkp-flag-value">6 meses</div>
+                <div style="display:flex;align-items:center;gap:6px;">
+                  <!-- Mini circle -->
+                  <div style="position:relative;width:24px;height:24px;">
+                    <svg viewBox="0 0 36 36" width="24" height="24" style="transform:rotate(-90deg);">
+                      <circle cx="18" cy="18" r="14" fill="none" stroke="#EAECF0" stroke-width="3"/>
+                      <circle cx="18" cy="18" r="14" fill="none" stroke="#22C55E" stroke-width="3" stroke-linecap="round" stroke-dasharray="72.2 87.96"/>
+                    </svg>
+                    <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:6px;font-weight:900;color:#0F1117;">82</div>
+                  </div>
+                  <!-- Bars -->
+                  <div style="flex:1;display:flex;flex-direction:column;gap:2.5px;">
+                    <div style="display:flex;align-items:center;gap:3px;"><span style="font-size:4.5px;color:#6B7280;width:22px;">Peso</span><div style="flex:1;height:2px;background:#EAECF0;border-radius:1px;overflow:hidden;"><div style="width:90%;height:100%;background:#F97316;border-radius:1px;"></div></div></div>
+                    <div style="display:flex;align-items:center;gap:3px;"><span style="font-size:4.5px;color:#6B7280;width:22px;">Vacunas</span><div style="flex:1;height:2px;background:#EAECF0;border-radius:1px;overflow:hidden;"><div style="width:85%;height:100%;background:#F97316;border-radius:1px;"></div></div></div>
+                    <div style="display:flex;align-items:center;gap:3px;"><span style="font-size:4.5px;color:#6B7280;width:22px;">Nutrición</span><div style="flex:1;height:2px;background:#EAECF0;border-radius:1px;overflow:hidden;"><div style="width:80%;height:100%;background:#F97316;border-radius:1px;"></div></div></div>
+                  </div>
                 </div>
+                <div style="font-size:5px;font-weight:600;color:#22C55E;margin-top:4px;">Excelente →</div>
+              </div>
+              <!-- Peso -->
+              <div style="flex:2;background:white;border-radius:10px;padding:7px 8px;border:1px solid #EAECF0;">
+                <div style="font-size:4.5px;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:3px;">Peso</div>
+                <div style="display:flex;align-items:baseline;gap:2px;">
+                  <span style="font-size:16px;font-weight:900;color:#0F1117;line-height:1;">28.5</span>
+                  <span style="font-size:6px;color:#6B7280;">kg</span>
+                </div>
+                <div style="font-size:5px;color:#F97316;margin-top:2px;">↓ 0.3 kg</div>
+              </div>
+            </div>
+            <!-- Bottom cards row -->
+            <div style="display:flex;gap:5px;margin:5px 8px 0;">
+              <div style="flex:1;background:white;border-radius:10px;padding:7px 8px;border:1px solid #EAECF0;">
+                <div style="font-size:5px;font-weight:700;color:#0F1117;margin-bottom:3px;">Vacunas</div>
+                <div style="display:flex;align-items:center;gap:3px;margin-bottom:2px;">
+                  <div style="width:10px;height:10px;border-radius:3px;background:rgba(249,115,22,0.1);display:flex;align-items:center;justify-content:center;font-size:5px;">💉</div>
+                  <span style="font-size:5px;color:#0F1117;font-weight:600;">Rabia</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:3px;">
+                  <div style="width:10px;height:10px;border-radius:3px;background:rgba(249,115,22,0.1);display:flex;align-items:center;justify-content:center;font-size:5px;">💉</div>
+                  <span style="font-size:5px;color:#0F1117;font-weight:600;">Parvovirus</span>
+                </div>
+              </div>
+              <div style="flex:1;background:white;border-radius:10px;padding:7px 8px;border:1px solid #EAECF0;">
+                <div style="font-size:5px;font-weight:700;color:#0F1117;margin-bottom:3px;">Comida</div>
+                <div style="display:flex;align-items:center;gap:3px;margin-bottom:3px;">
+                  <div style="width:10px;height:10px;border-radius:3px;background:rgba(245,158,11,0.1);display:flex;align-items:center;justify-content:center;font-size:5px;">🍖</div>
+                  <span style="font-size:5px;color:#0F1117;font-weight:600;">Royal Canin</span>
+                </div>
+                <div style="height:2px;background:#EAECF0;border-radius:1px;overflow:hidden;"><div style="width:65%;height:100%;background:#22C55E;border-radius:1px;"></div></div>
+                <div style="font-size:4px;color:#6B7280;margin-top:1px;">18d restantes</div>
+              </div>
+            </div>
+            <!-- Reminders -->
+            <div style="margin:5px 8px 8px;background:white;border-radius:10px;padding:6px 8px;border:1px solid #EAECF0;">
+              <div style="font-size:4.5px;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:4px;">Recordatorios</div>
+              <div style="display:flex;align-items:center;gap:5px;padding:3px 0;border-bottom:1px solid #F3F4F6;">
+                <span style="font-size:8px;">🐛</span>
+                <span style="font-size:5.5px;font-weight:600;color:#0F1117;flex:1;">Antipulgas</span>
+                <span style="font-size:5px;font-weight:700;color:#EA580C;">5d</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:5px;padding:3px 0;">
+                <span style="font-size:8px;">💊</span>
+                <span style="font-size:5.5px;font-weight:600;color:#0F1117;flex:1;">Desparasitante</span>
+                <span style="font-size:5px;font-weight:700;color:#22C55E;">12d</span>
               </div>
             </div>
           </div>
@@ -440,7 +502,7 @@ if (Astro.url.searchParams.has('code') || Astro.url.searchParams.has('token_hash
           <!-- Featured: Score de Bienestar -->
           <div class="bento-card featured">
             <div class="score-preview">
-              <div class="bento-icon" style="background:rgba(124,185,116,0.15);">💚</div>
+              <div class="bento-icon" style="background:rgba(249,115,22,0.15);">🧡</div>
               <h3>Score de Bienestar</h3>
               <p>Un número del 0 al 100 que resume la salud de tu perro en 5 pilares: nutrición, actividad, peso, veterinario y vacunas.</p>
             </div>
@@ -557,7 +619,7 @@ if (Astro.url.searchParams.has('code') || Astro.url.searchParams.has('token_hash
       <a href="/" class="footer-logo">
         <img src="/PetLog-logo.svg" alt="PetLog" style="height:28px;width:auto;filter:brightness(0) invert(1);" />
       </a>
-      <p>© 2025 PetLog · Hecho con ❤️ en Panamá · <a href="/login">Iniciar sesión</a></p>
+      <p>© 2026 PetLog · Hecho con ❤️ en Panamá · <a href="/login">Iniciar sesión</a></p>
     </footer>
 
   </body>

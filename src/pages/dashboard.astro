@@ -28,6 +28,7 @@ const [
   { data: foods },
   { data: lastAntipulgas },
   { data: lastDesparasitante },
+  { data: lastVetVisit },
 ] = await Promise.all([
   supabase.from('groomings').select('type, date').eq('pet_id', pet.id).order('date', { ascending: false }).limit(1),
   supabase.from('adventures').select('title, date, photo_url').eq('pet_id', pet.id).order('date', { ascending: false }).limit(1),
@@ -40,6 +41,7 @@ const [
   supabase.from('foods').select('brand, daily_grams, bag_size, bag_unit, price, food_type, start_date, created_at').eq('pet_id', pet.id).order('created_at', { ascending: false }),
   supabase.from('preventive_treatments').select('date_given, product_name').eq('pet_id', pet.id).eq('type', 'antipulgas').order('date_given', { ascending: false }).limit(1),
   supabase.from('preventive_treatments').select('date_given, product_name').eq('pet_id', pet.id).eq('type', 'desparasitante').order('date_given', { ascending: false }).limit(1),
+  supabase.from('vet_visits').select('date, reason').eq('pet_id', pet.id).order('date', { ascending: false }).limit(1),
 ]);
 
 const lastGrooming = groomingRows?.[0] ?? null;
@@ -118,6 +120,11 @@ function daysUntilNext(lastDateStr: string | null | undefined): { daysLeft: numb
   return { daysLeft, overdue: daysLeft < 0, lastDate: lastDateStr };
 }
 
+const lastVet = lastVetVisit?.[0] ?? null;
+const daysSinceVet = lastVet?.date
+  ? Math.floor((Date.now() - new Date(lastVet.date).getTime()) / (1000 * 60 * 60 * 24))
+  : null;
+
 const antipulgasInfo = daysUntilNext(lastAntipulgas?.[0]?.date_given);
 const desparasitanteInfo = daysUntilNext(lastDesparasitante?.[0]?.date_given);
 
@@ -193,11 +200,16 @@ const checklistItems = [
       }
     })();
   </script>
-  <script>
-    document.getElementById('btn-dismiss-checklist')?.addEventListener('click', () => {
-      localStorage.setItem('petlog_checklist_hidden', '1');
-      const el = document.getElementById('onboarding-checklist');
-      if (el) el.style.display = 'none';
+  <script is:inline>
+    document.addEventListener('astro:page-load', function() {
+      var btn = document.getElementById('btn-dismiss-checklist');
+      if (btn) {
+        btn.addEventListener('click', function() {
+          localStorage.setItem('petlog_checklist_hidden', '1');
+          var el = document.getElementById('onboarding-checklist');
+          if (el) el.style.display = 'none';
+        });
+      }
     });
   </script>
 
@@ -210,7 +222,7 @@ const checklistItems = [
         script.onload = function() {
           setTimeout(function() {
             window.confetti({ particleCount: 140, spread: 90, origin: { y: 0.55 },
-              colors: ['#7CB974','#5FA356','#ffffff','#F59E0B','#EAF5E8'] });
+              colors: ['#F97316','#EA580C','#ffffff','#F59E0B','#FFF7ED'] });
           }, 300);
         };
         document.head.appendChild(script);
@@ -226,8 +238,8 @@ const checklistItems = [
   )}
 
   {/* ── HERO CARD ── */}
-  <a href="/perfil" class="block mb-5 animate-fade-up">
-    <div class="relative rounded-2xl overflow-hidden" style="background-color: color-mix(in srgb, var(--color-accent) 25%, #0a0f0a);">
+  <a href="/perfil" class="block mb-6 animate-fade-up">
+    <div class="relative rounded-3xl overflow-hidden" style="background-color: var(--color-accent);">
       <div class="absolute inset-0 bg-linear-to-br from-white/5 to-transparent pointer-events-none"></div>
       <div class="relative flex items-center gap-4 p-5">
         <div class="relative shrink-0">
@@ -281,24 +293,24 @@ const checklistItems = [
   </a>
 
   {/* ── MIDDLE ROW: Score + Peso/Alimentación ── */}
-  <div class="grid grid-cols-5 gap-3 mb-5 animate-fade-up animate-fade-up-delay-1">
+  <div class="grid grid-cols-5 gap-3 mb-6 animate-fade-up animate-fade-up-delay-1">
 
     {/* Score de Bienestar — dark card (3/5) */}
     <div class="col-span-5 sm:col-span-3 self-stretch">
       <a href="/salud" class="block h-full">
-        <div class="h-full rounded-2xl p-4 flex flex-col gap-3" style="background-color: #1C1C1E;">
+        <div class="h-full rounded-2xl border border-card-border bg-card p-4 flex flex-col gap-3">
 
           {/* Icon + title */}
           <div class="flex items-start gap-3">
-            <div class="shrink-0 flex h-10 w-10 items-center justify-center rounded-xl" style="background-color: rgba(124,185,116,0.18);">
-              <svg class="h-5 w-5" viewBox="0 0 24 24" fill="#7CB974" stroke="none">
+            <div class="shrink-0 flex h-10 w-10 items-center justify-center rounded-xl bg-accent/10">
+              <svg class="h-5 w-5" viewBox="0 0 24 24" fill="var(--color-accent)" stroke="none">
                 <path d="M12 21.593c-5.63-5.539-11-10.297-11-14.402 0-3.791 3.068-5.191 5.281-5.191 1.312 0 4.151.501 5.719 4.457 1.59-3.968 4.464-4.447 5.726-4.447 2.54 0 5.274 1.621 5.274 5.181 0 4.069-5.136 8.625-11 14.402z"/>
               </svg>
             </div>
             <div class="flex-1 min-w-0">
-              <p class="text-sm font-bold text-white">Score de Bienestar</p>
-              <p class="text-[11px] leading-relaxed mt-0.5" style="color: rgba(255,255,255,0.45);">
-                Un número del 0 al 100 que resume la salud de {pet.name} en 5 pilares: nutrición, actividad, peso, veterinario y vacunas.
+              <p class="text-sm font-bold text-ink">Score de Bienestar</p>
+              <p class="text-[11px] text-muted leading-relaxed mt-0.5">
+                Salud de {pet.name} en 5 pilares.
               </p>
             </div>
           </div>
@@ -310,7 +322,7 @@ const checklistItems = [
             {dashScore.showScore ? (
               <div class="relative shrink-0 h-16 w-16" aria-label={`Score: ${dashScore.total}`}>
                 <svg viewBox="0 0 36 36" class="h-16 w-16 -rotate-90" aria-hidden="true">
-                  <circle cx="18" cy="18" r="15.5" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="3"/>
+                  <circle cx="18" cy="18" r="15.5" fill="none" stroke="#EAECF0" stroke-width="3"/>
                   <circle
                     cx="18" cy="18" r="15.5"
                     fill="none"
@@ -321,12 +333,12 @@ const checklistItems = [
                   />
                 </svg>
                 <div class="absolute inset-0 flex flex-col items-center justify-center">
-                  <span class="text-xl font-black text-white leading-none">{dashScore.total}</span>
-                  <span class="text-[8px] font-semibold uppercase tracking-widest" style="color: rgba(255,255,255,0.35);">Score</span>
+                  <span class="text-xl font-black text-ink leading-none">{dashScore.total}</span>
+                  <span class="text-[8px] font-semibold text-muted uppercase tracking-widest">Score</span>
                 </div>
               </div>
             ) : (
-              <div class="shrink-0 h-16 w-16 rounded-full flex items-center justify-center" style="border: 2.5px dashed rgba(255,255,255,0.15);">
+              <div class="shrink-0 h-16 w-16 rounded-full flex items-center justify-center border-2 border-dashed border-card-border">
                 <span class="text-xl">🐾</span>
               </div>
             )}
@@ -335,16 +347,16 @@ const checklistItems = [
             <div class="flex-1 flex flex-col justify-center gap-2">
               {dashScore.pillars.map(pillar => (
                 <div class="flex items-center gap-2">
-                  <p class="text-[10px] shrink-0 w-14 truncate" style="color: rgba(255,255,255,0.5);">
+                  <p class="text-[10px] shrink-0 w-14 truncate text-muted">
                     {SHORT_PILLAR[pillar.name] ?? pillar.name}
                   </p>
-                  <div class="flex-1 rounded-full h-1.5 overflow-hidden" style="background-color: rgba(255,255,255,0.08);">
+                  <div class="flex-1 rounded-full h-1.5 overflow-hidden bg-canvas">
                     <div
                       class="h-1.5 rounded-full"
-                      style={`width: ${dashScore.showScore ? pillar.pct : 0}%; background-color: #7CB974; transition: width 0.6s ease;`}
+                      style={`width: ${dashScore.showScore ? pillar.pct : 0}%; background-color: var(--color-accent); transition: width 0.6s ease;`}
                     />
                   </div>
-                  <p class="text-[10px] w-4 text-right font-semibold shrink-0" style={`color: ${dashScore.showScore ? '#7CB974' : 'rgba(255,255,255,0.2)'};`}>
+                  <p class={`text-[10px] w-4 text-right font-semibold shrink-0 ${dashScore.showScore ? 'text-ink' : 'text-muted/30'}`}>
                     {pillar.score}
                   </p>
                 </div>
@@ -366,46 +378,44 @@ const checklistItems = [
     <div class="col-span-5 sm:col-span-2 flex flex-col gap-3">
 
       {/* Peso compact */}
-      <a href="/salud/peso" class="block rounded-2xl bg-accent overflow-hidden active:scale-95 transition-transform">
-        <div class="relative px-4 py-4">
-          <div class="absolute inset-0 bg-linear-to-br from-white/10 to-transparent pointer-events-none"></div>
-          <p class="relative text-[10px] font-semibold text-white/50 uppercase tracking-widest mb-1">Peso actual</p>
+      <a href="/salud/peso" class="block rounded-2xl border border-card-border bg-card overflow-hidden active:scale-95 transition-transform hover:shadow-sm">
+        <div class="px-4 py-4">
+          <p class="text-[10px] font-semibold text-muted uppercase tracking-widest mb-1">Peso actual</p>
           {latestWeight ? (
-            <div class="relative flex items-baseline gap-1.5">
-              <span class="text-3xl font-black text-white leading-none">{latestWeight}</span>
-              <span class="text-sm text-white/60">kg</span>
+            <div class="flex items-baseline gap-1.5">
+              <span class="text-3xl font-black text-ink leading-none">{latestWeight}</span>
+              <span class="text-sm text-muted">kg</span>
             </div>
           ) : (
-            <p class="relative text-sm font-semibold text-white/60">Sin registrar</p>
+            <p class="text-sm font-semibold text-muted">Sin registrar</p>
           )}
           {weightDiff !== null && (
-            <p class="relative text-xs text-white/60 mt-1">
+            <p class={`text-xs mt-1 ${weightDiff > 0 ? 'text-amber-600' : 'text-accent'}`}>
               {weightDiff > 0 ? '↑' : '↓'} {Math.abs(weightDiff)} kg
             </p>
           )}
         </div>
       </a>
 
-      {/* Alimentación compact */}
-      <a href="/alimentacion" class="flex-1 block rounded-2xl bg-card border border-card-border px-4 py-4 active:scale-95 transition-transform hover:border-amber/30">
+      {/* Veterinario compact */}
+      <a href="/salud/historial" class="flex-1 block rounded-2xl bg-card border border-card-border px-4 py-4 active:scale-95 transition-transform hover:border-blue-200">
         <div class="flex items-center gap-2 mb-2">
-          <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-amber/10">
-            <svg class="h-3.5 w-3.5 text-amber-dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/></svg>
+          <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-blue-50">
+            <svg class="h-3.5 w-3.5 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 2v4M16 2v4"/><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18"/></svg>
           </div>
-          <p class="text-xs font-semibold text-ink">Alimentación</p>
+          <p class="text-xs font-semibold text-ink">Veterinario</p>
         </div>
-        {currentFood ? (
+        {lastVet ? (
           <>
-            <p class="text-sm font-bold text-ink truncate">{currentFood.brand}</p>
-            {avgCostPerDay ? (
-              <p class="text-xs text-muted mt-0.5">${avgCostPerDay}/día</p>
-            ) : null}
-            {daysLeft !== null && totalDays !== null ? (
-              <p class="text-xs text-muted mt-0.5">{daysLeft}d restantes / {totalDays}d total</p>
-            ) : null}
+            <p class="text-sm font-bold text-ink truncate">{lastVet.reason || 'Visita'}</p>
+            <p class="text-xs text-muted mt-0.5">
+              {daysSinceVet !== null ? (
+                daysSinceVet === 0 ? 'Hoy' : `Hace ${daysSinceVet}d`
+              ) : ''}
+            </p>
           </>
         ) : (
-          <p class="text-xs text-muted/60">Agregar alimento →</p>
+          <p class="text-xs text-muted/60">Registrar visita →</p>
         )}
       </a>
 
@@ -413,7 +423,7 @@ const checklistItems = [
   </div>
 
   {/* ── BOTTOM ROW: Vacunas + Alimentación detalle ── */}
-  <div class="grid grid-cols-2 gap-3 mb-5 animate-fade-up animate-fade-up-delay-2">
+  <div class="grid grid-cols-2 gap-3 mb-6 animate-fade-up animate-fade-up-delay-2">
 
     {/* Vacunas list */}
     <a href="/salud/vacunas" class="rounded-2xl bg-card border border-card-border p-4 transition-all active:scale-95 hover:shadow-sm">
@@ -481,7 +491,7 @@ const checklistItems = [
               <div class="h-1.5 rounded-full bg-card-border overflow-hidden">
                 <div
                   class="h-1.5 rounded-full transition-all"
-                  style={`width: ${Math.round((daysLeft / totalDays) * 100)}%; background-color: ${daysLeft <= 5 ? '#EF4444' : daysLeft <= 10 ? '#F59E0B' : '#7CB974'};`}
+                  style={`width: ${Math.round((daysLeft / totalDays) * 100)}%; background-color: ${daysLeft <= 5 ? '#EF4444' : daysLeft <= 10 ? '#F59E0B' : '#22C55E'};`}
                 />
               </div>
             </div>
@@ -498,7 +508,7 @@ const checklistItems = [
   </div>
 
   {/* ── REMINDERS: Antipulgas + Desparasitante ── */}
-  <a href="/salud/preventivos" class="block mb-5 animate-fade-up animate-fade-up-delay-2">
+  <a href="/salud/preventivos" class="block mb-6 animate-fade-up animate-fade-up-delay-2">
     <div class="rounded-2xl bg-card border border-card-border overflow-hidden transition-all duration-200 hover:shadow-sm active:scale-95">
       <div class="flex items-center justify-between px-4 py-3 border-b border-card-border">
         <p class="text-xs font-semibold text-muted uppercase tracking-widest">Recordatorios</p>
@@ -509,7 +519,7 @@ const checklistItems = [
         <div class="flex items-center gap-3 px-4 py-3">
           <div class:list={[
             'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-base',
-            antipulgasInfo.overdue || !antipulgasInfo.lastDate ? 'bg-red-50' : antipulgasInfo.daysLeft <= 5 ? 'bg-amber/10' : 'bg-green-50'
+            !antipulgasInfo.lastDate ? 'bg-accent-light' : antipulgasInfo.overdue ? 'bg-red-50' : antipulgasInfo.daysLeft <= 5 ? 'bg-amber/10' : 'bg-green-50'
           ]}>🐛</div>
           <div class="flex-1 min-w-0">
             <p class="text-sm font-semibold text-ink">Antipulgas</p>
@@ -519,24 +529,35 @@ const checklistItems = [
           </div>
           <div class="text-right shrink-0">
             {!antipulgasInfo.lastDate ? (
-              <p class="text-xs font-semibold text-red-500">Nunca</p>
+              <>
+                <p class="text-xs font-semibold text-accent">Registrar</p>
+                <p class="text-[10px] text-muted">primera vez</p>
+              </>
             ) : antipulgasInfo.overdue ? (
-              <p class="text-xs font-semibold text-red-500">Vencido</p>
+              <>
+                <p class="text-xs font-semibold text-red-500">Vencido</p>
+                <p class="text-[10px] text-muted">próximo</p>
+              </>
             ) : antipulgasInfo.daysLeft === 0 ? (
-              <p class="text-xs font-semibold text-amber-600">¡Hoy!</p>
+              <>
+                <p class="text-xs font-semibold text-amber-600">¡Hoy!</p>
+                <p class="text-[10px] text-muted">próximo</p>
+              </>
             ) : (
-              <p class:list={['text-xs font-semibold', antipulgasInfo.daysLeft <= 5 ? 'text-amber-600' : 'text-accent-dark']}>
-                {antipulgasInfo.daysLeft}d
-              </p>
+              <>
+                <p class:list={['text-xs font-semibold', antipulgasInfo.daysLeft <= 5 ? 'text-amber-600' : 'text-accent-dark']}>
+                  {antipulgasInfo.daysLeft}d
+                </p>
+                <p class="text-[10px] text-muted">próximo</p>
+              </>
             )}
-            <p class="text-[10px] text-muted">próximo</p>
           </div>
         </div>
 
         <div class="flex items-center gap-3 px-4 py-3">
           <div class:list={[
             'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-base',
-            desparasitanteInfo.overdue || !desparasitanteInfo.lastDate ? 'bg-red-50' : desparasitanteInfo.daysLeft <= 5 ? 'bg-amber/10' : 'bg-green-50'
+            !desparasitanteInfo.lastDate ? 'bg-accent-light' : desparasitanteInfo.overdue ? 'bg-red-50' : desparasitanteInfo.daysLeft <= 5 ? 'bg-amber/10' : 'bg-green-50'
           ]}>💊</div>
           <div class="flex-1 min-w-0">
             <p class="text-sm font-semibold text-ink">Desparasitante</p>
@@ -546,17 +567,28 @@ const checklistItems = [
           </div>
           <div class="text-right shrink-0">
             {!desparasitanteInfo.lastDate ? (
-              <p class="text-xs font-semibold text-red-500">Nunca</p>
+              <>
+                <p class="text-xs font-semibold text-accent">Registrar</p>
+                <p class="text-[10px] text-muted">primera vez</p>
+              </>
             ) : desparasitanteInfo.overdue ? (
-              <p class="text-xs font-semibold text-red-500">Vencido</p>
+              <>
+                <p class="text-xs font-semibold text-red-500">Vencido</p>
+                <p class="text-[10px] text-muted">próximo</p>
+              </>
             ) : desparasitanteInfo.daysLeft === 0 ? (
-              <p class="text-xs font-semibold text-amber-600">¡Hoy!</p>
+              <>
+                <p class="text-xs font-semibold text-amber-600">¡Hoy!</p>
+                <p class="text-[10px] text-muted">próximo</p>
+              </>
             ) : (
-              <p class:list={['text-xs font-semibold', desparasitanteInfo.daysLeft <= 5 ? 'text-amber-600' : 'text-accent-dark']}>
-                {desparasitanteInfo.daysLeft}d
-              </p>
+              <>
+                <p class:list={['text-xs font-semibold', desparasitanteInfo.daysLeft <= 5 ? 'text-amber-600' : 'text-accent-dark']}>
+                  {desparasitanteInfo.daysLeft}d
+                </p>
+                <p class="text-[10px] text-muted">próximo</p>
+              </>
             )}
-            <p class="text-[10px] text-muted">próximo</p>
           </div>
         </div>
 

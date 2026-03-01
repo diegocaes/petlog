@@ -56,8 +56,8 @@ export default function WeightChart({ records }: Props) {
   const previous = records[records.length - 2].weight_kg;
   const diff = latest - previous;
 
-  // Accent color: #7CB974 (matches --color-accent)
-  const ACCENT = '#7CB974';
+  // Accent color: #F97316 (matches --color-accent)
+  const ACCENT = '#F97316';
   const GRID = '#EAECF0';
 
   return (

@@ -53,7 +53,6 @@ if (Astro.request.method === 'POST') {
         : 'register_failed';
       return Astro.redirect(`/register?error=${code}`);
     }
-    // Supabase sometimes returns no error but user is null (rate limit or email confirmation issue)
     if (!signUpData.user) {
       return Astro.redirect('/register?error=register_failed');
     }
@@ -67,7 +66,7 @@ if (Astro.request.method === 'POST') {
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#7CB974" />
+    <meta name="theme-color" content="#F97316" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'" />
@@ -75,6 +74,21 @@ if (Astro.request.method === 'POST') {
     <link rel="manifest" href="/manifest.json" />
     <link rel="icon" href="/icons/icon-192.png" />
     <title>Crear cuenta | PetLog</title>
+    <style>
+      .right-panel {
+        position: relative;
+      }
+      .right-panel::before {
+        content: '';
+        position: absolute; inset: 0;
+        background-image: url('/PetLog.png');
+        background-size: 380px auto;
+        background-repeat: repeat;
+        opacity: 0.10;
+        pointer-events: none;
+        mix-blend-mode: multiply;
+      }
+    </style>
   </head>
   <body class="flex min-h-screen bg-canvas">
 
@@ -86,28 +100,28 @@ if (Astro.request.method === 'POST') {
       </div>
       <div class="relative">
         <a href="/" class="flex items-center mb-12 hover:opacity-80 transition-opacity">
-          <img src="/PetLog-logo.svg" alt="PetLog" style="height:64px;width:auto;filter:brightness(0) invert(1);" />
+          <img src="/PetLog-logo.svg" alt="PetLog" style="height:80px;width:auto;filter:brightness(0) invert(1);" />
         </a>
         <h2 class="text-3xl font-bold leading-tight mb-4">Empieza el diario<br/>digital de tu mascota</h2>
         <p class="text-white/60 text-sm leading-relaxed mb-8">Todo lo que necesitas para cuidar a tu mejor amigo, en un solo lugar.</p>
 
         <div class="space-y-4">
           <div class="flex items-center gap-3">
-            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent/20 text-base">🐾</div>
+            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-orange-500/20 text-base">🐾</div>
             <div>
               <p class="text-sm font-semibold">Perfil y pasaporte</p>
               <p class="text-xs text-white/50">Pasaporte digital para viajes</p>
             </div>
           </div>
           <div class="flex items-center gap-3">
-            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent/20 text-base">💉</div>
+            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-orange-500/20 text-base">💉</div>
             <div>
               <p class="text-sm font-semibold">Historial de vacunas</p>
               <p class="text-xs text-white/50">Nunca pierdas un registro</p>
             </div>
           </div>
           <div class="flex items-center gap-3">
-            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent/20 text-base">📸</div>
+            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-orange-500/20 text-base">📸</div>
             <div>
               <p class="text-sm font-semibold">Álbum de aventuras</p>
               <p class="text-xs text-white/50">Guarda los mejores momentos</p>
@@ -121,7 +135,7 @@ if (Astro.request.method === 'POST') {
     </div>
 
     <!-- Right panel -->
-    <div class="flex flex-1 items-center justify-center p-6">
+    <div class="right-panel flex flex-1 items-center justify-center p-6">
       <div class="w-full max-w-sm">
 
         <!-- Mobile logo -->
@@ -201,37 +215,63 @@ if (Astro.request.method === 'POST') {
                   type="email"
                   name="email"
                   required
+                  autocomplete="email"
                   placeholder="tu@email.com"
                   class="w-full rounded-xl border border-card-border bg-white px-4 py-2.5 text-ink placeholder-muted text-sm transition-all duration-200 hover:border-gray-300 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
                 />
               </div>
               <div>
                 <label class="block text-sm font-medium text-ink mb-1.5">Contraseña</label>
-                <input
-                  type="password"
-                  name="password"
-                  required
-                  minlength="8"
-                  placeholder="Mínimo 8 caracteres"
-                  class="w-full rounded-xl border border-card-border bg-white px-4 py-2.5 text-ink placeholder-muted text-sm transition-all duration-200 hover:border-gray-300 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
-                />
+                <div class="relative">
+                  <input
+                    type="password"
+                    name="password"
+                    id="pw-input"
+                    required
+                    minlength="8"
+                    autocomplete="new-password"
+                    placeholder="Mínimo 8 caracteres"
+                    class="w-full rounded-xl border border-card-border bg-white px-4 py-2.5 pr-10 text-ink placeholder-muted text-sm transition-all duration-200 hover:border-gray-300 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
+                  />
+                  <button type="button" id="pw-toggle" class="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-ink transition-colors" tabindex="-1">
+                    <svg id="pw-eye-off" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                    <svg id="pw-eye-on" class="h-4 w-4 hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                  </button>
+                </div>
+                <!-- Strength bar -->
+                <div class="mt-1.5 h-1 w-full rounded-full bg-card-border overflow-hidden">
+                  <div id="strength-bar" style="width:0%;height:100%;border-radius:2px;transition:width 0.3s,background-color 0.3s;"></div>
+                </div>
+                <p id="strength-label" class="text-[10px] mt-0.5 hidden"></p>
               </div>
               <div>
                 <label class="block text-sm font-medium text-ink mb-1.5">Confirmar contraseña</label>
-                <input
-                  type="password"
-                  name="confirm_password"
-                  required
-                  minlength="8"
-                  placeholder="Repite tu contraseña"
-                  class="w-full rounded-xl border border-card-border bg-white px-4 py-2.5 text-ink placeholder-muted text-sm transition-all duration-200 hover:border-gray-300 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
-                />
+                <div class="relative">
+                  <input
+                    type="password"
+                    name="confirm_password"
+                    id="pw-confirm"
+                    required
+                    minlength="8"
+                    autocomplete="new-password"
+                    placeholder="Repite tu contraseña"
+                    class="w-full rounded-xl border border-card-border bg-white px-4 py-2.5 pr-10 text-ink placeholder-muted text-sm transition-all duration-200 hover:border-gray-300 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
+                  />
+                  <div id="match-icon" class="absolute right-3 top-1/2 -translate-y-1/2 hidden">
+                    <svg id="match-ok" class="h-4 w-4 text-accent hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                    <svg id="match-no" class="h-4 w-4 text-red-500 hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  </div>
+                </div>
+                <p id="match-error" class="text-xs text-red-500 mt-1 hidden">Las contraseñas no coinciden.</p>
               </div>
 
               <button
                 type="submit"
                 id="btn-register"
-                class="w-full rounded-xl bg-accent px-6 py-3 text-sm font-semibold text-white transition-all duration-200 hover:bg-accent-dark active:scale-95"
+                class="w-full rounded-xl px-6 py-3 text-sm font-semibold text-white transition-all duration-200 active:scale-95"
+                style="background:#F97316; box-shadow:0 4px 14px rgba(249,115,22,0.35);"
+                onmouseover="this.style.background='#EA6C0A'"
+                onmouseout="this.style.background='#F97316'"
               >
                 Crear cuenta
               </button>
@@ -248,8 +288,6 @@ if (Astro.request.method === 'POST') {
 
     <script>
       // Google loading state
-      // Must inject hidden input BEFORE disabling the button,
-      // because a disabled submit button does not send its name/value.
       const googleFormReg = document.getElementById('google-form-reg') as HTMLFormElement;
       const btnGoogleReg = document.getElementById('btn-google-reg') as HTMLButtonElement;
       googleFormReg?.addEventListener('submit', () => {
@@ -264,20 +302,74 @@ if (Astro.request.method === 'POST') {
         }
       });
 
-      // Register form: client-side password match check before submit
+      // Password show/hide
+      const pwInput = document.getElementById('pw-input') as HTMLInputElement;
+      const pwToggle = document.getElementById('pw-toggle') as HTMLButtonElement;
+      const eyeOff = document.getElementById('pw-eye-off') as HTMLElement;
+      const eyeOn = document.getElementById('pw-eye-on') as HTMLElement;
+      pwToggle?.addEventListener('click', () => {
+        const isHidden = pwInput.type === 'password';
+        pwInput.type = isHidden ? 'text' : 'password';
+        eyeOff.classList.toggle('hidden', isHidden);
+        eyeOn.classList.toggle('hidden', !isHidden);
+      });
+
+      // Password strength bar
+      const strengthBar = document.getElementById('strength-bar') as HTMLElement;
+      const strengthLabel = document.getElementById('strength-label') as HTMLElement;
+      function getStrength(pw: string) {
+        if (!pw) return { pct: 0, color: '#EF4444', label: '' };
+        let score = 0;
+        if (pw.length >= 8) score++;
+        if (pw.length >= 12) score++;
+        if (/[A-Z]/.test(pw)) score++;
+        if (/[0-9]/.test(pw)) score++;
+        if (/[^A-Za-z0-9]/.test(pw)) score++;
+        if (score <= 1) return { pct: 20, color: '#EF4444', label: 'Muy débil' };
+        if (score === 2) return { pct: 40, color: '#F59E0B', label: 'Débil' };
+        if (score === 3) return { pct: 65, color: '#F97316', label: 'Regular' };
+        if (score === 4) return { pct: 85, color: '#22C55E', label: 'Buena' };
+        return { pct: 100, color: '#16A34A', label: '¡Excelente!' };
+      }
+      pwInput?.addEventListener('input', () => {
+        const { pct, color, label } = getStrength(pwInput.value);
+        strengthBar.style.width = pct + '%';
+        strengthBar.style.backgroundColor = color;
+        if (label) {
+          strengthLabel.textContent = label;
+          strengthLabel.style.color = color;
+          strengthLabel.classList.remove('hidden');
+        } else {
+          strengthLabel.classList.add('hidden');
+        }
+        checkMatch();
+      });
+
+      // Confirm match indicator
+      const pwConfirm = document.getElementById('pw-confirm') as HTMLInputElement;
+      const matchIcon = document.getElementById('match-icon') as HTMLElement;
+      const matchOk = document.getElementById('match-ok') as HTMLElement;
+      const matchNo = document.getElementById('match-no') as HTMLElement;
+      const matchError = document.getElementById('match-error') as HTMLElement;
+      function checkMatch() {
+        if (!pwConfirm.value) { matchIcon.classList.add('hidden'); matchError.classList.add('hidden'); return; }
+        const match = pwInput.value === pwConfirm.value;
+        matchIcon.classList.remove('hidden');
+        matchOk.classList.toggle('hidden', !match);
+        matchNo.classList.toggle('hidden', match);
+        matchError.classList.toggle('hidden', match);
+      }
+      pwConfirm?.addEventListener('input', checkMatch);
+
+      // Submit
       const form = document.getElementById('register-form') as HTMLFormElement;
       form?.addEventListener('submit', (e) => {
-        const password = (form.querySelector('input[name="password"]') as HTMLInputElement)?.value;
+        const pw = (form.querySelector('input[name="password"]') as HTMLInputElement)?.value;
         const confirm = (form.querySelector('input[name="confirm_password"]') as HTMLInputElement)?.value;
-        if (password !== confirm) {
+        if (pw !== confirm) {
           e.preventDefault();
-          const existing = form.querySelector('.client-error') as HTMLElement | null;
-          if (!existing) {
-            const msg = document.createElement('p');
-            msg.className = 'client-error text-xs text-red-500 mt-1';
-            msg.textContent = 'Las contraseñas no coinciden.';
-            form.querySelector('input[name="confirm_password"]')?.insertAdjacentElement('afterend', msg);
-          }
+          matchError.classList.remove('hidden');
+          pwConfirm.focus();
           return;
         }
         const btn = document.getElementById('btn-register') as HTMLButtonElement;

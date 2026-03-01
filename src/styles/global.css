@@ -8,9 +8,9 @@
   --color-sidebar-active: #252A32;
   --color-card: #FFFFFF;
   --color-card-border: #EAECF0;
-  --color-accent: #7CB974;
-  --color-accent-dark: #5FA356;
-  --color-accent-light: #EAF5E8;
+  --color-accent: #F97316;
+  --color-accent-dark: #EA580C;
+  --color-accent-light: #FFF7ED;
   --color-ink: #0F1117;
   --color-muted: #6B7280;
   --color-amber: #F59E0B;
@@ -27,13 +27,15 @@
     @apply bg-canvas text-ink font-sans antialiased;
   }
 
-  /* Pet color themes — index assigned by creation order */
-  body[data-pet="0"] { --color-accent: #7CB974; --color-accent-dark: #5FA356; --color-accent-light: #EAF5E8; }
-  body[data-pet="1"] { --color-accent: #60A5FA; --color-accent-dark: #3B82F6; --color-accent-light: #EFF6FF; }
-  body[data-pet="2"] { --color-accent: #A78BFA; --color-accent-dark: #7C3AED; --color-accent-light: #F5F3FF; }
-  body[data-pet="3"] { --color-accent: #FB923C; --color-accent-dark: #EA580C; --color-accent-light: #FFF7ED; }
-  body[data-pet="4"] { --color-accent: #F472B6; --color-accent-dark: #DB2777; --color-accent-light: #FDF2F8; }
-  body[data-pet="5"] { --color-accent: #2DD4BF; --color-accent-dark: #0D9488; --color-accent-light: #F0FDFA; }
+  /* Pet color themes — user-selectable via pet.theme_color */
+  body[data-pet-theme="orange"]  { --color-accent: #F97316; --color-accent-dark: #EA580C; --color-accent-light: #FFF7ED; }
+  body[data-pet-theme="rose"]    { --color-accent: #E85D75; --color-accent-dark: #D14460; --color-accent-light: #FDF2F4; }
+  body[data-pet-theme="purple"]  { --color-accent: #6B4C9A; --color-accent-dark: #553C7D; --color-accent-light: #F3F0F9; }
+  body[data-pet-theme="blue"]    { --color-accent: #3B6FB5; --color-accent-dark: #2D5A96; --color-accent-light: #EEF4FB; }
+  body[data-pet-theme="teal"]    { --color-accent: #469387; --color-accent-dark: #367568; --color-accent-light: #EDF7F5; }
+  body[data-pet-theme="gold"]    { --color-accent: #E69739; --color-accent-dark: #C97F28; --color-accent-light: #FDF5E8; }
+  body[data-pet-theme="yellow"]  { --color-accent: #EFC65D; --color-accent-dark: #D4A93D; --color-accent-light: #FDFAED; }
+  body[data-pet-theme="sky"]     { --color-accent: #AAD3DC; --color-accent-dark: #7FB8C6; --color-accent-light: #F0F8FA; }
 }
 
 @layer components {
@@ -109,7 +111,7 @@
     color: #FFFFFF;
   }
   .sidebar-link.active svg {
-    color: #7CB974;
+    color: #F97316;
   }
 }
 
@@ -134,7 +136,7 @@
 
 /* Focus ring */
 :focus-visible {
-  outline: 2px solid #7CB974;
+  outline: 2px solid #F97316;
   outline-offset: 2px;
 }
 

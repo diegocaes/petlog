@@ -9,6 +9,7 @@ export interface Pet {
   photo_url: string | null;
   chip_id: string | null;
   color: string | null;
+  theme_color: string | null;
   is_neutered: boolean | null;
   created_at: string;
 }

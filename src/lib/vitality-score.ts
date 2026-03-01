@@ -739,7 +739,7 @@ const SCORE_CATEGORIES: Array<{
     sublines: ['Todo apunta a un estado de salud muy bueno', 'Sigue así — lo estás haciendo genial'],
   },
   {
-    min: 70, category: 'good', color: '#7CB974',
+    min: 70, category: 'good', color: '#22C55E',
     headline: 'Muy buen estado',
     sublines: ['Hay pequeñas oportunidades de mejora', 'Un par de ajustes y llegamos al máximo'],
   },

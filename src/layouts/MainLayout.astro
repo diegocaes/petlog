@@ -19,7 +19,8 @@ const { pet: activePet, pets } = user
   ? await getActivePet(supabase, user.id, activePetId)
   : { pet: null, pets: [] };
 
-const petColorIndex = activePet ? pets.findIndex(p => p.id === activePet.id) : 0;
+// Theme color: user-selected, falls back to 'orange'
+const petTheme = activePet?.theme_color || 'orange';
 ---
 
 <!doctype html>
@@ -41,7 +42,7 @@ const petColorIndex = activePet ? pets.findIndex(p => p.id === activePet.id) : 0
     <title>{title} | PetLog</title>
     <ClientRouter />
   </head>
-  <body class="min-h-screen bg-canvas" data-pet={petColorIndex}>
+  <body class="min-h-screen bg-canvas" data-pet-theme={petTheme}>
     <Sidebar activePet={activePet} pets={pets} />
 
     <!-- Mobile top bar spacer -->

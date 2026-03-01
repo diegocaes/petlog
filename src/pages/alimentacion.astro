@@ -87,7 +87,7 @@ const avgDaysPerBag = foods.filter(f => f.daysTotal).length > 0
 
 function bagStatusText(daysRemaining: number | null, daysElapsed: number | null): string | null {
   if (daysRemaining === null) return null;
-  if (daysRemaining === 0) return 'La bolsa se terminó — hora de comprar';
+  if (daysRemaining === 0) return 'Se terminó — hora de reabastecer';
   if (daysRemaining <= 3) return `Quedan ${daysRemaining} días — ¡casi se acaba!`;
   return `${daysElapsed} días desde que se abrió`;
 }
@@ -100,24 +100,24 @@ function bagStatusText(daysRemaining: number | null, daysElapsed: number | null)
   {currentFood ? (
     <div class="mb-5 animate-fade-up">
       {/* Hero stat */}
-      <div class="rounded-2xl mb-3 px-5 py-4" style="background-color: color-mix(in srgb, var(--color-accent) 18%, #0a0f0a);">
-        <p class="text-xs font-semibold text-white/40 uppercase tracking-widest mb-1">Alimento actual</p>
+      <div class="rounded-2xl mb-3 px-5 py-4 border border-card-border bg-card">
+        <p class="text-xs font-semibold text-muted uppercase tracking-widest mb-1">Alimento actual</p>
         <div class="flex items-center justify-between">
           <div>
-            <p class="text-xl font-bold text-white">{currentFood.brand}</p>
-            <p class="text-sm text-white/50">{FOOD_TYPES[currentFood.foodType] || currentFood.foodType || '—'}{currentFood.daily_grams ? ` · ${currentFood.daily_grams}g/día` : ''}</p>
+            <p class="text-xl font-bold text-ink">{currentFood.brand}</p>
+            <p class="text-sm text-muted">{FOOD_TYPES[currentFood.foodType] || currentFood.foodType || '—'}{currentFood.daily_grams ? ` · ${currentFood.daily_grams}g/día` : ''}</p>
           </div>
           {currentFood.daysTotal && (
             <div class="text-right shrink-0">
               {currentFood.daysRemaining !== null ? (
                 <>
-                  <p class="text-2xl font-black text-white">≈{currentFood.daysRemaining}</p>
-                  <p class="text-xs text-white/50">días restantes</p>
+                  <p class="text-2xl font-black text-ink">≈{currentFood.daysRemaining}</p>
+                  <p class="text-xs text-muted">días restantes</p>
                 </>
               ) : (
                 <>
-                  <p class="text-2xl font-black text-white">≈{currentFood.daysTotal}</p>
-                  <p class="text-xs text-white/50">días/bolsa</p>
+                  <p class="text-2xl font-black text-ink">≈{currentFood.daysTotal}</p>
+                  <p class="text-xs text-muted">{['barf', 'mixto'].includes(currentFood.foodType ?? '') ? 'días/lote' : 'días/bolsa'}</p>
                 </>
               )}
             </div>
@@ -125,14 +125,14 @@ function bagStatusText(daysRemaining: number | null, daysElapsed: number | null)
         </div>
         {currentFood.daysTotal && (
           <div class="mt-3">
-            <div class="h-1.5 w-full rounded-full bg-white/10 overflow-hidden">
+            <div class="h-1.5 w-full rounded-full bg-canvas overflow-hidden">
               <div
                 class="h-full rounded-full transition-all"
-                style={`width: ${currentFood.progressPct ?? 100}%; background-color: ${(currentFood.progressPct ?? 100) < 20 ? '#F97316' : (currentFood.progressPct ?? 100) < 40 ? '#F59E0B' : 'rgba(255,255,255,0.5)'};`}
+                style={`width: ${currentFood.progressPct ?? 100}%; background-color: ${(currentFood.progressPct ?? 100) < 20 ? '#EF4444' : (currentFood.progressPct ?? 100) < 40 ? '#F59E0B' : '#22C55E'};`}
               />
             </div>
             {bagStatusText(currentFood.daysRemaining, currentFood.daysElapsed) && (
-              <p class="text-[11px] text-white/40 mt-1">{bagStatusText(currentFood.daysRemaining, currentFood.daysElapsed)}</p>
+              <p class="text-[11px] text-muted mt-1">{bagStatusText(currentFood.daysRemaining, currentFood.daysElapsed)}</p>
             )}
           </div>
         )}
@@ -147,7 +147,7 @@ function bagStatusText(daysRemaining: number | null, daysElapsed: number | null)
           </div>
           <div class="rounded-2xl bg-card border border-card-border px-4 py-3 text-center">
             <p class="text-lg font-black text-ink">{avgDaysPerBag ?? '—'}</p>
-            <p class="text-[10px] text-muted font-medium mt-0.5">días/bolsa prom.</p>
+            <p class="text-[10px] text-muted font-medium mt-0.5">días prom.</p>
           </div>
           <div class="rounded-2xl bg-card border border-card-border px-4 py-3 text-center">
             <p class="text-lg font-black text-ink">{foods.length}</p>
@@ -213,9 +213,12 @@ function bagStatusText(daysRemaining: number | null, daysElapsed: number | null)
               </select>
             </div>
           </div>
+          <div id="barf-hint" class="hidden rounded-xl bg-accent-light px-4 py-2.5 text-xs text-accent-dark">
+            💡 Indica el peso total de tu preparación y cuántos gramos consume al día
+          </div>
           <div class="grid grid-cols-3 gap-3">
             <div class="col-span-1">
-              <label class="block text-sm font-medium text-ink mb-1">Tamaño bolsa</label>
+              <label id="bag-size-label" class="block text-sm font-medium text-ink mb-1">Tamaño bolsa</label>
               <input type="number" name="bag_size" placeholder="Ej: 10" min="0" step="0.1" class="field-input" />
             </div>
             <div class="col-span-1">
@@ -227,7 +230,7 @@ function bagStatusText(daysRemaining: number | null, daysElapsed: number | null)
               </select>
             </div>
             <div class="col-span-1">
-              <label class="block text-sm font-medium text-ink mb-1">Precio ($)</label>
+              <label id="price-label" class="block text-sm font-medium text-ink mb-1">Precio ($)</label>
               <input type="number" name="price" placeholder="Ej: 45.00" min="0" step="0.01" class="field-input" />
             </div>
           </div>
@@ -289,12 +292,12 @@ function bagStatusText(daysRemaining: number | null, daysElapsed: number | null)
                         {food.daysRemaining !== null ? (
                           <>
                             <span class="text-xl font-bold text-ink">≈ {food.daysRemaining}</span>
-                            <span class="text-sm text-muted">días restantes de {food.daysTotal}</span>
+                            <span class="text-sm text-muted">días restantes</span>
                           </>
                         ) : (
                           <>
                             <span class="text-xl font-bold text-ink">≈ {food.daysTotal}</span>
-                            <span class="text-sm text-muted">días por bolsa</span>
+                            <span class="text-sm text-muted">días por {['barf', 'mixto'].includes(food.foodType ?? '') ? 'lote' : 'bolsa'}</span>
                           </>
                         )}
                       </div>
@@ -313,7 +316,7 @@ function bagStatusText(daysRemaining: number | null, daysElapsed: number | null)
                     {food.daily_grams && <span class="text-xs text-muted">{food.daily_grams}g/día</span>}
                     {food.bag_size && <span class="text-xs text-muted">{food.bag_size} {food.bag_unit ?? 'kg'}</span>}
                     {food.costPerDay && <span class="text-xs font-semibold text-accent">${food.costPerDay}/día</span>}
-                    {food.price && <span class="text-xs text-muted">${food.price} bolsa</span>}
+                    {food.price && <span class="text-xs text-muted">${food.price} {['barf', 'mixto'].includes(food.foodType ?? '') ? 'lote' : 'bolsa'}</span>}
                     {food.frequency && (
                       <span class="text-xs text-muted">{food.frequency === '1x' ? '1x/día' : food.frequency === '2x' ? '2x/día' : food.frequency === '3x' ? '3x/día' : 'Libre acceso'}</span>
                     )}
@@ -397,6 +400,21 @@ function bagStatusText(daysRemaining: number | null, daysElapsed: number | null)
       if (toggleIcon) toggleIcon.style.transform = isOpen ? '' : 'rotate(180deg)';
     });
 
+    // Dynamic labels for BARF/raw/casero
+    const typeSelect = document.querySelector('select[name="type"]') as HTMLSelectElement | null;
+    const bagLabel = document.getElementById('bag-size-label');
+    const priceLabel = document.getElementById('price-label');
+    const barfHint = document.getElementById('barf-hint');
+    const barfTypes = ['barf', 'mixto'];
+
+    function updateLabels() {
+      const isBarf = barfTypes.includes(typeSelect?.value ?? '');
+      if (bagLabel) bagLabel.textContent = isBarf ? 'Peso por lote' : 'Tamaño bolsa';
+      if (priceLabel) priceLabel.textContent = isBarf ? 'Costo lote ($)' : 'Precio ($)';
+      barfHint?.classList.toggle('hidden', !isBarf);
+    }
+    typeSelect?.addEventListener('change', updateLabels);
+
     // Edit / cancel
     document.querySelectorAll('.edit-btn').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -413,4 +431,7 @@ function bagStatusText(daysRemaining: number | null, daysElapsed: number | null)
       });
     });
   </script>
+
+  <p class="mt-10 mb-4 text-center text-xs text-muted/40 leading-relaxed max-w-xs mx-auto">Una buena alimentación es la base de la salud de tu mascota. Registra su dieta actual para saber cuándo se acaba el alimento y llevar el control de costos.</p>
+
 </MainLayout>

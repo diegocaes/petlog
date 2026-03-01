@@ -97,7 +97,7 @@ const breedFactsB64 = Buffer.from(JSON.stringify(BREED_FACTS)).toString('base64'
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#7CB974" />
+    <meta name="theme-color" content="#F97316" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'" />
@@ -127,7 +127,7 @@ const breedFactsB64 = Buffer.from(JSON.stringify(BREED_FACTS)).toString('base64'
 
         <!-- ───────────── PASO 1: Bienvenida ───────────── -->
         <div data-step="1" class="animate-fade-up">
-          <div class="relative overflow-hidden rounded-3xl text-white px-6 py-8 shadow-xl" style="background:#1E3B1A">
+          <div class="relative overflow-hidden rounded-3xl text-white px-6 py-8 shadow-xl" style="background: var(--color-accent)">
             <div class="absolute -top-10 -right-10 h-36 w-36 rounded-full bg-white/5"></div>
             <div class="absolute -bottom-8 -left-8 h-28 w-28 rounded-full bg-white/5"></div>
 
@@ -137,7 +137,7 @@ const breedFactsB64 = Buffer.from(JSON.stringify(BREED_FACTS)).toString('base64'
                 ¡Hola, {firstName}!
               </h1>
               <p class="text-sm text-white/70 leading-relaxed mb-6">
-                Estás a un minuto de tener el pasaporte digital de tu mascota.
+                Estás a un minuto de poder tener toda la información en un sólo lugar de tu mascota.
               </p>
 
               <div class="space-y-3 text-left mb-8">
@@ -145,7 +145,7 @@ const breedFactsB64 = Buffer.from(JSON.stringify(BREED_FACTS)).toString('base64'
                   <span class="text-lg shrink-0">🐾</span>
                   <div>
                     <p class="text-sm font-semibold">Perfil y pasaporte</p>
-                    <p class="text-xs text-white/60">Pasaporte digital para viajes</p>
+                    <p class="text-xs text-white/60">Toda su info y un pasaporte digital para viajes</p>
                   </div>
                 </div>
                 <div class="flex items-center gap-3 rounded-xl bg-white/10 px-4 py-2.5">
@@ -174,57 +174,11 @@ const breedFactsB64 = Buffer.from(JSON.stringify(BREED_FACTS)).toString('base64'
           </div>
         </div>
 
-        <!-- ───────────── PASO 2: Especie ───────────── -->
+        <!-- ───────────── PASO 2: Nombre, raza y foto ───────────── -->
         <div data-step="2" class="hidden">
           <div class="mb-6 text-center">
-            <p class="text-xs font-semibold text-accent uppercase tracking-widest mb-1" id="step2-eyebrow">
-              {isAddMode ? 'Una más en la familia' : 'El primero de muchos'}
-            </p>
-            <h2 class="text-2xl font-bold text-ink">¿Qué tipo de mascota tienes?</h2>
-            <p class="text-sm text-muted mt-1">Cuéntanos un poco sobre tu compañero.</p>
-          </div>
-
-          <div class="grid grid-cols-2 gap-4 mb-6">
-            <button
-              type="button"
-              id="species-dog"
-              data-species="dog"
-              class="species-pill flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-card-border bg-white px-4 py-8 text-center transition-all hover:border-accent active:scale-95"
-            >
-              <span class="text-5xl">🐕</span>
-              <span class="text-base font-bold text-ink">Perro</span>
-            </button>
-            <button
-              type="button"
-              id="species-cat"
-              data-species="cat"
-              class="species-pill flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-card-border bg-white px-4 py-8 text-center transition-all hover:border-accent active:scale-95"
-            >
-              <span class="text-5xl">🐱</span>
-              <span class="text-base font-bold text-ink">Gato</span>
-            </button>
-          </div>
-
-          <p id="species-error" class="text-xs text-red-500 text-center mb-4 hidden">Selecciona una opción para continuar</p>
-
-          <div class="space-y-3">
-            <button
-              id="btn-step2-next"
-              class="w-full rounded-2xl bg-accent px-6 py-3.5 font-bold text-sm text-white transition-all hover:bg-accent-dark active:scale-95 shadow-md"
-            >
-              Continuar →
-            </button>
-            <button type="button" id="btn-step2-back" class="w-full text-sm text-muted hover:text-ink transition-colors py-1">
-              ← Atrás
-            </button>
-          </div>
-        </div>
-
-        <!-- ───────────── PASO 3: Nombre, raza y foto ───────────── -->
-        <div data-step="3" class="hidden">
-          <div class="mb-6 text-center">
-            <p class="text-xs font-semibold text-accent uppercase tracking-widest mb-1">Paso 1 de 4</p>
-            <h2 class="text-2xl font-bold text-ink" id="step3-heading">¿Cómo se llama?</h2>
+            <p class="text-xs font-semibold text-accent uppercase tracking-widest mb-1">Paso 1 de 3</p>
+            <h2 class="text-2xl font-bold text-ink">¿Cómo se llama tu peludo?</h2>
             <p class="text-sm text-muted mt-1">Empieza por lo más importante.</p>
           </div>
 
@@ -298,10 +252,10 @@ const breedFactsB64 = Buffer.from(JSON.stringify(BREED_FACTS)).toString('base64'
           </div>
         </div>
 
-        <!-- ───────────── PASO 4: Fecha y género ───────────── -->
-        <div data-step="4" class="hidden">
+        <!-- ───────────── PASO 3: Fecha y género ───────────── -->
+        <div data-step="3" class="hidden">
           <div class="mb-6 text-center">
-            <p class="text-xs font-semibold text-accent uppercase tracking-widest mb-1">Paso 2 de 4</p>
+            <p class="text-xs font-semibold text-accent uppercase tracking-widest mb-1">Paso 2 de 3</p>
             <h2 class="text-2xl font-bold text-ink">¿Cuándo nació? 🎂</h2>
             <p class="text-sm text-muted mt-1">Para calcular su edad y recordar su cumpleaños.</p>
           </div>
@@ -353,19 +307,12 @@ const breedFactsB64 = Buffer.from(JSON.stringify(BREED_FACTS)).toString('base64'
           </div>
         </div>
 
-        <!-- ───────────── PASO 5: Datos de salud ───────────── -->
-        <div data-step="5" class="hidden">
+        <!-- ───────────── PASO 4: Datos de salud ───────────── -->
+        <div data-step="4" class="hidden">
           <div class="mb-6 text-center">
-            <p class="text-xs font-semibold text-accent uppercase tracking-widest mb-1">Paso 3 de 4</p>
+            <p class="text-xs font-semibold text-accent uppercase tracking-widest mb-1">Paso 3 de 3</p>
             <h2 class="text-2xl font-bold text-ink">Datos de salud</h2>
             <p class="text-sm text-muted mt-1">Opcional — puedes completarlo después.</p>
-          </div>
-
-          <div class="mb-4 flex items-center justify-center">
-            <span class="inline-flex items-center gap-1.5 rounded-full border border-amber/30 bg-amber/10 px-3 py-1 text-xs font-medium text-amber-dark">
-              <svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-              Estos datos son opcionales
-            </span>
           </div>
 
           <div class="space-y-4">
@@ -417,18 +364,18 @@ const breedFactsB64 = Buffer.from(JSON.stringify(BREED_FACTS)).toString('base64'
           </div>
         </div>
 
-        <!-- ───────────── PASO 6: Celebración ───────────── -->
-        <div data-step="6" class="hidden">
-          <div class="relative overflow-hidden rounded-3xl text-white px-6 py-10 shadow-xl text-center" style="background:#1E3B1A">
+        <!-- ───────────── PASO 5: Celebración ───────────── -->
+        <div data-step="5" class="hidden">
+          <div class="relative overflow-hidden rounded-3xl text-white px-6 py-10 shadow-xl text-center" style="background: var(--color-accent)">
             <div class="absolute -top-10 -right-10 h-36 w-36 rounded-full bg-white/5"></div>
             <div class="absolute -bottom-8 -left-8 h-28 w-28 rounded-full bg-white/5"></div>
 
             <div class="relative">
-              <div id="celebration-emoji" class="text-6xl mb-5 animate-float inline-block">🐾</div>
+              <div class="text-6xl mb-5 animate-float inline-block">🐕</div>
 
               <div class="mb-2 inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-1.5">
                 <svg class="h-4 w-4 text-accent" viewBox="0 0 24 24" fill="currentColor"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                <span class="text-xs font-semibold text-white">Paso 4 de 4</span>
+                <span class="text-xs font-semibold text-white">Completado</span>
               </div>
 
               <h2 class="text-2xl font-bold tracking-tight mt-4 mb-2" id="celebration-title">
@@ -436,7 +383,7 @@ const breedFactsB64 = Buffer.from(JSON.stringify(BREED_FACTS)).toString('base64'
               </h2>
               <p class="text-sm text-white/70 leading-relaxed mb-8" id="celebration-subtitle">
                 {isAddMode
-                  ? 'Tu nueva mascota ya tiene su historial digital en PetLog.'
+                  ? 'Ya puedes empezar a llevar toda la información e historial de tu peludo.'
                   : 'Bienvenido a PetLog. Tu mejor amigo ya tiene su historial digital — vacunas, peso, aventuras y más.'}
               </p>
 
@@ -444,7 +391,7 @@ const breedFactsB64 = Buffer.from(JSON.stringify(BREED_FACTS)).toString('base64'
                 id="btn-final-submit"
                 class="w-full rounded-2xl bg-white text-gray-900 px-6 py-3.5 font-bold text-sm transition-all hover:bg-white/90 active:scale-95 shadow-lg"
               >
-                <span id="btn-final-label">Ver el pasaporte →</span>
+                <span id="btn-final-label">Vamos a PetLog →</span>
               </button>
             </div>
           </div>
@@ -471,7 +418,6 @@ const breedFactsB64 = Buffer.from(JSON.stringify(BREED_FACTS)).toString('base64'
     <script>
       // ── State ──
       let selectedGender = '';
-      let selectedSpecies = '';
       let photoFileRef: File | null = null;
       const store: Record<string, string> = {};
 
@@ -490,20 +436,20 @@ const breedFactsB64 = Buffer.from(JSON.stringify(BREED_FACTS)).toString('base64'
         const fill = document.getElementById('progress-fill') as HTMLElement;
         const text = document.getElementById('progress-text') as HTMLElement;
 
-        // Show progress only from step 3 onward (steps 1 & 2 are pre-flow)
-        if (step <= 2) {
+        // Show progress only from step 2 onward (step 1 is welcome)
+        if (step <= 1) {
           wrap.style.display = 'none';
           return;
         }
         wrap.style.display = 'block';
 
         const stepMap: Record<number, { width: string; label: string }> = {
-          3: { width: '25%', label: 'Paso 1 de 4' },
-          4: { width: '50%', label: 'Paso 2 de 4' },
-          5: { width: '75%', label: 'Paso 3 de 4' },
-          6: { width: '100%', label: 'Paso 4 de 4' },
+          2: { width: '33%', label: 'Paso 1 de 3' },
+          3: { width: '66%', label: 'Paso 2 de 3' },
+          4: { width: '100%', label: 'Paso 3 de 3' },
+          5: { width: '100%', label: 'Completado' },
         };
-        const info = stepMap[step] || { width: '25%', label: '' };
+        const info = stepMap[step] || { width: '33%', label: '' };
         fill.style.width = info.width;
         text.textContent = info.label;
       }
@@ -521,7 +467,7 @@ const breedFactsB64 = Buffer.from(JSON.stringify(BREED_FACTS)).toString('base64'
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
 
-      // ── Add-mode: skip step 1, go straight to species selection ──
+      // ── Add-mode: skip step 1, go straight to name/breed ──
       const isAddMode = document.body.dataset.addMode === 'true';
       if (isAddMode) {
         goTo(2);
@@ -529,40 +475,6 @@ const breedFactsB64 = Buffer.from(JSON.stringify(BREED_FACTS)).toString('base64'
 
       // ── Step 1 → 2 ──
       document.getElementById('btn-step1-next')?.addEventListener('click', () => goTo(2));
-
-      // ── Species selection ──
-      document.querySelectorAll('.species-pill').forEach((btn) => {
-        btn.addEventListener('click', () => {
-          document.querySelectorAll('.species-pill').forEach((b) => {
-            b.classList.remove('border-accent', 'bg-accent/10');
-            b.classList.add('border-card-border');
-          });
-          btn.classList.add('border-accent', 'bg-accent/10');
-          btn.classList.remove('border-card-border');
-          selectedSpecies = (btn as HTMLElement).dataset.species || '';
-          document.getElementById('species-error')?.classList.add('hidden');
-        });
-      });
-
-      document.getElementById('btn-step2-next')?.addEventListener('click', () => {
-        if (!selectedSpecies) {
-          document.getElementById('species-error')?.classList.remove('hidden');
-          return;
-        }
-        // Update heading and emoji for selected species
-        const heading = document.getElementById('step3-heading');
-        const celebEmoji = document.getElementById('celebration-emoji');
-        if (heading) heading.textContent = selectedSpecies === 'cat' ? '¿Cómo se llama?' : '¿Cómo se llama?';
-        if (celebEmoji) celebEmoji.textContent = selectedSpecies === 'cat' ? '🐱' : '🐕';
-        // Hide breed section for cats (no breed list for cats yet)
-        const breedSection = document.getElementById('breed-section');
-        if (breedSection) breedSection.style.display = selectedSpecies === 'cat' ? 'none' : 'block';
-        goTo(3);
-      });
-      document.getElementById('btn-step2-back')?.addEventListener('click', () => {
-        if (isAddMode) { window.location.href = '/dashboard'; return; }
-        goTo(1);
-      });
 
       // ── Photo preview ──
       const photoInput = document.getElementById('ob-photo-input') as HTMLInputElement;
@@ -605,7 +517,7 @@ const breedFactsB64 = Buffer.from(JSON.stringify(BREED_FACTS)).toString('base64'
         }
       });
 
-      // ── Step 3 → 4 ──
+      // ── Step 2 (name/breed) → 3 ──
       document.getElementById('btn-step3-next')?.addEventListener('click', () => {
         const nameInput = document.getElementById('ob-name') as HTMLInputElement;
         const nameError = document.getElementById('ob-name-error') as HTMLElement;
@@ -629,9 +541,12 @@ const breedFactsB64 = Buffer.from(JSON.stringify(BREED_FACTS)).toString('base64'
         if (celebTitle) celebTitle.textContent = `¡Listo! El pasaporte de ${store.name} está creado 🎉`;
         if (celebBtn) celebBtn.textContent = `Ver el pasaporte de ${store.name} →`;
 
-        goTo(4);
+        goTo(3);
       });
-      document.getElementById('btn-step3-back')?.addEventListener('click', () => goTo(2));
+      document.getElementById('btn-step3-back')?.addEventListener('click', () => {
+        if (isAddMode) { window.location.href = '/dashboard'; return; }
+        goTo(1);
+      });
 
       // ── Gender pills ──
       document.querySelectorAll('.gender-pill').forEach((btn) => {
@@ -646,20 +561,20 @@ const breedFactsB64 = Buffer.from(JSON.stringify(BREED_FACTS)).toString('base64'
         });
       });
 
-      // ── Step 4 → 5 ──
+      // ── Step 3 (date/gender) → 4 ──
       document.getElementById('btn-step4-next')?.addEventListener('click', () => {
         store.birthDate = (document.getElementById('ob-birth-date') as HTMLInputElement).value;
         store.gender = selectedGender;
-        goTo(5);
+        goTo(4);
       });
       document.getElementById('btn-step4-skip')?.addEventListener('click', () => {
         store.birthDate = '';
         store.gender = '';
-        goTo(5);
+        goTo(4);
       });
-      document.getElementById('btn-step4-back')?.addEventListener('click', () => goTo(3));
+      document.getElementById('btn-step4-back')?.addEventListener('click', () => goTo(2));
 
-      // ── Step 5 → 6 ──
+      // ── Step 4 (health) → 5 ──
       function goToStep5Next(skipOptional: boolean) {
         if (!skipOptional) {
           store.weight = (document.getElementById('ob-weight') as HTMLInputElement).value;
@@ -670,11 +585,11 @@ const breedFactsB64 = Buffer.from(JSON.stringify(BREED_FACTS)).toString('base64'
           store.chip = '';
           store.color = '';
         }
-        goTo(6);
+        goTo(5);
       }
       document.getElementById('btn-step5-next')?.addEventListener('click', () => goToStep5Next(false));
       document.getElementById('btn-step5-skip')?.addEventListener('click', () => goToStep5Next(true));
-      document.getElementById('btn-step5-back')?.addEventListener('click', () => goTo(4));
+      document.getElementById('btn-step5-back')?.addEventListener('click', () => goTo(3));
 
       // ── Final submit (from celebration screen) ──
       function submitFinal() {
