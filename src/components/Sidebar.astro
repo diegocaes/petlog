@@ -15,7 +15,7 @@ const navItems = [
   { href: '/alimentacion',  match: '/alimentacion', label: 'Comida',   icon: 'food' },
   { href: '/viajes',        match: '/viajes',       label: 'Vuelos',   icon: 'plane' },
   { href: '/aventuras',     match: '/aventuras',    label: 'Fotos',    icon: 'camera' },
-  { href: '/badges',        match: '/badges',       label: 'Badges',   icon: 'trophy' },
+  { href: '/badges',        match: '/badges',       label: 'Insignias', icon: 'trophy' },
 ];
 
 function isActive(match: string): boolean {
@@ -126,9 +126,7 @@ function petInitial(name: string) {
 <!-- ─── MOBILE TOP BAR ─────────────────────────────── -->
 <header class="no-print lg:hidden fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-4 py-3 bg-sidebar border-b border-white/5">
   <a href="/" class="flex items-center gap-2.5 hover:opacity-80 transition-opacity">
-    <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-accent/20">
-      <span class="text-sm">🐾</span>
-    </div>
+    <img src="/PetLog-logo.svg" alt="PetLog" class="h-7 w-7" style="filter:brightness(0) invert(1);" />
     <span class="text-white font-bold text-sm tracking-tight">PetLog</span>
   </a>
   <button

@@ -6,43 +6,47 @@
  */
 ---
 
-<script>
-  // 1. Loading state on submit buttons
-  document.querySelectorAll<HTMLFormElement>('form[method="POST"]').forEach(form => {
-    form.addEventListener('submit', (e) => {
-      const action = form.querySelector<HTMLInputElement>('input[name="_action"]')?.value;
+<script is:inline>
+  function setupFormEnhancements() {
+    // 1. Loading state on submit buttons
+    document.querySelectorAll('form[method="POST"]').forEach(function(form) {
+      form.addEventListener('submit', function(e) {
+        var actionEl = form.querySelector('input[name="_action"]');
+        var action = actionEl ? actionEl.value : '';
 
-      // Skip delete forms — handled separately with confirmation
-      if (action === 'delete') return;
+        // Skip delete forms — handled separately with confirmation
+        if (action === 'delete') return;
 
-      const submitBtn = form.querySelector<HTMLButtonElement>('button[type="submit"]');
-      if (submitBtn && !submitBtn.classList.contains('btn-loading')) {
-        submitBtn.classList.add('btn-loading');
-        submitBtn.setAttribute('disabled', '');
-      }
-    });
-  });
-
-  // 2. Delete confirmation + haptic feedback
-  document.querySelectorAll<HTMLFormElement>('form[method="POST"]').forEach(form => {
-    const actionEl = form.querySelector<HTMLInputElement>('input[name="_action"]');
-    const actionVal = actionEl?.value ?? '';
-    if (!actionVal.includes('delete')) return;
-
-    form.addEventListener('submit', (e) => {
-      e.preventDefault();
-      // Haptic on confirm prompt
-      if ('vibrate' in navigator) navigator.vibrate(8);
-      if (confirm('¿Eliminar este registro? Esta acción no se puede deshacer.')) {
-        // Stronger haptic on confirm
-        if ('vibrate' in navigator) navigator.vibrate([10, 50, 10]);
-        const btn = form.querySelector<HTMLButtonElement>('button[type="submit"]');
-        if (btn) {
-          btn.classList.add('btn-loading');
-          btn.setAttribute('disabled', '');
+        var submitBtn = form.querySelector('button[type="submit"]');
+        if (submitBtn && !submitBtn.classList.contains('btn-loading')) {
+          submitBtn.classList.add('btn-loading');
+          submitBtn.setAttribute('disabled', '');
         }
-        form.submit();
-      }
+      });
     });
-  });
+
+    // 2. Delete confirmation + haptic feedback
+    document.querySelectorAll('form[method="POST"]').forEach(function(form) {
+      var actionEl = form.querySelector('input[name="_action"]');
+      var actionVal = actionEl ? actionEl.value : '';
+      if (actionVal.indexOf('delete') === -1) return;
+
+      form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        // Haptic on confirm prompt
+        if ('vibrate' in navigator) navigator.vibrate(8);
+        if (confirm('¿Eliminar este registro? Esta acción no se puede deshacer.')) {
+          // Stronger haptic on confirm
+          if ('vibrate' in navigator) navigator.vibrate([10, 50, 10]);
+          var btn = form.querySelector('button[type="submit"]');
+          if (btn) {
+            btn.classList.add('btn-loading');
+            btn.setAttribute('disabled', '');
+          }
+          form.submit();
+        }
+      });
+    });
+  }
+  document.addEventListener('astro:page-load', setupFormEnhancements);
 </script>

@@ -140,7 +140,7 @@ function bagStatusText(daysRemaining: number | null, daysElapsed: number | null)
 
       {/* Stats row */}
       {(currentFood.costPerDay || avgDaysPerBag || foods.length > 1) && (
-        <div class="grid grid-cols-3 gap-3">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div class="rounded-2xl bg-card border border-card-border px-4 py-3 text-center">
             <p class="text-lg font-black text-ink">{currentFood.costPerDay ? `$${currentFood.costPerDay}` : '—'}</p>
             <p class="text-[10px] text-muted font-medium mt-0.5">costo/día</p>
@@ -216,7 +216,7 @@ function bagStatusText(daysRemaining: number | null, daysElapsed: number | null)
           <div id="barf-hint" class="hidden rounded-xl bg-accent-light px-4 py-2.5 text-xs text-accent-dark">
             💡 Indica el peso total de tu preparación y cuántos gramos consume al día
           </div>
-          <div class="grid grid-cols-3 gap-3">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div class="col-span-1">
               <label id="bag-size-label" class="block text-sm font-medium text-ink mb-1">Tamaño bolsa</label>
               <input type="number" name="bag_size" placeholder="Ej: 10" min="0" step="0.1" class="field-input" />
@@ -366,7 +366,7 @@ function bagStatusText(daysRemaining: number | null, daysElapsed: number | null)
                 <option value="libre" selected={food.frequency === 'libre'}>Libre</option>
               </select>
             </div>
-            <div class="grid grid-cols-3 gap-2">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <input type="number" name="bag_size" value={food.bag_size || ''} placeholder="Bolsa" step="0.1" class="field-input-sm" />
               <select name="bag_unit" class="field-input-sm">
                 <option value="kg" selected={food.bag_unit === 'kg'}>kg</option>
@@ -389,47 +389,66 @@ function bagStatusText(daysRemaining: number | null, daysElapsed: number | null)
     </div>
   )}
 
-  <script>
-    // Toggle form
-    const toggleBtn = document.getElementById('toggle-food-form');
-    const formBody = document.getElementById('food-form-body');
-    const toggleIcon = document.getElementById('toggle-food-icon');
-    toggleBtn?.addEventListener('click', () => {
-      const isOpen = !formBody?.classList.contains('hidden');
-      formBody?.classList.toggle('hidden');
-      if (toggleIcon) toggleIcon.style.transform = isOpen ? '' : 'rotate(180deg)';
-    });
+  <script is:inline>
+    function setupAlimentacion() {
+      var toggleBtn = document.getElementById('toggle-food-form');
+      var formBody = document.getElementById('food-form-body');
+      var toggleIcon = document.getElementById('toggle-food-icon');
+      if (toggleBtn) {
+        toggleBtn.addEventListener('click', function() {
+          var isOpen = formBody && !formBody.classList.contains('hidden');
+          if (formBody) formBody.classList.toggle('hidden');
+          if (toggleIcon) toggleIcon.style.transform = isOpen ? '' : 'rotate(180deg)';
+        });
+      }
 
-    // Dynamic labels for BARF/raw/casero
-    const typeSelect = document.querySelector('select[name="type"]') as HTMLSelectElement | null;
-    const bagLabel = document.getElementById('bag-size-label');
-    const priceLabel = document.getElementById('price-label');
-    const barfHint = document.getElementById('barf-hint');
-    const barfTypes = ['barf', 'mixto'];
+      // Dynamic labels for BARF/raw/casero
+      var typeSelect = document.querySelector('select[name="type"]');
+      var bagLabel = document.getElementById('bag-size-label');
+      var priceLabel = document.getElementById('price-label');
+      var barfHint = document.getElementById('barf-hint');
+      var barfTypes = ['barf', 'mixto'];
 
-    function updateLabels() {
-      const isBarf = barfTypes.includes(typeSelect?.value ?? '');
-      if (bagLabel) bagLabel.textContent = isBarf ? 'Peso por lote' : 'Tamaño bolsa';
-      if (priceLabel) priceLabel.textContent = isBarf ? 'Costo lote ($)' : 'Precio ($)';
-      barfHint?.classList.toggle('hidden', !isBarf);
+      function updateLabels() {
+        var isBarf = barfTypes.indexOf(typeSelect ? typeSelect.value : '') !== -1;
+        if (bagLabel) bagLabel.textContent = isBarf ? 'Peso por lote' : 'Tamaño bolsa';
+        if (priceLabel) priceLabel.textContent = isBarf ? 'Costo lote ($)' : 'Precio ($)';
+        if (barfHint) barfHint.classList.toggle('hidden', !isBarf);
+      }
+      if (typeSelect) typeSelect.addEventListener('change', updateLabels);
+
+      // Edit / cancel
+      document.querySelectorAll('.edit-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          var id = btn.dataset.id;
+          var view = document.querySelector('.item-view[data-id="' + id + '"]');
+          var edit = document.querySelector('.item-edit[data-id="' + id + '"]');
+          if (view) view.classList.add('hidden');
+          if (edit) edit.classList.remove('hidden');
+        });
+      });
+      document.querySelectorAll('.cancel-edit').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          var id = btn.dataset.id;
+          var view = document.querySelector('.item-view[data-id="' + id + '"]');
+          var edit = document.querySelector('.item-edit[data-id="' + id + '"]');
+          if (view) view.classList.remove('hidden');
+          if (edit) edit.classList.add('hidden');
+        });
+      });
+
+      // Close food form when navigating away (prevents accidental submit)
+      var menuBtn = document.getElementById('mobile-menu-btn');
+      if (menuBtn && formBody) {
+        menuBtn.addEventListener('click', function() {
+          if (!formBody.classList.contains('hidden')) {
+            formBody.classList.add('hidden');
+            if (toggleIcon) toggleIcon.style.transform = '';
+          }
+        });
+      }
     }
-    typeSelect?.addEventListener('change', updateLabels);
-
-    // Edit / cancel
-    document.querySelectorAll('.edit-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const id = (btn as HTMLElement).dataset.id;
-        document.querySelector(`.item-view[data-id="${id}"]`)?.classList.add('hidden');
-        document.querySelector(`.item-edit[data-id="${id}"]`)?.classList.remove('hidden');
-      });
-    });
-    document.querySelectorAll('.cancel-edit').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const id = (btn as HTMLElement).dataset.id;
-        document.querySelector(`.item-view[data-id="${id}"]`)?.classList.remove('hidden');
-        document.querySelector(`.item-edit[data-id="${id}"]`)?.classList.add('hidden');
-      });
-    });
+    document.addEventListener('astro:page-load', setupAlimentacion);
   </script>
 
   <p class="mt-10 mb-4 text-center text-xs text-muted/40 leading-relaxed max-w-xs mx-auto">Una buena alimentación es la base de la salud de tu mascota. Registra su dieta actual para saber cuándo se acaba el alimento y llevar el control de costos.</p>

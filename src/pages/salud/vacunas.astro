@@ -268,57 +268,71 @@ const upcomingCount = vaccines?.filter(v => {
     </button>
   )}
 
-  <script>
-    const vaccineSelect = document.getElementById('vaccine-select') as HTMLSelectElement;
-    const vaccineNameInput = document.getElementById('vaccine-name-input') as HTMLInputElement;
-    vaccineSelect?.addEventListener('change', () => {
-      const val = vaccineSelect.value;
-      if (val === 'Otra') {
-        vaccineNameInput.classList.remove('hidden');
-        vaccineNameInput.value = '';
-        vaccineNameInput.focus();
-      } else {
-        vaccineNameInput.classList.add('hidden');
-        vaccineNameInput.value = val;
+  <script is:inline>
+    function setupVacunas() {
+      var vaccineSelect = document.getElementById('vaccine-select');
+      var vaccineNameInput = document.getElementById('vaccine-name-input');
+      if (vaccineSelect) {
+        vaccineSelect.addEventListener('change', function() {
+          var val = vaccineSelect.value;
+          if (val === 'Otra') {
+            vaccineNameInput.classList.remove('hidden');
+            vaccineNameInput.value = '';
+            vaccineNameInput.focus();
+          } else {
+            vaccineNameInput.classList.add('hidden');
+            vaccineNameInput.value = val;
+          }
+        });
+        var form = vaccineSelect.closest('form');
+        if (form) {
+          form.addEventListener('submit', function() {
+            if (vaccineSelect.value && vaccineSelect.value !== 'Otra') {
+              vaccineNameInput.value = vaccineSelect.value;
+              vaccineNameInput.classList.remove('hidden');
+            }
+          });
+        }
       }
-    });
-    vaccineSelect?.closest('form')?.addEventListener('submit', () => {
-      if (vaccineSelect.value && vaccineSelect.value !== 'Otra') {
-        vaccineNameInput.value = vaccineSelect.value;
-        vaccineNameInput.classList.remove('hidden');
+
+      var toggleBtn = document.getElementById('toggle-vaccine-form');
+      var formBody = document.getElementById('vaccine-form-body');
+      var toggleIcon = document.getElementById('toggle-vaccine-icon');
+      if (toggleBtn) {
+        toggleBtn.addEventListener('click', function() {
+          var isOpen = formBody && !formBody.classList.contains('hidden');
+          if (formBody) formBody.classList.toggle('hidden');
+          if (toggleIcon) toggleIcon.style.transform = isOpen ? '' : 'rotate(180deg)';
+        });
       }
-    });
 
-    const toggleBtn = document.getElementById('toggle-vaccine-form');
-    const formBody = document.getElementById('vaccine-form-body');
-    const toggleIcon = document.getElementById('toggle-vaccine-icon');
-    toggleBtn?.addEventListener('click', () => {
-      const isOpen = !formBody?.classList.contains('hidden');
-      formBody?.classList.toggle('hidden');
-      if (toggleIcon) toggleIcon.style.transform = isOpen ? '' : 'rotate(180deg)';
-    });
-
-    document.querySelectorAll('.edit-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const id = (btn as HTMLElement).dataset.id;
-        document.querySelector(`.vaccine-view[data-id="${id}"]`)?.classList.add('hidden');
-        document.querySelector(`.vaccine-edit[data-id="${id}"]`)?.classList.remove('hidden');
+      document.querySelectorAll('.edit-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          var id = btn.dataset.id;
+          var view = document.querySelector('.vaccine-view[data-id="' + id + '"]');
+          var edit = document.querySelector('.vaccine-edit[data-id="' + id + '"]');
+          if (view) view.classList.add('hidden');
+          if (edit) edit.classList.remove('hidden');
+        });
       });
-    });
-    document.querySelectorAll('.cancel-edit').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const id = (btn as HTMLElement).dataset.id;
-        document.querySelector(`.vaccine-view[data-id="${id}"]`)?.classList.remove('hidden');
-        document.querySelector(`.vaccine-edit[data-id="${id}"]`)?.classList.add('hidden');
+      document.querySelectorAll('.cancel-edit').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          var id = btn.dataset.id;
+          var view = document.querySelector('.vaccine-view[data-id="' + id + '"]');
+          var edit = document.querySelector('.vaccine-edit[data-id="' + id + '"]');
+          if (view) view.classList.remove('hidden');
+          if (edit) edit.classList.add('hidden');
+        });
       });
-    });
-    const showMoreBtn = document.getElementById('show-more-btn');
-    if (showMoreBtn) {
-      showMoreBtn.addEventListener('click', () => {
-        document.querySelectorAll('.collapse-item').forEach(el => el.classList.remove('hidden'));
-        showMoreBtn.remove();
-      });
+      var showMoreBtn = document.getElementById('show-more-btn');
+      if (showMoreBtn) {
+        showMoreBtn.addEventListener('click', function() {
+          document.querySelectorAll('.collapse-item').forEach(function(el) { el.classList.remove('hidden'); });
+          showMoreBtn.remove();
+        });
+      }
     }
+    document.addEventListener('astro:page-load', setupVacunas);
   </script>
 
   <p class="mt-10 mb-4 text-center text-xs text-muted/40 leading-relaxed max-w-xs mx-auto">Mantener las vacunas al día protege a tu mascota de enfermedades graves. Registra cada dosis y lleva el historial completo a cada cita con el vet.</p>
