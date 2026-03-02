@@ -8,6 +8,8 @@ import type { ScoreInput } from '../lib/vitality-score';
 import { GROOMING_TYPES } from '../lib/constants';
 import { evaluateBadges } from '../lib/badges';
 import type { BadgeCounts } from '../lib/badges';
+import { BREED_FACTS } from '../lib/breeds';
+import type { DogBreed } from '../lib/breeds';
 
 const { supabase, user, activePetId } = Astro.locals;
 const isNewlyOnboarded = Astro.url.searchParams.get('onboarded') === '1';
@@ -141,6 +143,12 @@ const desparasitanteInfo = daysUntilNext(lastDesparasitante?.[0]?.date_given);
 const birthday = pet.birth_date ? isBirthday(pet.birth_date) : false;
 const age = pet.birth_date ? calculateAge(pet.birth_date) : null;
 const photoUrl = pet.photo_url || '/icons/default-pet.svg';
+
+// Breed fact of the day — pick based on date so it changes daily
+const breedFacts = pet.breed ? BREED_FACTS[pet.breed as DogBreed] : null;
+const dailyFact = breedFacts?.length
+  ? breedFacts[Math.floor(new Date().getDate() % breedFacts.length)]
+  : null;
 
 // Weight trend
 const latestWeight = weightRecords?.[0]?.weight_kg ?? pet.weight_kg;
@@ -321,6 +329,19 @@ const checklistItems = [
       )}
     </div>
   </a>
+
+  {/* ── BREED FACT OF THE DAY ── */}
+  {dailyFact && (
+    <div class="mb-5 animate-fade-up">
+      <div class="flex items-start gap-3 rounded-2xl border border-accent/15 bg-accent/5 px-4 py-3">
+        <span class="text-lg shrink-0 mt-0.5">{dailyFact.emoji}</span>
+        <div>
+          <p class="text-xs font-bold text-accent-dark mb-0.5">¿Sabías que...?</p>
+          <p class="text-xs text-ink/70 leading-relaxed">{dailyFact.fact}</p>
+        </div>
+      </div>
+    </div>
+  )}
 
   {/* ── MIDDLE ROW: Score + Peso/Alimentación ── */}
   <div class="grid grid-cols-5 gap-3 mb-6 animate-fade-up animate-fade-up-delay-1">

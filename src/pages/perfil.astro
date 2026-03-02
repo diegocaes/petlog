@@ -40,10 +40,34 @@ const totalFields = profileFields.length;
 const isProfileComplete = pet && completedFields === totalFields;
 const completionPct = pet ? Math.round((completedFields / totalFields) * 100) : 0;
 
+// Owner profile
+const { data: ownerProfile } = await supabase
+  .from('owner_profiles')
+  .select('*')
+  .eq('user_id', user.id)
+  .maybeSingle();
+
 // Handle form submission
 if (Astro.request.method === 'POST') {
   const formData = await Astro.request.formData();
   const action = formData.get('_action') as string;
+
+  if (action === 'save_owner') {
+    const ownerData = {
+      user_id: user.id,
+      first_name: (formData.get('owner_first_name') as string)?.trim() || null,
+      last_name: (formData.get('owner_last_name') as string)?.trim() || null,
+      phone: (formData.get('owner_phone') as string)?.trim() || null,
+      birth_date: (formData.get('owner_birth_date') as string) || null,
+      gender: (formData.get('owner_gender') as string) || null,
+    };
+    if (ownerProfile) {
+      await supabase.from('owner_profiles').update(ownerData).eq('user_id', user.id);
+    } else {
+      await supabase.from('owner_profiles').insert(ownerData);
+    }
+    return Astro.redirect('/perfil?saved=owner');
+  }
 
   if (action === 'logout') {
     await supabase.auth.signOut();
@@ -113,6 +137,9 @@ if (Astro.request.method === 'POST') {
     chip_id: (formData.get('chip_id') as string) || null,
     color: (formData.get('color') as string) || null,
     theme_color: (formData.get('theme_color') as string) || 'orange',
+    birth_city: (formData.get('birth_city') as string)?.trim() || null,
+    birth_country: (formData.get('birth_country') as string)?.trim() || null,
+    support_type: (formData.get('support_type') as string) || null,
   };
 
   // Handle photo upload
@@ -256,6 +283,11 @@ const isOtherBreed = pet?.breed && !breedInList;
             </select>
           </div>
         </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <Input label="Ciudad de nacimiento" name="birth_city" value={pet?.birth_city || ''} placeholder="Ej: Bogotá" />
+          <Input label="País de nacimiento" name="birth_country" value={pet?.birth_country || ''} placeholder="Ej: Colombia" />
+        </div>
       </div>
 
       <hr class="border-card-border/50" />
@@ -273,6 +305,16 @@ const isOtherBreed = pet?.breed && !breedInList;
         </div>
         <p class="text-xs text-gray-400 -mt-2">Al cambiar el peso se guarda automáticamente en el historial</p>
         <Input label="Color de pelaje" name="color" value={pet?.color || ''} placeholder="Ej: Dorado, Negro, Blanco..." />
+
+        <div>
+          <label class="block text-sm font-medium text-ink mb-1.5">Tipo de asistencia</label>
+          <select name="support_type" class="field-input">
+            <option value="" selected={!pet?.support_type}>No aplica</option>
+            <option value="emotional_support" selected={pet?.support_type === 'emotional_support'}>Apoyo emocional (ESA)</option>
+            <option value="service" selected={pet?.support_type === 'service'}>Perro de servicio</option>
+          </select>
+          <p class="text-xs text-gray-400 mt-1">Se mostrará en el pasaporte si aplica</p>
+        </div>
       </div>
 
       <hr class="border-card-border/50" />
@@ -350,6 +392,49 @@ const isOtherBreed = pet?.breed && !breedInList;
       )}
     </div>
   )}
+
+  <!-- Owner Profile -->
+  <Card variant="elevated" class="mt-4 animate-fade-up animate-fade-up-delay-2">
+    <form method="POST" class="space-y-4">
+      <input type="hidden" name="_action" value="save_owner" />
+
+      <div class="flex items-center gap-2 text-xs font-semibold text-muted uppercase tracking-widest">
+        <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+        Datos del dueño
+      </div>
+      <p class="text-xs text-muted -mt-2">Tu información personal como responsable de {pet?.name ?? 'tu mascota'}.</p>
+
+      {savedParam === 'owner' && (
+        <div class="rounded-xl bg-accent/10 border border-accent/20 px-4 py-3 text-sm text-accent-dark font-medium">
+          Datos del dueño guardados.
+        </div>
+      )}
+
+      <div class="grid grid-cols-2 gap-4">
+        <Input label="Nombre" name="owner_first_name" value={ownerProfile?.first_name || ''} placeholder="Tu nombre" />
+        <Input label="Apellido" name="owner_last_name" value={ownerProfile?.last_name || ''} placeholder="Tu apellido" />
+      </div>
+
+      <Input label="Teléfono" name="owner_phone" type="tel" value={ownerProfile?.phone || ''} placeholder="Ej: +57 300 1234567" />
+
+      <div class="grid grid-cols-2 gap-4">
+        <Input label="Fecha de nacimiento" name="owner_birth_date" type="date" value={ownerProfile?.birth_date || ''} />
+        <div>
+          <label class="block text-sm font-medium text-ink mb-1.5">Sexo</label>
+          <select name="owner_gender" class="field-input">
+            <option value="" selected={!ownerProfile?.gender}>Seleccionar</option>
+            <option value="masculino" selected={ownerProfile?.gender === 'masculino'}>Masculino</option>
+            <option value="femenino" selected={ownerProfile?.gender === 'femenino'}>Femenino</option>
+            <option value="otro" selected={ownerProfile?.gender === 'otro'}>Otro</option>
+          </select>
+        </div>
+      </div>
+
+      <Button type="submit" variant="primary" size="lg" class="w-full">
+        Guardar datos del dueño
+      </Button>
+    </form>
+  </Card>
 
   <!-- Logout & Account Info -->
   <Card variant="elevated" class="mt-4 animate-fade-up animate-fade-up-delay-2">
@@ -496,6 +581,69 @@ const isOtherBreed = pet?.breed && !breedInList;
     </div>
   </div>
 
+  <!-- Feedback / Sugerencias -->
+  <div id="feedback" class="mt-4 animate-fade-up animate-fade-up-delay-2">
+    <button
+      type="button"
+      id="btn-open-feedback"
+      class="w-full rounded-2xl border border-card-border bg-white px-5 py-4 flex items-center gap-4 hover:border-accent/30 transition-all active:scale-[0.98]"
+    >
+      <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent/10">
+        <svg class="h-5 w-5 text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      </div>
+      <div class="text-left">
+        <p class="text-sm font-semibold text-ink">Enviar sugerencias</p>
+        <p class="text-xs text-muted">Ayúdanos a mejorar PetLog</p>
+      </div>
+      <svg class="h-4 w-4 text-muted/40 ml-auto shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+    </button>
+  </div>
+
+  <!-- Feedback modal -->
+  <div id="feedback-modal" class="fixed inset-0 z-50 items-end justify-center p-4 bg-black/40 backdrop-blur-sm hidden">
+    <div class="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl animate-scale-in">
+      <div class="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-accent/10 mx-auto">
+        <svg class="h-7 w-7 text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      </div>
+      <h3 class="text-center text-base font-bold text-ink mb-1">Enviar sugerencias</h3>
+      <p class="text-center text-xs text-muted mb-5 leading-relaxed">
+        Estamos lanzando la aplicación y cualquier aporte o reporte nos ayuda a crear una mejor experiencia. ¡Gracias!
+      </p>
+      <form id="feedback-form" class="space-y-3">
+        <div>
+          <select id="feedback-type" class="w-full rounded-xl border border-card-border bg-canvas px-4 py-2.5 text-sm text-ink focus:border-accent focus:outline-none transition-colors">
+            <option value="sugerencia">Sugerencia</option>
+            <option value="bug">Reportar error</option>
+            <option value="otro">Otro</option>
+          </select>
+        </div>
+        <div>
+          <textarea
+            id="feedback-message"
+            rows="4"
+            required
+            placeholder="Cuéntanos tu idea, reporte o comentario..."
+            class="w-full rounded-xl border border-card-border bg-canvas px-4 py-3 text-sm text-ink placeholder-muted focus:border-accent focus:outline-none transition-colors resize-none"
+          ></textarea>
+        </div>
+        <a
+          id="feedback-send-btn"
+          href="#"
+          class="block w-full rounded-xl bg-accent px-6 py-3 text-sm font-semibold text-white text-center transition-all hover:bg-accent-dark active:scale-95"
+        >
+          Enviar por email
+        </a>
+      </form>
+      <button
+        type="button"
+        id="btn-cancel-feedback"
+        class="w-full rounded-xl border border-card-border px-6 py-3 text-sm font-semibold text-muted transition-all hover:bg-canvas active:scale-95 mt-3"
+      >
+        Cancelar
+      </button>
+    </div>
+  </div>
+
   <!-- Footer -->
   <div class="mt-8 pb-4 text-center">
     <p class="text-xs text-muted/50">PetLog © 2026</p>
@@ -585,5 +733,42 @@ const isOtherBreed = pet?.breed && !breedInList;
       btnConfirm.textContent = 'Eliminando...';
       btnConfirm.setAttribute('disabled', '');
     });
+
+    // Feedback modal
+    const feedbackModal = document.getElementById('feedback-modal') as HTMLDivElement;
+    const btnOpenFeedback = document.getElementById('btn-open-feedback');
+    const btnCancelFeedback = document.getElementById('btn-cancel-feedback');
+
+    function openFeedbackModal() {
+      feedbackModal.classList.remove('hidden');
+      feedbackModal.classList.add('flex');
+    }
+    function closeFeedbackModal() {
+      feedbackModal.classList.add('hidden');
+      feedbackModal.classList.remove('flex');
+    }
+
+    btnOpenFeedback?.addEventListener('click', openFeedbackModal);
+    btnCancelFeedback?.addEventListener('click', closeFeedbackModal);
+    feedbackModal?.addEventListener('click', (e) => {
+      if (e.target === feedbackModal) closeFeedbackModal();
+    });
+
+    // Build mailto link dynamically
+    const feedbackType = document.getElementById('feedback-type') as HTMLSelectElement;
+    const feedbackMessage = document.getElementById('feedback-message') as HTMLTextAreaElement;
+    const feedbackSendBtn = document.getElementById('feedback-send-btn') as HTMLAnchorElement;
+
+    function updateMailtoLink() {
+      const type = feedbackType?.value || 'sugerencia';
+      const msg = feedbackMessage?.value || '';
+      const subject = encodeURIComponent(`[PetLog] ${type.charAt(0).toUpperCase() + type.slice(1)}`);
+      const body = encodeURIComponent(msg);
+      feedbackSendBtn.href = `mailto:soporte@petlog.app?subject=${subject}&body=${body}`;
+    }
+
+    feedbackType?.addEventListener('change', updateMailtoLink);
+    feedbackMessage?.addEventListener('input', updateMailtoLink);
+    updateMailtoLink();
   </script>
 </MainLayout>

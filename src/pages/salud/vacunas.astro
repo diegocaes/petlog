@@ -6,6 +6,7 @@ import EmptyState from '../../components/ui/EmptyState.astro';
 import { formatDate } from '../../lib/utils';
 import { getVaccineBadge } from '../../lib/vaccine-badges';
 import { getActivePet } from '../../lib/pet';
+import { uploadPetPhoto } from '../../lib/storage';
 
 const { supabase, user, activePetId } = Astro.locals;
 const { pet } = await getActivePet(supabase, user.id, activePetId);
@@ -33,6 +34,18 @@ if (Astro.request.method === 'POST') {
       vet_name: (formData.get('vet_name') as string) || null,
       notes: (formData.get('notes') as string) || null,
     }).eq('id', vaccineId);
+  }
+  if (action === 'upload_card') {
+    const photo = formData.get('vaccine_card') as File;
+    const url = await uploadPetPhoto(photo, user.id, supabase, 'vaccine-card');
+    if (url) {
+      await supabase.from('pets').update({ vaccine_card_url: url }).eq('id', pet.id);
+    }
+    return Astro.redirect('/salud/vacunas?saved=1');
+  }
+  if (action === 'delete_card') {
+    await supabase.from('pets').update({ vaccine_card_url: null }).eq('id', pet.id);
+    return Astro.redirect('/salud/vacunas?deleted=1');
   }
   if (action === 'delete') {
     const vaccineId = formData.get('vaccine_id') as string;
@@ -116,6 +129,67 @@ const upcomingCount = vaccines?.filter(v => {
       <p class="text-xs text-muted">Registra la primera vacuna para ver el historial de inmunización</p>
     </div>
   )}
+
+  {/* ── VACCINE CARD PHOTO ── */}
+  <div class="mb-5 animate-fade-up">
+    <div class="rounded-2xl border border-card-border bg-card overflow-hidden">
+      <button type="button" id="toggle-vaccine-card" class="w-full flex items-center justify-between px-4 py-3.5 hover:bg-canvas transition-colors">
+        <div class="flex items-center gap-2.5">
+          <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50">
+            <svg class="h-3.5 w-3.5 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+          </div>
+          <div class="text-left">
+            <p class="text-sm font-semibold text-ink">Carné de vacunas</p>
+            <p class="text-xs text-muted">{pet.vaccine_card_url ? 'Foto guardada' : 'Sube una foto de tu carné físico'}</p>
+          </div>
+        </div>
+        <svg id="toggle-card-icon" class="h-4 w-4 text-muted transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+      </button>
+
+      <div id="vaccine-card-body" class="hidden border-t border-card-border px-4 py-4">
+        {pet.vaccine_card_url ? (
+          <div class="space-y-3">
+            <a href={pet.vaccine_card_url} target="_blank" rel="noopener">
+              <img src={pet.vaccine_card_url} alt="Carné de vacunas" class="w-full rounded-xl border border-card-border shadow-sm" />
+            </a>
+            <div class="flex gap-2">
+              <a href={pet.vaccine_card_url} target="_blank" rel="noopener" class="flex-1 text-center rounded-xl border border-card-border px-3 py-2 text-xs font-semibold text-ink hover:bg-canvas transition-colors">
+                Ver completa
+              </a>
+              <form method="POST" class="flex-1">
+                <input type="hidden" name="_action" value="delete_card" />
+                <button type="submit" class="w-full rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-500 hover:bg-red-100 transition-colors">
+                  Eliminar
+                </button>
+              </form>
+            </div>
+            <form method="POST" enctype="multipart/form-data" class="pt-1">
+              <input type="hidden" name="_action" value="upload_card" />
+              <label class="flex items-center justify-center gap-2 rounded-xl border border-dashed border-card-border px-3 py-2.5 cursor-pointer hover:border-accent/30 transition-colors">
+                <svg class="h-4 w-4 text-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                <span class="text-xs font-medium text-muted">Cambiar foto</span>
+                <input type="file" name="vaccine_card" accept="image/*" class="hidden" onchange="this.form.submit()" />
+              </label>
+            </form>
+          </div>
+        ) : (
+          <form method="POST" enctype="multipart/form-data">
+            <input type="hidden" name="_action" value="upload_card" />
+            <label class="flex flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-card-border px-6 py-8 cursor-pointer hover:border-accent/30 hover:bg-accent/5 transition-all">
+              <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50">
+                <svg class="h-6 w-6 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              </div>
+              <div class="text-center">
+                <p class="text-sm font-semibold text-ink">Subir foto del carné</p>
+                <p class="text-xs text-muted mt-0.5">Toca para seleccionar una imagen</p>
+              </div>
+              <input type="file" name="vaccine_card" accept="image/*" class="hidden" onchange="this.form.submit()" />
+            </label>
+          </form>
+        )}
+      </div>
+    </div>
+  </div>
 
   {/* ── FORM (colapsable) ── */}
   <div class="mb-5 animate-fade-up animate-fade-up-delay-1">
@@ -293,6 +367,17 @@ const upcomingCount = vaccines?.filter(v => {
             }
           });
         }
+      }
+
+      var cardToggle = document.getElementById('toggle-vaccine-card');
+      var cardBody = document.getElementById('vaccine-card-body');
+      var cardIcon = document.getElementById('toggle-card-icon');
+      if (cardToggle) {
+        cardToggle.addEventListener('click', function() {
+          var isOpen = cardBody && !cardBody.classList.contains('hidden');
+          if (cardBody) cardBody.classList.toggle('hidden');
+          if (cardIcon) cardIcon.style.transform = isOpen ? '' : 'rotate(180deg)';
+        });
       }
 
       var toggleBtn = document.getElementById('toggle-vaccine-form');

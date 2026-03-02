@@ -11,6 +11,10 @@ export interface Pet {
   color: string | null;
   theme_color: string | null;
   is_neutered: boolean | null;
+  birth_city: string | null;
+  birth_country: string | null;
+  support_type: string | null;
+  vaccine_card_url: string | null;
   created_at: string;
 }
 
@@ -78,6 +82,7 @@ export interface Flight {
   destination: string;
   flight_date: string;
   cabin_or_cargo: string;
+  ticket_price: number | null;
   crate_approved: boolean;
   vet_certificate: boolean;
   chip_verified: boolean;
