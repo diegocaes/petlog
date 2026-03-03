@@ -25,7 +25,7 @@ if (Astro.request.method === 'POST') {
 
   const fields = {
     brand:       formData.get('brand') as string,
-    food_type:   (formData.get('type') as string) || null,
+    type:        (formData.get('type') as string) || null,
     daily_grams: formData.get('daily_grams') ? Number(formData.get('daily_grams')) : null,
     frequency:   (formData.get('frequency') as string) || null,
     bag_size:    formData.get('bag_size') ? Number(formData.get('bag_size')) : null,
@@ -36,12 +36,14 @@ if (Astro.request.method === 'POST') {
   };
 
   if (action === 'add') {
-    await supabase.from('foods').insert({ pet_id: pet.id, ...fields });
+    const { error } = await supabase.from('foods').insert({ pet_id: pet.id, ...fields });
+    if (error) return Astro.redirect('/alimentacion?toast_error=' + encodeURIComponent(error.message));
   }
 
   if (action === 'edit') {
     const foodId = formData.get('food_id') as string;
-    await supabase.from('foods').update(fields).eq('id', foodId);
+    const { error } = await supabase.from('foods').update(fields).eq('id', foodId);
+    if (error) return Astro.redirect('/alimentacion?toast_error=' + encodeURIComponent(error.message));
   }
 
   if (action === 'delete') {
@@ -74,8 +76,7 @@ const foods = (rawFoods ?? []).map(food => {
   const progressPct = (daysTotal && daysRemaining !== null)
     ? Math.round((daysRemaining / daysTotal) * 100)
     : null;
-  // Normalizar food_type (acepta tanto food_type como type del campo legacy)
-  const foodType = food.food_type ?? food.type ?? null;
+  const foodType = food.type ?? null;
   return { ...food, totalGrams, daysTotal, costPerDay, daysElapsed, daysRemaining, progressPct, foodType };
 });
 

@@ -107,22 +107,6 @@ export const BADGES: BadgeDef[] = [
   },
   // Actividad
   {
-    id: 'primera-aventura',
-    name: 'Primera Aventura',
-    description: 'Sube la primera foto de una aventura.',
-    img: 'primera-aventura.png',
-    category: 'actividad',
-    condition: (c) => c.adventureCount >= 1,
-  },
-  {
-    id: 'explorador',
-    name: 'Explorador',
-    description: 'Registra 10 o más aventuras.',
-    img: 'explorador.png',
-    category: 'actividad',
-    condition: (c) => c.adventureCount >= 10,
-  },
-  {
     id: 'primer-vuelo',
     name: 'Primer Vuelo',
     description: 'Registra el primer vuelo de tu mascota.',

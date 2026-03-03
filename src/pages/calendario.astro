@@ -8,13 +8,12 @@ const { pet } = await getActivePet(supabase, user.id, activePetId);
 if (!pet) return Astro.redirect('/perfil?new=1');
 
 // Fetch all date-relevant data in parallel
-const [vaccinesRes, visitsRes, groomingsRes, flightsRes, preventivesRes, adventuresRes] = await Promise.all([
+const [vaccinesRes, visitsRes, groomingsRes, flightsRes, preventivesRes] = await Promise.all([
   supabase.from('vaccines').select('id, name, date_given, next_due').eq('pet_id', pet.id),
   supabase.from('vet_visits').select('id, reason, date, vet_name').eq('pet_id', pet.id),
   supabase.from('groomings').select('id, type, date, groomer_name').eq('pet_id', pet.id),
   supabase.from('flights').select('id, origin, destination, flight_date, airline').eq('pet_id', pet.id),
   supabase.from('preventive_treatments').select('id, type, date_given, product_name').eq('pet_id', pet.id),
-  supabase.from('adventures').select('id, title, date, location').eq('pet_id', pet.id),
 ]);
 
 interface CalendarEvent {
@@ -22,7 +21,7 @@ interface CalendarEvent {
   date: string;
   title: string;
   subtitle: string;
-  category: 'vaccine' | 'vet' | 'grooming' | 'flight' | 'preventive' | 'adventure' | 'reminder';
+  category: 'vaccine' | 'vet' | 'grooming' | 'flight' | 'preventive' | 'reminder';
   icon: string;
   color: string;
   href: string;
@@ -112,20 +111,6 @@ for (const p of preventivesRes.data ?? []) {
   });
 }
 
-// Adventures
-for (const a of adventuresRes.data ?? []) {
-  events.push({
-    id: `adv-${a.id}`,
-    date: a.date,
-    title: a.title,
-    subtitle: a.location || 'Aventura',
-    category: 'adventure',
-    icon: '📸',
-    color: 'bg-amber-50 text-amber-600 border-amber-100',
-    href: '/aventuras',
-  });
-}
-
 // Sort by date descending
 events.sort((a, b) => b.date.localeCompare(a.date));
 
@@ -203,7 +188,6 @@ function dayLabel(dateStr: string) {
     <button type="button" class="cal-filter rounded-full px-3 py-1.5 text-[11px] font-semibold border transition-colors" data-cat="vet">Veterinario</button>
     <button type="button" class="cal-filter rounded-full px-3 py-1.5 text-[11px] font-semibold border transition-colors" data-cat="preventive">Preventivos</button>
     <button type="button" class="cal-filter rounded-full px-3 py-1.5 text-[11px] font-semibold border transition-colors" data-cat="flight">Vuelos</button>
-    <button type="button" class="cal-filter rounded-full px-3 py-1.5 text-[11px] font-semibold border transition-colors" data-cat="adventure">Aventuras</button>
     <button type="button" class="cal-filter rounded-full px-3 py-1.5 text-[11px] font-semibold border transition-colors" data-cat="grooming">Estética</button>
     <button type="button" class="cal-filter rounded-full px-3 py-1.5 text-[11px] font-semibold border transition-colors" data-cat="reminder">Recordatorios</button>
   </div>
@@ -225,7 +209,7 @@ function dayLabel(dateStr: string) {
   <div class="space-y-5">
     {months.map((monthKey, mi) => (
       <div class:list={['animate-fade-up', mi < 5 && `animate-fade-up-delay-${Math.min(mi + 1, 5)}`]}>
-        <p class="text-xs font-semibold text-muted uppercase tracking-widest mb-3 capitalize">{monthLabel(monthKey)}</p>
+        <p class="text-xs font-semibold text-muted uppercase tracking-widest mb-3">{monthLabel(monthKey)}</p>
         <div class="rounded-2xl bg-card border border-card-border divide-y divide-card-border overflow-hidden">
           {grouped[monthKey].map((ev) => (
             <a
@@ -299,6 +283,6 @@ function dayLabel(dateStr: string) {
     });
   </script>
 
-  <p class="mt-10 mb-4 text-center text-xs text-muted/40 leading-relaxed max-w-xs mx-auto">Aquí puedes ver todas las fechas importantes de {pet.name}: vacunas, visitas, vuelos, aventuras y recordatorios en un solo lugar.</p>
+  <p class="mt-10 mb-4 text-center text-xs text-muted/40 leading-relaxed max-w-xs mx-auto">Aquí puedes ver todas las fechas importantes de {pet.name}: vacunas, visitas, vuelos y recordatorios en un solo lugar.</p>
 
 </MainLayout>

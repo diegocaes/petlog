@@ -42,15 +42,17 @@ export interface VaccineRecord {
 }
 
 export interface VetVisit {
-  visit_date: string; // ISO date
+  date: string; // ISO date — column name in vet_visits table
 }
 
 export interface GroomingRecord {
   date: string; // ISO date
 }
 
-export interface AdventureRecord {
-  date: string; // ISO date
+export interface ActivityLogRecord {
+  date: string;              // ISO date
+  walks: number;             // number of walks that day
+  duration_minutes: number | null; // total minutes walked
 }
 
 export interface FoodRecord {
@@ -58,7 +60,7 @@ export interface FoodRecord {
   daily_grams: number | null;
   bag_size: number | null;
   bag_unit: string | null; // 'g' | 'kg' | 'lb'
-  food_type: string | null;
+  type: string | null;     // column name in foods table
 }
 
 export interface ScoreInput {
@@ -67,7 +69,7 @@ export interface ScoreInput {
   vaccines: VaccineRecord[];
   vetVisits: VetVisit[];
   groomings: GroomingRecord[];
-  adventures: AdventureRecord[];
+  activityLogs: ActivityLogRecord[];
   foods: FoodRecord[];
 }
 
@@ -88,6 +90,8 @@ export interface PillarScore {
   max: number;
   pct: number;
   status: string;
+  /** Breve descripción del pilar — qué mide y por qué importa */
+  description: string;
   /** Sugerencias — siempre en tono de ayuda, nunca alarmante */
   tips: string[];
   /** true si este pilar no tiene datos suficientes para calcularse */
@@ -193,6 +197,16 @@ function getFoodKcalPerG(foodType: string | null): number {
   return 3.3;
 }
 
+// ─── Descripciones de pilares (para tooltips) ───────────────────────────────
+
+const PILLAR_DESC = {
+  peso: 'Compara el peso actual con el rango ideal de la raza. Un peso saludable reduce riesgos articulares y metabólicos.',
+  cuidado: 'Evalúa vacunas al día y frecuencia de visitas al veterinario. La prevención es la base de una vida larga.',
+  raza: 'Factores genéticos y de edad que influyen en la salud. Cada raza tiene predisposiciones específicas.',
+  actividad: 'Mide los paseos diarios, su duración y el cuidado estético. Un perro activo es un perro feliz.',
+  nutricion: 'Analiza la calidad del alimento y si la porción diaria es adecuada según el peso y la raza.',
+} as const;
+
 // ─── Pilar 1: Peso Corporal ──────────────────────────────────────────────────
 
 function scorePeso(input: ScoreInput): PillarScore {
@@ -205,7 +219,7 @@ function scorePeso(input: ScoreInput): PillarScore {
   if (petAge !== null && petAge < 1) {
     return {
       name: 'Peso', emoji: '⚖️', score: 10, max: 20, pct: 50,
-      status: 'En crecimiento',
+      status: 'En crecimiento', description: PILLAR_DESC.peso,
       tips: ['Los cachorros están en fase de crecimiento — el peso ideal se evalúa a partir del año'],
       isEstimated: true,
     };
@@ -216,7 +230,7 @@ function scorePeso(input: ScoreInput): PillarScore {
   if (!latestWeight) {
     return {
       name: 'Peso', emoji: '⚖️', score: 10, max: 20, pct: 50,
-      status: 'Pendiente de registro',
+      status: 'Pendiente de registro', description: PILLAR_DESC.peso,
       tips: ['Registrar el peso regularmente ayuda a detectar cambios a tiempo'],
       isEstimated: true,
     };
@@ -273,7 +287,7 @@ function scorePeso(input: ScoreInput): PillarScore {
   return {
     name: 'Peso', emoji: '⚖️',
     score: clamp(pts, 2, 20), max: 20, pct: clamp(pts * 5, 10, 100),
-    status, tips: tips.slice(0, 2), isEstimated: false,
+    status, description: PILLAR_DESC.peso, tips: tips.slice(0, 2), isEstimated: false,
   };
 }
 
@@ -287,7 +301,7 @@ function scoreCuidado(input: ScoreInput): PillarScore {
   if (!hasAnyData) {
     return {
       name: 'Cuidado preventivo', emoji: '🩺', score: 10, max: 20, pct: 50,
-      status: 'Pendiente de registro',
+      status: 'Pendiente de registro', description: PILLAR_DESC.cuidado,
       tips: ['Agrega vacunas y visitas al vet para completar este indicador'],
       isEstimated: true,
     };
@@ -323,7 +337,7 @@ function scoreCuidado(input: ScoreInput): PillarScore {
     vetScore = 3;
     tips.push('Registrar las visitas al veterinario ayuda a llevar un seguimiento completo');
   } else {
-    const daysSince = daysBetween(vetVisits[0].visit_date);
+    const daysSince = daysBetween(vetVisits[0].date);
     if (daysSince <= 365) {
       vetScore = 10;
     } else if (daysSince <= 548) {
@@ -347,7 +361,7 @@ function scoreCuidado(input: ScoreInput): PillarScore {
   return {
     name: 'Cuidado preventivo', emoji: '🩺',
     score: total, max: 20, pct: clamp(total * 5, 10, 100),
-    status, tips: tips.slice(0, 2), isEstimated: vaccines.length === 0 && vetVisits.length === 0,
+    status, description: PILLAR_DESC.cuidado, tips: tips.slice(0, 2), isEstimated: vaccines.length === 0 && vetVisits.length === 0,
   };
 }
 
@@ -367,7 +381,7 @@ function scoreRazaEdad(input: ScoreInput): PillarScore {
   if (!hasBreed && !hasAge) {
     return {
       name: 'Raza y edad', emoji: '🧬', score: 12, max: 20, pct: 60,
-      status: 'Perfil incompleto',
+      status: 'Perfil incompleto', description: PILLAR_DESC.raza,
       tips: ['Agregar raza y fecha de nacimiento permite personalizar el análisis'],
       isEstimated: true,
     };
@@ -394,14 +408,14 @@ function scoreRazaEdad(input: ScoreInput): PillarScore {
 
     if (isDentalRisk && groomingDays > 60) {
       pts -= 3;
-      tips.push('La salud dental es importante en esta raza — una limpieza periódica marca la diferencia');
+      tips.push('La salud dental es importante en esta raza. Una limpieza periódica marca la diferencia');
     }
   }
 
   // Riesgo cardíaco por raza — recordatorio suave, no alarmante
   if (hasAge && age! >= 5 && breed.cardiacRisk === 'very_high') {
     pts -= 3;
-    tips.push(`En ${breed.displayName}, se recomienda revisión cardíaca de rutina a partir de los 5 años`);
+    tips.push(`En ${breed.displayName}, los chequeos generales cobran mayor importancia a partir de los 5 años`);
   }
 
   // Obesidad: raza de riesgo + castrado + adulto mayor
@@ -431,41 +445,56 @@ function scoreRazaEdad(input: ScoreInput): PillarScore {
   return {
     name: 'Raza y edad', emoji: '🧬',
     score: clamp(pts, 2, 20), max: 20, pct: clamp(pts * 5, 10, 100),
-    status, tips: tips.slice(0, 2), isEstimated,
+    status, description: PILLAR_DESC.raza, tips: tips.slice(0, 2), isEstimated,
   };
 }
 
 // ─── Pilar 4: Actividad y Bienestar ──────────────────────────────────────────
 
 function scoreActividad(input: ScoreInput): PillarScore {
-  const { adventures, groomings } = input;
+  const { activityLogs, groomings } = input;
   const tips: string[] = [];
-  const hasAnyData = adventures.length > 0 || groomings.length > 0;
+  const hasAnyData = activityLogs.length > 0 || groomings.length > 0;
 
   if (!hasAnyData) {
     return {
       name: 'Actividad', emoji: '🏃', score: 10, max: 20, pct: 50,
-      status: 'Pendiente de registro',
-      tips: ['Registrar paseos y aventuras ayuda a visualizar su nivel de actividad'],
+      status: 'Pendiente de registro', description: PILLAR_DESC.actividad,
+      tips: ['Registrar paseos diarios ayuda a visualizar su nivel de actividad'],
       isEstimated: true,
     };
   }
 
-  // Sub-score aventuras últimos 30 días (12 pts)
-  const recentActs = adventures.filter(a => daysBetween(a.date) <= 30).length;
+  // Sub-score actividad diaria últimos 30 días (12 pts)
+  const recentLogs = activityLogs.filter(l => daysBetween(l.date) <= 30);
+  const totalWalks30d = recentLogs.reduce((s, l) => s + (l.walks || 0), 0);
+  const totalMinutes30d = recentLogs.reduce((s, l) => s + (l.duration_minutes || 0), 0);
+  const activeDays30d = recentLogs.length;
+
   let actScore: number;
-  if (recentActs >= 4) {
-    actScore = 12;
-  } else if (recentActs >= 2) {
-    actScore = 8;
-  } else if (recentActs >= 1) {
+  if (activeDays30d >= 20 || totalWalks30d >= 40) {
+    actScore = 12; // muy activo
+  } else if (activeDays30d >= 12 || totalWalks30d >= 24) {
+    actScore = 10;
+  } else if (activeDays30d >= 6 || totalWalks30d >= 12) {
+    actScore = 7;
+  } else if (activeDays30d >= 2) {
     actScore = 5;
   } else {
     actScore = 2;
-    if (adventures.length > 0) {
-      tips.push('Lleva un tiempo sin registrar salidas — ¿hay aventuras recientes sin anotar?');
+    if (activityLogs.length > 0) {
+      tips.push('Lleva un tiempo sin registrar actividad — ¿hay paseos recientes sin anotar?');
     } else {
-      tips.push('Registra los paseos y salidas para ver la actividad mensual');
+      tips.push('Registra los paseos diarios para ver la actividad mensual');
+    }
+  }
+
+  // Bonus por duración promedio (si registra minutos)
+  if (recentLogs.length > 0 && totalMinutes30d > 0) {
+    const avgMinPerDay = totalMinutes30d / recentLogs.length;
+    if (avgMinPerDay >= 45) actScore = Math.min(12, actScore + 1);
+    else if (avgMinPerDay < 15 && actScore >= 5) {
+      tips.push('Los paseos cortos suman, pero 30+ min diarios es lo ideal para su bienestar');
     }
   }
 
@@ -495,8 +524,8 @@ function scoreActividad(input: ScoreInput): PillarScore {
   return {
     name: 'Actividad', emoji: '🏃',
     score: total, max: 20, pct: clamp(total * 5, 10, 100),
-    status, tips: tips.slice(0, 2),
-    isEstimated: adventures.length === 0 && groomings.length === 0,
+    status, description: PILLAR_DESC.actividad, tips: tips.slice(0, 2),
+    isEstimated: activityLogs.length === 0 && groomings.length === 0,
   };
 }
 
@@ -509,7 +538,7 @@ function scoreNutricion(input: ScoreInput): PillarScore {
   if (foods.length === 0) {
     return {
       name: 'Nutrición', emoji: '🍖', score: 10, max: 20, pct: 50,
-      status: 'Pendiente de registro',
+      status: 'Pendiente de registro', description: PILLAR_DESC.nutricion,
       tips: ['Registra el alimento actual para obtener un análisis nutricional personalizado'],
       isEstimated: true,
     };
@@ -520,8 +549,8 @@ function scoreNutricion(input: ScoreInput): PillarScore {
   // Calidad del alimento (10 pts)
   let qualityScore = 5;
   if (f.brand) qualityScore += 2;
-  if (f.food_type) {
-    const t = f.food_type.toLowerCase();
+  if (f.type) {
+    const t = f.type.toLowerCase();
     if (t.includes('veterinario') || t.includes('premium')) qualityScore += 3;
     else if (t.includes('croquetas') || t.includes('kibble')) qualityScore += 2;
     else qualityScore += 1;
@@ -534,7 +563,7 @@ function scoreNutricion(input: ScoreInput): PillarScore {
 
   if (f.daily_grams && latestWeight) {
     const kcalNeed = estimateDailyKcalNeed(latestWeight);
-    const kcalPerG = getFoodKcalPerG(f.food_type);
+    const kcalPerG = getFoodKcalPerG(f.type);
     const kcalProvided = f.daily_grams * kcalPerG;
     const deviation = Math.abs(1 - kcalProvided / kcalNeed) * 100;
 
@@ -545,7 +574,7 @@ function scoreNutricion(input: ScoreInput): PillarScore {
     } else if (deviation <= 35) {
       portionScore = 5;
       const idealG = Math.round(kcalNeed / kcalPerG);
-      tips.push(`La ración estimada sería ~${idealG} g/día según su peso — puede ajustarse con el vet`);
+      tips.push(`La ración estimada sería ~${idealG} g/día según su peso. Puede ajustarse con el vet`);
     } else {
       portionScore = 3;
       const idealG = Math.round(kcalNeed / kcalPerG);
@@ -569,7 +598,7 @@ function scoreNutricion(input: ScoreInput): PillarScore {
   return {
     name: 'Nutrición', emoji: '🍖',
     score: total, max: 20, pct: clamp(total * 5, 10, 100),
-    status, tips: tips.slice(0, 2), isEstimated: false,
+    status, description: PILLAR_DESC.nutricion, tips: tips.slice(0, 2), isEstimated: false,
   };
 }
 
@@ -584,12 +613,12 @@ function evaluateDataSufficiency(input: ScoreInput): {
   pilarsWithData: number;
   missingDataCount: number;
 } {
-  const { pet, weightRecords, vaccines, vetVisits, groomings, adventures, foods } = input;
+  const { pet, weightRecords, vaccines, vetVisits, groomings, foods } = input;
 
   const hasWeight = !!(weightRecords[0]?.weight_kg ?? pet.weight_kg);
   const hasVaccinesOrVet = vaccines.length > 0 || vetVisits.length > 0;
   const hasBreedOrAge = !!(pet.breed && pet.breed !== 'Other' && pet.breed !== 'mixed') || !!pet.birth_date;
-  const hasActivity = adventures.length > 0 || groomings.length > 0;
+  const hasActivity = input.activityLogs.length > 0 || groomings.length > 0;
   const hasFood = foods.length > 0;
 
   const dataPoints = [hasWeight, hasVaccinesOrVet, hasBreedOrAge, hasActivity, hasFood];
@@ -634,7 +663,7 @@ function buildFlags(input: ScoreInput): ScoreFlag[] {
 
   // Recordatorio: visita al vet — solo si hay historial Y han pasado más de 14 meses
   if (vetVisits.length > 0) {
-    const daysSince = daysBetween(vetVisits[0].visit_date);
+    const daysSince = daysBetween(vetVisits[0].date);
     if (daysSince > 425) { // ~14 meses
       flags.push({
         id: 'vet_reminder',
@@ -671,7 +700,7 @@ function buildFlags(input: ScoreInput): ScoreFlag[] {
       flags.push({
         id: 'dental_tip',
         severity: 'tip',
-        message: 'La salud dental es especialmente importante en esta raza — limpieza periódica recomendada',
+        message: 'La salud dental es especialmente importante en esta raza. Limpieza periódica recomendada',
         action: 'Ver registro de grooming',
         href: '/salud/grooming',
       });
@@ -680,13 +709,13 @@ function buildFlags(input: ScoreInput): ScoreFlag[] {
 
   // Recordatorio: revisión cardíaca para razas de riesgo (solo ≥6 años y sin visita reciente)
   if (breed.cardiacRisk === 'very_high' && age !== null && age >= 6) {
-    const lastVisitDays = vetVisits[0] ? daysBetween(vetVisits[0].visit_date) : 999;
+    const lastVisitDays = vetVisits[0] ? daysBetween(vetVisits[0].date) : 999;
     if (lastVisitDays > 365) {
       flags.push({
         id: 'cardiac_tip',
         severity: 'suggestion',
-        message: `En ${breed.displayName} se recomienda monitoreo cardíaco a partir de los 5–6 años`,
-        action: 'Comentarlo con el veterinario',
+        message: `En ${breed.displayName} los chequeos de rutina son especialmente importantes a partir de los 5–6 años`,
+        action: 'Ver historial veterinario',
         href: '/salud/historial',
       });
     }
@@ -694,7 +723,7 @@ function buildFlags(input: ScoreInput): ScoreFlag[] {
 
   // Recordatorio: senior — chequeos más frecuentes (solo si hay historial vet existente)
   if (age !== null && isSenior(pet.breed, age) && vetVisits.length > 0) {
-    const lastVisitDays = daysBetween(vetVisits[0].visit_date);
+    const lastVisitDays = daysBetween(vetVisits[0].date);
     if (lastVisitDays > 210) {
       flags.push({
         id: 'senior_care',
@@ -736,7 +765,7 @@ const SCORE_CATEGORIES: Array<{
   {
     min: 85, category: 'excellent', color: '#22c55e',
     headline: 'En excelente forma',
-    sublines: ['Todo apunta a un estado de salud muy bueno', 'Sigue así — lo estás haciendo genial'],
+    sublines: ['Todo apunta a un estado de salud muy bueno', 'Sigue así, lo estás haciendo genial'],
   },
   {
     min: 70, category: 'good', color: '#22C55E',
@@ -778,7 +807,7 @@ export function calculateVitalityScore(input: ScoreInput): VitalityScoreResult {
   const pillars = [p1, p2, p3, p4, p5];
   const { sufficiency, pilarsWithData, missingDataCount } = evaluateDataSufficiency(input);
 
-  const { pet, weightRecords, vaccines, vetVisits, groomings, adventures, foods } = input;
+  const { pet, weightRecords, vaccines, vetVisits, groomings, foods } = input;
 
   // ── Áreas pendientes con CTA amigable ─────────────────────────────────────
   // IMPORTANTE: debe ser exactamente paralelo a los 5 checks de evaluateDataSufficiency
@@ -801,9 +830,9 @@ export function calculateVitalityScore(input: ScoreInput): VitalityScoreResult {
     pendingAreas.push({ label: 'Completa raza y fecha de nacimiento en el perfil', href: '/perfil' });
   }
 
-  // Pilar 4: Actividad (aventuras o grooming)
-  if (adventures.length === 0 && groomings.length === 0) {
-    pendingAreas.push({ label: 'Registra paseos o sesiones de grooming', href: '/aventuras' });
+  // Pilar 4: Actividad (paseos o grooming)
+  if (input.activityLogs.length === 0 && groomings.length === 0) {
+    pendingAreas.push({ label: 'Registra paseos o sesiones de grooming', href: '/salud/actividad' });
   }
 
   // Pilar 5: Alimentación

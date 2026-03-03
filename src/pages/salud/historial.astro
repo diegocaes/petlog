@@ -214,27 +214,35 @@ const lastVisitDays = visits?.[0]
     </div>
   )}
 
-  <script>
-    const toggleBtn = document.getElementById('toggle-historial-form');
-    const formBody = document.getElementById('historial-form-body');
-    const toggleIcon = document.getElementById('toggle-historial-icon');
-    toggleBtn?.addEventListener('click', () => {
-      const isOpen = !formBody?.classList.contains('hidden');
-      formBody?.classList.toggle('hidden');
-      if (toggleIcon) toggleIcon.style.transform = isOpen ? '' : 'rotate(180deg)';
-    });
-    document.querySelectorAll('.edit-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const id = (btn as HTMLElement).dataset.id;
-        document.querySelector(`.item-view[data-id="${id}"]`)?.classList.add('hidden');
-        document.querySelector(`.item-edit[data-id="${id}"]`)?.classList.remove('hidden');
+  <script is:inline>
+    document.addEventListener('astro:page-load', function() {
+      var toggleBtn = document.getElementById('toggle-historial-form');
+      var formBody = document.getElementById('historial-form-body');
+      var toggleIcon = document.getElementById('toggle-historial-icon');
+      if (toggleBtn) {
+        toggleBtn.addEventListener('click', function() {
+          var isOpen = formBody && !formBody.classList.contains('hidden');
+          if (formBody) formBody.classList.toggle('hidden');
+          if (toggleIcon) toggleIcon.style.transform = isOpen ? '' : 'rotate(180deg)';
+        });
+      }
+      document.querySelectorAll('.edit-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          var id = btn.dataset.id;
+          var view = document.querySelector('.item-view[data-id="' + id + '"]');
+          var edit = document.querySelector('.item-edit[data-id="' + id + '"]');
+          if (view) view.classList.add('hidden');
+          if (edit) edit.classList.remove('hidden');
+        });
       });
-    });
-    document.querySelectorAll('.cancel-edit').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const id = (btn as HTMLElement).dataset.id;
-        document.querySelector(`.item-view[data-id="${id}"]`)?.classList.remove('hidden');
-        document.querySelector(`.item-edit[data-id="${id}"]`)?.classList.add('hidden');
+      document.querySelectorAll('.cancel-edit').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          var id = btn.dataset.id;
+          var view = document.querySelector('.item-view[data-id="' + id + '"]');
+          var edit = document.querySelector('.item-edit[data-id="' + id + '"]');
+          if (view) view.classList.remove('hidden');
+          if (edit) edit.classList.add('hidden');
+        });
       });
     });
   </script>

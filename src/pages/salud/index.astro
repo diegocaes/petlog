@@ -15,15 +15,15 @@ const [
   { data: vaccines },
   { data: vetVisits },
   { data: groomings },
-  { data: adventures },
+  { data: activityLogs },
   { data: foods },
 ] = await Promise.all([
   supabase.from('weight_records').select('weight_kg, date').eq('pet_id', pet.id).order('date', { ascending: false }),
   supabase.from('vaccines').select('name, date_given').eq('pet_id', pet.id).order('date_given', { ascending: false }),
-  supabase.from('vet_visits').select('visit_date').eq('pet_id', pet.id).order('visit_date', { ascending: false }),
+  supabase.from('vet_visits').select('date').eq('pet_id', pet.id).order('date', { ascending: false }),
   supabase.from('groomings').select('date').eq('pet_id', pet.id).order('date', { ascending: false }),
-  supabase.from('adventures').select('date').eq('pet_id', pet.id).order('date', { ascending: false }),
-  supabase.from('foods').select('brand, daily_grams, bag_size, bag_unit, food_type').eq('pet_id', pet.id).order('created_at', { ascending: false }),
+  supabase.from('activity_logs').select('date, walks, duration_minutes').eq('pet_id', pet.id).order('date', { ascending: false }).limit(60),
+  supabase.from('foods').select('brand, daily_grams, bag_size, bag_unit, type').eq('pet_id', pet.id).order('created_at', { ascending: false }),
 ]);
 
 const scoreInput: ScoreInput = {
@@ -38,7 +38,7 @@ const scoreInput: ScoreInput = {
   vaccines: vaccines ?? [],
   vetVisits: vetVisits ?? [],
   groomings: groomings ?? [],
-  adventures: adventures ?? [],
+  activityLogs: activityLogs ?? [],
   foods: foods ?? [],
 };
 
@@ -107,18 +107,34 @@ const visitCount = vetVisits?.length ?? 0;
       </div>
 
       {/* Pillar breakdown bars */}
-      <div class="pt-3 border-t border-card-border space-y-2.5">
+      <div class="pt-3 border-t border-card-border space-y-1">
         {score.pillars.map(pillar => (
-          <div class="flex items-center gap-2.5">
-            <span class="text-sm shrink-0">{pillar.emoji}</span>
-            <p class="text-xs shrink-0 w-20 truncate text-muted font-medium">{pillar.name}</p>
-            <div class="flex-1 rounded-full h-2 overflow-hidden bg-canvas">
-              <div
-                class="h-2 rounded-full transition-all duration-700"
-                style={`width: ${pillar.pct}%; background-color: ${pillar.pct >= 70 ? '#22C55E' : pillar.pct >= 40 ? '#F59E0B' : '#EF4444'};`}
-              />
+          <div class="pillar-row">
+            <button type="button" class="pillar-toggle w-full flex items-center gap-2.5 py-1.5 rounded-xl transition-colors hover:bg-canvas/50 -mx-1 px-1">
+              <span class="text-sm shrink-0">{pillar.emoji}</span>
+              <p class="text-xs shrink-0 w-20 truncate text-muted font-medium text-left">{pillar.name}</p>
+              <div class="flex-1 rounded-full h-2 overflow-hidden bg-canvas">
+                <div
+                  class="h-2 rounded-full transition-all duration-700"
+                  style={`width: ${pillar.pct}%; background-color: ${pillar.pct >= 70 ? '#22C55E' : pillar.pct >= 40 ? '#F59E0B' : '#EF4444'};`}
+                />
+              </div>
+              <p class="text-xs w-8 text-right font-bold text-ink shrink-0">{pillar.score}/{pillar.max}</p>
+            </button>
+            <div class="pillar-detail hidden ml-7 mr-1 mb-2 rounded-xl bg-canvas px-3 py-2.5">
+              <p class="text-[11px] text-muted leading-relaxed">{pillar.description}</p>
+              <p class="text-[11px] font-semibold text-ink mt-1.5">{pillar.status}</p>
+              {pillar.tips.length > 0 && (
+                <ul class="mt-1.5 space-y-0.5">
+                  {pillar.tips.map(tip => (
+                    <li class="flex items-start gap-1.5">
+                      <div class="h-1 w-1 shrink-0 rounded-full bg-accent mt-1.5" />
+                      <p class="text-[11px] text-muted leading-relaxed">{tip}</p>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
-            <p class="text-xs w-8 text-right font-bold text-ink shrink-0">{pillar.score}/{pillar.max}</p>
           </div>
         ))}
       </div>
@@ -263,5 +279,21 @@ const visitCount = vetVisits?.length ?? 0;
       <a href="/faq" class="text-accent hover:text-accent-dark ml-1">¿Cómo funciona? →</a>
     </p>
   </div>
+
+  <script is:inline>
+    document.addEventListener('astro:page-load', function() {
+      document.querySelectorAll('.pillar-toggle').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          var detail = btn.nextElementSibling;
+          if (!detail || !detail.classList.contains('pillar-detail')) return;
+          var wasOpen = !detail.classList.contains('hidden');
+          // Close all others
+          document.querySelectorAll('.pillar-detail').forEach(function(d) { d.classList.add('hidden'); });
+          // Toggle current
+          if (!wasOpen) detail.classList.remove('hidden');
+        });
+      });
+    });
+  </script>
 
 </MainLayout>

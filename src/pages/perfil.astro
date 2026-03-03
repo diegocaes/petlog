@@ -213,6 +213,37 @@ const isOtherBreed = pet?.breed && !breedInList;
     <SectionHeader title="Perfil" subtitle="Datos de tu mascota" />
   )}
 
+  <!-- Profile completion badge (top) -->
+  {pet && (
+    <div class="mb-4 animate-fade-up">
+      {isProfileComplete ? (
+        <div class="rounded-2xl border border-accent/30 bg-accent/5 px-5 py-4 flex items-center gap-4">
+          <img src="/badges/perfil-completo.png" alt="Perfil completo" class="h-14 w-14 shrink-0 object-contain" />
+          <div>
+            <p class="text-sm font-bold text-accent-dark">¡Perfil completo!</p>
+            <p class="text-xs text-muted mt-0.5">El pasaporte de {pet.name} tiene toda la información.</p>
+          </div>
+        </div>
+      ) : (
+        <div class="rounded-2xl border border-card-border bg-white px-5 py-4">
+          <div class="flex items-center gap-4 mb-3">
+            <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-canvas text-2xl">
+              🔒
+            </div>
+            <div class="flex-1">
+              <p class="text-sm font-bold text-ink">Perfil completo</p>
+              <p class="text-xs text-muted mt-0.5">{completedFields} de {totalFields} campos completados</p>
+              <div class="mt-2 h-1.5 w-full rounded-full bg-card-border overflow-hidden">
+                <div class="h-full bg-accent rounded-full transition-all duration-500" style={`width:${completionPct}%`}></div>
+              </div>
+            </div>
+          </div>
+          <p class="text-xs text-muted">Completa todos los datos del perfil para desbloquear esta insignia.</p>
+        </div>
+      )}
+    </div>
+  )}
+
   <Card variant="elevated" class="animate-fade-up animate-fade-up-delay-1">
     <form method="POST" enctype="multipart/form-data" class="space-y-6">
       <!-- Photo -->
@@ -269,7 +300,7 @@ const isOtherBreed = pet?.breed && !breedInList;
           />
         </div>
 
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Input label="Fecha de nacimiento" name="birth_date" type="date" value={pet?.birth_date || ''} />
           <div>
             <label class="block text-sm font-medium text-ink mb-1.5">Género</label>
@@ -284,7 +315,7 @@ const isOtherBreed = pet?.breed && !breedInList;
           </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Input label="Ciudad de nacimiento" name="birth_city" value={pet?.birth_city || ''} placeholder="Ej: Bogotá" />
           <Input label="País de nacimiento" name="birth_country" value={pet?.birth_country || ''} placeholder="Ej: Colombia" />
         </div>
@@ -299,7 +330,7 @@ const isOtherBreed = pet?.breed && !breedInList;
           Datos Médicos
         </div>
 
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Input label="Peso (kg)" name="weight_kg" type="number" step="0.1" value={pet?.weight_kg?.toString() || ''} placeholder="Ej: 12.5" />
           <Input label="Nº Microchip" name="chip_id" value={pet?.chip_id || ''} placeholder="Ej: 123456789" />
         </div>
@@ -360,39 +391,6 @@ const isOtherBreed = pet?.breed && !breedInList;
     </form>
   </Card>
 
-  <!-- Profile completion badge -->
-  {pet && (
-    <div class="mt-4 animate-fade-up animate-fade-up-delay-2">
-      {isProfileComplete ? (
-        <div class="rounded-2xl border border-accent/30 bg-accent/5 px-5 py-4 flex items-center gap-4">
-          <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-accent/10 text-3xl">
-            ✅
-          </div>
-          <div>
-            <p class="text-sm font-bold text-accent-dark">¡Perfil completo!</p>
-            <p class="text-xs text-muted mt-0.5">El pasaporte de {pet.name} tiene toda la información.</p>
-          </div>
-        </div>
-      ) : (
-        <div class="rounded-2xl border border-card-border bg-white px-5 py-4">
-          <div class="flex items-center gap-4 mb-3">
-            <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-canvas text-2xl">
-              🔒
-            </div>
-            <div class="flex-1">
-              <p class="text-sm font-bold text-ink">Perfil completo</p>
-              <p class="text-xs text-muted mt-0.5">{completedFields} de {totalFields} campos completados</p>
-              <div class="mt-2 h-1.5 w-full rounded-full bg-card-border overflow-hidden">
-                <div class="h-full bg-accent rounded-full transition-all duration-500" style={`width:${completionPct}%`}></div>
-              </div>
-            </div>
-          </div>
-          <p class="text-xs text-muted">Completa todos los datos del perfil para desbloquear esta insignia.</p>
-        </div>
-      )}
-    </div>
-  )}
-
   <!-- Owner Profile -->
   <Card variant="elevated" class="mt-4 animate-fade-up animate-fade-up-delay-2">
     <form method="POST" class="space-y-4">
@@ -410,14 +408,14 @@ const isOtherBreed = pet?.breed && !breedInList;
         </div>
       )}
 
-      <div class="grid grid-cols-2 gap-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Input label="Nombre" name="owner_first_name" value={ownerProfile?.first_name || ''} placeholder="Tu nombre" />
         <Input label="Apellido" name="owner_last_name" value={ownerProfile?.last_name || ''} placeholder="Tu apellido" />
       </div>
 
       <Input label="Teléfono" name="owner_phone" type="tel" value={ownerProfile?.phone || ''} placeholder="Ej: +57 300 1234567" />
 
-      <div class="grid grid-cols-2 gap-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Input label="Fecha de nacimiento" name="owner_birth_date" type="date" value={ownerProfile?.birth_date || ''} />
         <div>
           <label class="block text-sm font-medium text-ink mb-1.5">Sexo</label>
@@ -626,13 +624,13 @@ const isOtherBreed = pet?.breed && !breedInList;
             class="w-full rounded-xl border border-card-border bg-canvas px-4 py-3 text-sm text-ink placeholder-muted focus:border-accent focus:outline-none transition-colors resize-none"
           ></textarea>
         </div>
-        <a
+        <button
+          type="button"
           id="feedback-send-btn"
-          href="#"
-          class="block w-full rounded-xl bg-accent px-6 py-3 text-sm font-semibold text-white text-center transition-all hover:bg-accent-dark active:scale-95"
+          class="w-full rounded-xl bg-accent px-6 py-3 text-sm font-semibold text-white text-center transition-all hover:bg-accent-dark active:scale-95"
         >
           Enviar por email
-        </a>
+        </button>
       </form>
       <button
         type="button"
@@ -654,121 +652,113 @@ const isOtherBreed = pet?.breed && !breedInList;
     </div>
   </div>
 
-  <script>
-    // Photo preview
-    const input = document.getElementById('photo-input') as HTMLInputElement;
-    const preview = document.getElementById('photo-preview') as HTMLImageElement;
-    input?.addEventListener('change', () => {
-      const file = input.files?.[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = (e) => { preview.src = e.target?.result as string; };
-        reader.readAsDataURL(file);
-      }
-    });
-
-    // Theme color picker
-    const themeInput = document.getElementById('theme-color-input') as HTMLInputElement;
-    document.querySelectorAll<HTMLButtonElement>('.theme-color-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const color = btn.dataset.color!;
-        themeInput.value = color;
-        // Update ring on all buttons
-        document.querySelectorAll<HTMLButtonElement>('.theme-color-btn').forEach(b => {
-          const isSelected = b.dataset.color === color;
-          b.classList.toggle('ring-2', isSelected);
-          b.classList.toggle('ring-offset-2', isSelected);
-          b.classList.toggle('ring-ink', isSelected);
-          b.classList.toggle('bg-canvas', isSelected);
+  <script is:inline>
+    document.addEventListener('astro:page-load', function() {
+      // Photo preview
+      var input = document.getElementById('photo-input');
+      var preview = document.getElementById('photo-preview');
+      if (input) {
+        input.addEventListener('change', function() {
+          var file = input.files && input.files[0];
+          if (file && preview) {
+            var reader = new FileReader();
+            reader.onload = function(e) { preview.src = e.target.result; };
+            reader.readAsDataURL(file);
+          }
         });
-        // Live preview: update body data-pet-theme
-        document.body.setAttribute('data-pet-theme', color);
+      }
+
+      // Theme color picker
+      var themeInput = document.getElementById('theme-color-input');
+      document.querySelectorAll('.theme-color-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          var color = btn.dataset.color;
+          if (themeInput) themeInput.value = color;
+          document.querySelectorAll('.theme-color-btn').forEach(function(b) {
+            var isSelected = b.dataset.color === color;
+            b.classList.toggle('ring-2', isSelected);
+            b.classList.toggle('ring-offset-2', isSelected);
+            b.classList.toggle('ring-ink', isSelected);
+            b.classList.toggle('bg-canvas', isSelected);
+          });
+          document.body.setAttribute('data-pet-theme', color);
+        });
       });
-    });
 
-    // Breed "Other" toggle
-    const select = document.getElementById('breed-select') as HTMLSelectElement;
-    const otherInput = document.getElementById('breed-other-input') as HTMLInputElement;
-    function toggleOther() {
-      otherInput.classList.toggle('hidden', select.value !== 'Other');
-      if (select.value !== 'Other') otherInput.value = '';
-    }
-    select?.addEventListener('change', toggleOther);
+      // Breed "Other" toggle
+      var select = document.getElementById('breed-select');
+      var otherInput = document.getElementById('breed-other-input');
+      function toggleOther() {
+        if (otherInput) {
+          otherInput.classList.toggle('hidden', select.value !== 'Other');
+          if (select.value !== 'Other') otherInput.value = '';
+        }
+      }
+      if (select) select.addEventListener('change', toggleOther);
 
-    // Change password toggle
-    const btnTogglePassword = document.getElementById('btn-toggle-password');
-    const passwordFormBody = document.getElementById('password-form-body');
-    const iconPasswordToggle = document.getElementById('icon-password-toggle');
-    btnTogglePassword?.addEventListener('click', () => {
-      const isHidden = passwordFormBody?.classList.toggle('hidden');
-      iconPasswordToggle?.classList.toggle('rotate-180', !isHidden);
-    });
-    document.getElementById('password-form')?.addEventListener('submit', () => {
-      const btn = document.getElementById('btn-save-password') as HTMLButtonElement;
-      btn.textContent = 'Guardando...';
-      btn.disabled = true;
-    });
+      // Change password toggle
+      var btnTogglePassword = document.getElementById('btn-toggle-password');
+      var passwordFormBody = document.getElementById('password-form-body');
+      var iconPasswordToggle = document.getElementById('icon-password-toggle');
+      if (btnTogglePassword) {
+        btnTogglePassword.addEventListener('click', function() {
+          var isHidden = passwordFormBody && passwordFormBody.classList.toggle('hidden');
+          if (iconPasswordToggle) iconPasswordToggle.classList.toggle('rotate-180', !isHidden);
+        });
+      }
+      var passwordForm = document.getElementById('password-form');
+      if (passwordForm) {
+        passwordForm.addEventListener('submit', function() {
+          var btn = document.getElementById('btn-save-password');
+          if (btn) { btn.textContent = 'Guardando...'; btn.disabled = true; }
+        });
+      }
 
-    // Delete account modal
-    const modal = document.getElementById('delete-modal') as HTMLDivElement;
-    const btnOpen = document.getElementById('btn-delete-account') as HTMLButtonElement;
-    const btnCancel = document.getElementById('btn-cancel-delete') as HTMLButtonElement;
-    const btnConfirm = document.getElementById('btn-confirm-delete') as HTMLButtonElement;
+      // Delete account modal
+      var modal = document.getElementById('delete-modal');
+      var btnOpen = document.getElementById('btn-delete-account');
+      var btnCancel = document.getElementById('btn-cancel-delete');
+      var btnConfirm = document.getElementById('btn-confirm-delete');
 
-    btnOpen?.addEventListener('click', () => {
-      modal.classList.remove('hidden');
-      modal.classList.add('flex');
-    });
-    btnCancel?.addEventListener('click', () => {
-      modal.classList.add('hidden');
-      modal.classList.remove('flex');
-    });
-    modal?.addEventListener('click', (e) => {
-      if (e.target === modal) {
-        modal.classList.add('hidden');
-        modal.classList.remove('flex');
+      function openDeleteModal() { if (modal) { modal.classList.remove('hidden'); modal.classList.add('flex'); } }
+      function closeDeleteModal() { if (modal) { modal.classList.add('hidden'); modal.classList.remove('flex'); } }
+
+      if (btnOpen) btnOpen.addEventListener('click', openDeleteModal);
+      if (btnCancel) btnCancel.addEventListener('click', closeDeleteModal);
+      if (modal) modal.addEventListener('click', function(e) { if (e.target === modal) closeDeleteModal(); });
+      var deleteForm = document.getElementById('delete-account-form');
+      if (deleteForm) {
+        deleteForm.addEventListener('submit', function() {
+          if (btnConfirm) { btnConfirm.textContent = 'Eliminando...'; btnConfirm.setAttribute('disabled', ''); }
+        });
+      }
+
+      // Feedback modal
+      var feedbackModal = document.getElementById('feedback-modal');
+      var btnOpenFeedback = document.getElementById('btn-open-feedback');
+      var btnCancelFeedback = document.getElementById('btn-cancel-feedback');
+
+      function openFeedbackModal() { if (feedbackModal) { feedbackModal.classList.remove('hidden'); feedbackModal.classList.add('flex'); } }
+      function closeFeedbackModal() { if (feedbackModal) { feedbackModal.classList.add('hidden'); feedbackModal.classList.remove('flex'); } }
+
+      if (btnOpenFeedback) btnOpenFeedback.addEventListener('click', openFeedbackModal);
+      if (btnCancelFeedback) btnCancelFeedback.addEventListener('click', closeFeedbackModal);
+      if (feedbackModal) feedbackModal.addEventListener('click', function(e) { if (e.target === feedbackModal) closeFeedbackModal(); });
+
+      // Feedback send button
+      var feedbackType = document.getElementById('feedback-type');
+      var feedbackMessage = document.getElementById('feedback-message');
+      var feedbackSendBtn = document.getElementById('feedback-send-btn');
+
+      if (feedbackSendBtn) {
+        feedbackSendBtn.addEventListener('click', function() {
+          var type = (feedbackType && feedbackType.value) || 'sugerencia';
+          var msg = (feedbackMessage && feedbackMessage.value) || '';
+          var subject = encodeURIComponent('[PetLog] ' + type.charAt(0).toUpperCase() + type.slice(1));
+          var body = encodeURIComponent(msg);
+          window.location.href = 'mailto:soporte@petlog.app?subject=' + subject + '&body=' + body;
+        });
       }
     });
-    document.getElementById('delete-account-form')?.addEventListener('submit', () => {
-      btnConfirm.textContent = 'Eliminando...';
-      btnConfirm.setAttribute('disabled', '');
-    });
-
-    // Feedback modal
-    const feedbackModal = document.getElementById('feedback-modal') as HTMLDivElement;
-    const btnOpenFeedback = document.getElementById('btn-open-feedback');
-    const btnCancelFeedback = document.getElementById('btn-cancel-feedback');
-
-    function openFeedbackModal() {
-      feedbackModal.classList.remove('hidden');
-      feedbackModal.classList.add('flex');
-    }
-    function closeFeedbackModal() {
-      feedbackModal.classList.add('hidden');
-      feedbackModal.classList.remove('flex');
-    }
-
-    btnOpenFeedback?.addEventListener('click', openFeedbackModal);
-    btnCancelFeedback?.addEventListener('click', closeFeedbackModal);
-    feedbackModal?.addEventListener('click', (e) => {
-      if (e.target === feedbackModal) closeFeedbackModal();
-    });
-
-    // Build mailto link dynamically
-    const feedbackType = document.getElementById('feedback-type') as HTMLSelectElement;
-    const feedbackMessage = document.getElementById('feedback-message') as HTMLTextAreaElement;
-    const feedbackSendBtn = document.getElementById('feedback-send-btn') as HTMLAnchorElement;
-
-    function updateMailtoLink() {
-      const type = feedbackType?.value || 'sugerencia';
-      const msg = feedbackMessage?.value || '';
-      const subject = encodeURIComponent(`[PetLog] ${type.charAt(0).toUpperCase() + type.slice(1)}`);
-      const body = encodeURIComponent(msg);
-      feedbackSendBtn.href = `mailto:soporte@petlog.app?subject=${subject}&body=${body}`;
-    }
-
-    feedbackType?.addEventListener('change', updateMailtoLink);
-    feedbackMessage?.addEventListener('input', updateMailtoLink);
-    updateMailtoLink();
   </script>
 </MainLayout>

@@ -14,7 +14,6 @@ const navItems = [
   { href: '/salud',         match: '/salud',        label: 'Salud',    icon: 'heart' },
   { href: '/alimentacion',  match: '/alimentacion', label: 'Comida',   icon: 'food' },
   { href: '/viajes',        match: '/viajes',       label: 'Vuelos',   icon: 'plane' },
-  { href: '/aventuras',     match: '/aventuras',    label: 'Fotos',    icon: 'camera' },
   { href: '/calendario',   match: '/calendario',   label: 'Calendario', icon: 'calendar' },
   { href: '/badges',        match: '/badges',       label: 'Insignias', icon: 'trophy' },
 ];
@@ -133,8 +132,7 @@ function petInitial(name: string) {
 <!-- ─── MOBILE TOP BAR ─────────────────────────────── -->
 <header class="no-print lg:hidden fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-4 py-3 bg-sidebar border-b border-white/5">
   <a href="/" class="flex items-center gap-2.5 hover:opacity-80 transition-opacity">
-    <img src="/PetLog-logo.svg" alt="PetLog" class="h-7 w-7" style="filter:brightness(0) invert(1);" />
-    <span class="text-white font-bold text-sm tracking-tight">PetLog</span>
+    <img src="/PetLog-logo.svg" alt="PetLog" class="h-8 w-auto" style="filter:brightness(0) invert(1);" />
   </a>
   <button
     id="mobile-menu-btn"
@@ -239,7 +237,7 @@ function petInitial(name: string) {
         </svg>
         <span>Ayuda</span>
       </a>
-      <a href="/perfil#feedback" class="sidebar-link">
+      <a href="/perfil#feedback" class="sidebar-link go-feedback">
         <svg class="h-4.5 w-4.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
           <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
         </svg>
@@ -317,7 +315,25 @@ function petInitial(name: string) {
     overlay?.querySelectorAll('a').forEach(a => {
       a.addEventListener('click', close);
     });
+
+    // Special handling for feedback links with hash fragments
+    overlay?.querySelectorAll('.go-feedback').forEach(a => {
+      a.addEventListener('click', (e) => {
+        e.preventDefault();
+        close();
+        // Navigate without View Transitions for hash fragment support
+        window.location.href = '/perfil#feedback';
+      });
+    });
   }
+
+  // Also handle desktop sidebar feedback links
+  document.querySelectorAll('aside.no-print .go-feedback').forEach(a => {
+    a.addEventListener('click', (e) => {
+      e.preventDefault();
+      window.location.href = '/perfil#feedback';
+    });
+  });
 
   function setupPetSwitcher(triggerId: string, dropdownId: string, chevronId: string, containerId: string) {
     const trigger = document.getElementById(triggerId) as HTMLButtonElement | null;

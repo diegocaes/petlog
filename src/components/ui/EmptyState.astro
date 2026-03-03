@@ -1,6 +1,6 @@
 ---
 interface Props {
-  icon: 'vaccine' | 'vet' | 'food' | 'travel' | 'adventure' | 'weight' | 'grooming';
+  icon: 'vaccine' | 'vet' | 'food' | 'travel' | 'weight' | 'grooming';
   title: string;
   description?: string;
 }
@@ -12,7 +12,6 @@ const iconColors: Record<string, { bg: string; text: string }> = {
   vet:       { bg: 'bg-accent/10',   text: 'text-accent' },
   food:      { bg: 'bg-amber/10',    text: 'text-amber' },
   travel:    { bg: 'bg-purple-100',  text: 'text-purple-400' },
-  adventure: { bg: 'bg-sky-100',     text: 'text-sky-400' },
   weight:    { bg: 'bg-amber/10',    text: 'text-amber' },
   grooming:  { bg: 'bg-pink-100',    text: 'text-pink-400' },
 };
@@ -43,12 +42,7 @@ const colors = iconColors[icon] || iconColors.vet;
         <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/>
       </svg>
     )}
-    {icon === 'adventure' && (
-      <svg class:list={['h-7 w-7', colors.text]} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/>
-      </svg>
-    )}
-    {icon === 'weight' && (
+{icon === 'weight' && (
       <svg class:list={['h-7 w-7', colors.text]} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="12" cy="12" r="10"/><path d="M8 12a4 4 0 0 1 8 0"/><line x1="12" y1="12" x2="12" y2="8"/>
       </svg>

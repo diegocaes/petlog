@@ -169,14 +169,18 @@ const maxWeight = records && records.length > 0 ? Math.max(...records.map(r => r
     </div>
   )}
 
-  <script>
-    const toggleBtn = document.getElementById('toggle-peso-form');
-    const formBody = document.getElementById('peso-form-body');
-    const toggleIcon = document.getElementById('toggle-peso-icon');
-    toggleBtn?.addEventListener('click', () => {
-      const isOpen = !formBody?.classList.contains('hidden');
-      formBody?.classList.toggle('hidden');
-      if (toggleIcon) toggleIcon.style.transform = isOpen ? '' : 'rotate(180deg)';
+  <script is:inline>
+    document.addEventListener('astro:page-load', function() {
+      var toggleBtn = document.getElementById('toggle-peso-form');
+      var formBody = document.getElementById('peso-form-body');
+      var toggleIcon = document.getElementById('toggle-peso-icon');
+      if (toggleBtn) {
+        toggleBtn.addEventListener('click', function() {
+          var isOpen = formBody && !formBody.classList.contains('hidden');
+          if (formBody) formBody.classList.toggle('hidden');
+          if (toggleIcon) toggleIcon.style.transform = isOpen ? '' : 'rotate(180deg)';
+        });
+      }
     });
   </script>
 

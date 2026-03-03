@@ -13,7 +13,7 @@ if (Astro.request.method === 'POST') {
   const action = formData.get('_action') as string;
 
   if (action === 'add_flight') {
-    await supabase.from('flights').insert({
+    const flightData: Record<string, unknown> = {
       pet_id: pet.id,
       airline: formData.get('airline') as string,
       flight_number: (formData.get('flight_number') as string) || null,
@@ -29,13 +29,31 @@ if (Astro.request.method === 'POST') {
       import_permit: formData.get('import_permit') === 'on',
       health_certificate: formData.get('health_certificate') === 'on',
       notes: (formData.get('notes') as string) || null,
-    });
+    };
+    // Optional cost breakdown fields (require DB columns)
+    const paperwork = Number(formData.get('paperwork_cost')) || null;
+    const customs = Number(formData.get('customs_cost')) || null;
+    const airport = Number(formData.get('airport_cost')) || null;
+    if (paperwork) flightData.paperwork_cost = paperwork;
+    if (customs) flightData.customs_cost = customs;
+    if (airport) flightData.airport_cost = airport;
+
+    const { error } = await supabase.from('flights').insert(flightData);
+    if (error) {
+      // If cost columns don't exist yet, retry without them
+      if (error.message?.includes('paperwork_cost') || error.message?.includes('customs_cost') || error.message?.includes('airport_cost')) {
+        delete flightData.paperwork_cost;
+        delete flightData.customs_cost;
+        delete flightData.airport_cost;
+        await supabase.from('flights').insert(flightData);
+      }
+    }
     return Astro.redirect('/viajes?saved=1');
   }
 
   if (action === 'edit_flight') {
     const flightId = formData.get('flight_id') as string;
-    await supabase.from('flights').update({
+    const updateData: Record<string, unknown> = {
       airline: formData.get('airline') as string,
       flight_number: (formData.get('flight_number') as string) || null,
       origin: formData.get('origin') as string,
@@ -50,7 +68,21 @@ if (Astro.request.method === 'POST') {
       import_permit: formData.get('import_permit') === 'on',
       health_certificate: formData.get('health_certificate') === 'on',
       notes: (formData.get('notes') as string) || null,
-    }).eq('id', flightId);
+    };
+    const paperwork = Number(formData.get('paperwork_cost')) || null;
+    const customs = Number(formData.get('customs_cost')) || null;
+    const airport = Number(formData.get('airport_cost')) || null;
+    if (paperwork !== null) updateData.paperwork_cost = paperwork;
+    if (customs !== null) updateData.customs_cost = customs;
+    if (airport !== null) updateData.airport_cost = airport;
+
+    const { error } = await supabase.from('flights').update(updateData).eq('id', flightId);
+    if (error && (error.message?.includes('paperwork_cost') || error.message?.includes('customs_cost') || error.message?.includes('airport_cost'))) {
+      delete updateData.paperwork_cost;
+      delete updateData.customs_cost;
+      delete updateData.airport_cost;
+      await supabase.from('flights').update(updateData).eq('id', flightId);
+    }
     return Astro.redirect('/viajes?saved=1');
   }
 
@@ -129,7 +161,7 @@ const today = new Date().toISOString().split('T')[0];
 const upcoming = allFlights.filter(f => f.flight_date >= today);
 const past = allFlights.filter(f => f.flight_date < today);
 const totalFlights = allFlights.length;
-const totalSpent = allFlights.reduce((s, f) => s + (f.ticket_price || 0), 0);
+const totalSpent = allFlights.reduce((s, f) => s + (f.ticket_price || 0) + (f.paperwork_cost || 0) + (f.customs_cost || 0) + (f.airport_cost || 0), 0);
 const countries = new Set(allFlights.flatMap(f => [f.origin, f.destination]));
 const showForm = Astro.url.searchParams.get('new') === '1';
 
@@ -180,7 +212,7 @@ function checklistItems(flight: any) {
       </div>
       <div class="rounded-2xl bg-card border border-card-border px-4 py-3 text-center">
         <p class="text-lg font-black text-ink">{totalSpent > 0 ? `$${totalSpent.toLocaleString()}` : '—'}</p>
-        <p class="text-[10px] text-muted font-medium mt-0.5">invertido</p>
+        <p class="text-[10px] text-muted font-medium mt-0.5">costo total</p>
       </div>
     </div>
   )}
@@ -218,7 +250,7 @@ function checklistItems(flight: any) {
             </div>
           </div>
 
-          <div class="grid grid-cols-3 gap-3">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label class="block text-xs font-medium text-muted mb-1">Fecha *</label>
               <input type="date" name="flight_date" required class="w-full rounded-xl border border-card-border bg-canvas px-3 py-2.5 text-sm text-ink focus:outline-none focus:border-accent transition-colors" />
@@ -231,8 +263,23 @@ function checklistItems(flight: any) {
               </select>
             </div>
             <div>
-              <label class="block text-xs font-medium text-muted mb-1">Precio (USD)</label>
+              <label class="block text-xs font-medium text-muted mb-1">Boleto (USD)</label>
               <input type="number" name="ticket_price" placeholder="0" min="0" step="0.01" class="w-full rounded-xl border border-card-border bg-canvas px-3 py-2.5 text-sm text-ink focus:outline-none focus:border-accent transition-colors" />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label class="block text-xs font-medium text-muted mb-1">Trámites (USD)</label>
+              <input type="number" name="paperwork_cost" placeholder="Certificados, permisos..." min="0" step="0.01" class="w-full rounded-xl border border-card-border bg-canvas px-3 py-2.5 text-sm text-ink focus:outline-none focus:border-accent transition-colors" />
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-muted mb-1">Aduanas (USD)</label>
+              <input type="number" name="customs_cost" placeholder="Inspección, impuestos..." min="0" step="0.01" class="w-full rounded-xl border border-card-border bg-canvas px-3 py-2.5 text-sm text-ink focus:outline-none focus:border-accent transition-colors" />
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-muted mb-1">Aeropuerto (USD)</label>
+              <input type="number" name="airport_cost" placeholder="Transportín, extras..." min="0" step="0.01" class="w-full rounded-xl border border-card-border bg-canvas px-3 py-2.5 text-sm text-ink focus:outline-none focus:border-accent transition-colors" />
             </div>
           </div>
 
@@ -363,7 +410,22 @@ function checklistItems(flight: any) {
                   </span>
                   {flight.ticket_price && (
                     <span class="rounded-full bg-green-50 px-2.5 py-0.5 text-[11px] font-medium text-green-700">
-                      ${flight.ticket_price.toLocaleString()}
+                      Boleto: ${flight.ticket_price.toLocaleString()}
+                    </span>
+                  )}
+                  {flight.paperwork_cost && (
+                    <span class="rounded-full bg-blue-50 px-2.5 py-0.5 text-[11px] font-medium text-blue-700">
+                      Trámites: ${flight.paperwork_cost.toLocaleString()}
+                    </span>
+                  )}
+                  {flight.customs_cost && (
+                    <span class="rounded-full bg-purple-50 px-2.5 py-0.5 text-[11px] font-medium text-purple-700">
+                      Aduanas: ${flight.customs_cost.toLocaleString()}
+                    </span>
+                  )}
+                  {flight.airport_cost && (
+                    <span class="rounded-full bg-amber-50 px-2.5 py-0.5 text-[11px] font-medium text-amber-700">
+                      Aeropuerto: ${flight.airport_cost.toLocaleString()}
                     </span>
                   )}
                 </div>
@@ -462,13 +524,18 @@ function checklistItems(flight: any) {
                   <input type="text" name="origin" value={flight.origin} required placeholder="Origen" class="rounded-xl border border-card-border bg-canvas px-3 py-2 text-xs text-ink focus:outline-none focus:border-accent transition-colors" />
                   <input type="text" name="destination" value={flight.destination} required placeholder="Destino" class="rounded-xl border border-card-border bg-canvas px-3 py-2 text-xs text-ink focus:outline-none focus:border-accent transition-colors" />
                 </div>
-                <div class="grid grid-cols-3 gap-2">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   <input type="date" name="flight_date" value={flight.flight_date} required class="rounded-xl border border-card-border bg-canvas px-3 py-2 text-xs text-ink focus:outline-none focus:border-accent transition-colors" />
                   <select name="cabin_or_cargo" class="rounded-xl border border-card-border bg-canvas px-3 py-2 text-xs text-ink focus:outline-none focus:border-accent transition-colors">
                     <option value="cabina" selected={flight.cabin_or_cargo === 'cabina'}>Cabina</option>
                     <option value="bodega" selected={flight.cabin_or_cargo === 'bodega'}>Bodega</option>
                   </select>
-                  <input type="number" name="ticket_price" value={flight.ticket_price || ''} placeholder="Precio" min="0" step="0.01" class="rounded-xl border border-card-border bg-canvas px-3 py-2 text-xs text-ink focus:outline-none focus:border-accent transition-colors" />
+                  <input type="number" name="ticket_price" value={flight.ticket_price || ''} placeholder="Boleto (USD)" min="0" step="0.01" class="rounded-xl border border-card-border bg-canvas px-3 py-2 text-xs text-ink focus:outline-none focus:border-accent transition-colors" />
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <input type="number" name="paperwork_cost" value={flight.paperwork_cost || ''} placeholder="Trámites (USD)" min="0" step="0.01" class="rounded-xl border border-card-border bg-canvas px-3 py-2 text-xs text-ink focus:outline-none focus:border-accent transition-colors" />
+                  <input type="number" name="customs_cost" value={flight.customs_cost || ''} placeholder="Aduanas (USD)" min="0" step="0.01" class="rounded-xl border border-card-border bg-canvas px-3 py-2 text-xs text-ink focus:outline-none focus:border-accent transition-colors" />
+                  <input type="number" name="airport_cost" value={flight.airport_cost || ''} placeholder="Aeropuerto (USD)" min="0" step="0.01" class="rounded-xl border border-card-border bg-canvas px-3 py-2 text-xs text-ink focus:outline-none focus:border-accent transition-colors" />
                 </div>
                 <div class="grid grid-cols-2 gap-2">
                   <label class="flex items-center gap-2 text-xs text-ink"><input type="checkbox" name="vet_certificate" checked={flight.vet_certificate} class="h-3.5 w-3.5 rounded" /> Cert. vet.</label>
@@ -516,7 +583,7 @@ function checklistItems(flight: any) {
                   <p class="text-sm font-semibold text-ink">{flight.origin} → {flight.destination}</p>
                   <p class="text-[11px] text-muted">
                     {formatDate(flight.flight_date)} · {flight.airline}
-                    {flight.ticket_price ? ` · $${flight.ticket_price.toLocaleString()}` : ''}
+                    {(flight.ticket_price || flight.paperwork_cost || flight.customs_cost || flight.airport_cost) ? ` · $${((flight.ticket_price || 0) + (flight.paperwork_cost || 0) + (flight.customs_cost || 0) + (flight.airport_cost || 0)).toLocaleString()}` : ''}
                   </p>
                 </div>
               </div>
@@ -539,7 +606,16 @@ function checklistItems(flight: any) {
                     <span class="rounded-full bg-canvas px-2.5 py-0.5 text-[11px] font-medium text-muted">{flight.flight_number}</span>
                   )}
                   {flight.ticket_price && (
-                    <span class="rounded-full bg-green-50 px-2.5 py-0.5 text-[11px] font-medium text-green-700">${flight.ticket_price.toLocaleString()}</span>
+                    <span class="rounded-full bg-green-50 px-2.5 py-0.5 text-[11px] font-medium text-green-700">Boleto: ${flight.ticket_price.toLocaleString()}</span>
+                  )}
+                  {flight.paperwork_cost && (
+                    <span class="rounded-full bg-blue-50 px-2.5 py-0.5 text-[11px] font-medium text-blue-700">Trámites: ${flight.paperwork_cost.toLocaleString()}</span>
+                  )}
+                  {flight.customs_cost && (
+                    <span class="rounded-full bg-purple-50 px-2.5 py-0.5 text-[11px] font-medium text-purple-700">Aduanas: ${flight.customs_cost.toLocaleString()}</span>
+                  )}
+                  {flight.airport_cost && (
+                    <span class="rounded-full bg-amber-50 px-2.5 py-0.5 text-[11px] font-medium text-amber-700">Aeropuerto: ${flight.airport_cost.toLocaleString()}</span>
                   )}
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
@@ -592,13 +668,18 @@ function checklistItems(flight: any) {
                   <input type="text" name="origin" value={flight.origin} required placeholder="Origen" class="rounded-xl border border-card-border bg-canvas px-3 py-2 text-xs text-ink focus:outline-none focus:border-accent transition-colors" />
                   <input type="text" name="destination" value={flight.destination} required placeholder="Destino" class="rounded-xl border border-card-border bg-canvas px-3 py-2 text-xs text-ink focus:outline-none focus:border-accent transition-colors" />
                 </div>
-                <div class="grid grid-cols-3 gap-2">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   <input type="date" name="flight_date" value={flight.flight_date} required class="rounded-xl border border-card-border bg-canvas px-3 py-2 text-xs text-ink focus:outline-none focus:border-accent transition-colors" />
                   <select name="cabin_or_cargo" class="rounded-xl border border-card-border bg-canvas px-3 py-2 text-xs text-ink focus:outline-none focus:border-accent transition-colors">
                     <option value="cabina" selected={flight.cabin_or_cargo === 'cabina'}>Cabina</option>
                     <option value="bodega" selected={flight.cabin_or_cargo === 'bodega'}>Bodega</option>
                   </select>
-                  <input type="number" name="ticket_price" value={flight.ticket_price || ''} placeholder="Precio" min="0" step="0.01" class="rounded-xl border border-card-border bg-canvas px-3 py-2 text-xs text-ink focus:outline-none focus:border-accent transition-colors" />
+                  <input type="number" name="ticket_price" value={flight.ticket_price || ''} placeholder="Boleto (USD)" min="0" step="0.01" class="rounded-xl border border-card-border bg-canvas px-3 py-2 text-xs text-ink focus:outline-none focus:border-accent transition-colors" />
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <input type="number" name="paperwork_cost" value={flight.paperwork_cost || ''} placeholder="Trámites (USD)" min="0" step="0.01" class="rounded-xl border border-card-border bg-canvas px-3 py-2 text-xs text-ink focus:outline-none focus:border-accent transition-colors" />
+                  <input type="number" name="customs_cost" value={flight.customs_cost || ''} placeholder="Aduanas (USD)" min="0" step="0.01" class="rounded-xl border border-card-border bg-canvas px-3 py-2 text-xs text-ink focus:outline-none focus:border-accent transition-colors" />
+                  <input type="number" name="airport_cost" value={flight.airport_cost || ''} placeholder="Aeropuerto (USD)" min="0" step="0.01" class="rounded-xl border border-card-border bg-canvas px-3 py-2 text-xs text-ink focus:outline-none focus:border-accent transition-colors" />
                 </div>
                 <div class="grid grid-cols-2 gap-2">
                   <label class="flex items-center gap-2 text-xs text-ink"><input type="checkbox" name="vet_certificate" checked={flight.vet_certificate} class="h-3.5 w-3.5 rounded" /> Cert. vet.</label>
