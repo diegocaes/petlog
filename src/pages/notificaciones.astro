@@ -6,31 +6,37 @@ import { getActivePet } from '../lib/pet';
 const { supabase, user, activePetId } = Astro.locals;
 const { pet: activePet } = await getActivePet(supabase, user.id, activePetId);
 
-// Handle clear all action
+// Handle clear all action — soft-delete (dismissed) so dedup still works
 if (Astro.request.method === 'POST') {
   const formData = await Astro.request.formData();
   if (formData.get('_action') === 'clear_all') {
-    let delQuery = supabase.from('notifications').delete().eq('user_id', user.id);
-    if (activePet) delQuery = delQuery.eq('pet_id', activePet.id);
-    await delQuery;
+    let dismissQuery = supabase
+      .from('notifications')
+      .update({ dismissed: true, read: true })
+      .eq('user_id', user.id)
+      .eq('dismissed', false);
+    if (activePet) dismissQuery = dismissQuery.eq('pet_id', activePet.id);
+    await dismissQuery;
     return Astro.redirect('/notificaciones?cleared=1');
   }
 }
 
-// Mark all as read on page visit (only for active pet)
+// Mark all as read on page visit (only for active pet, non-dismissed)
 let markQuery = supabase
   .from('notifications')
   .update({ read: true })
   .eq('user_id', user.id)
-  .eq('read', false);
+  .eq('read', false)
+  .eq('dismissed', false);
 if (activePet) markQuery = markQuery.eq('pet_id', activePet.id);
 await markQuery;
 
-// Fetch notifications for active pet (most recent first, last 50)
+// Fetch non-dismissed notifications for active pet (most recent first, last 50)
 let fetchQuery = supabase
   .from('notifications')
   .select('id, type, title, message, icon, href, read, created_at, pet_id')
   .eq('user_id', user.id)
+  .eq('dismissed', false)
   .order('created_at', { ascending: false })
   .limit(50);
 if (activePet) fetchQuery = fetchQuery.eq('pet_id', activePet.id);

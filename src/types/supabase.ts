@@ -131,6 +131,7 @@ export interface Notification {
   icon: string | null;
   href: string | null;
   read: boolean;
+  dismissed: boolean;
   created_at: string;
 }
 

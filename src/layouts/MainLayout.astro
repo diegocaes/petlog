@@ -22,14 +22,15 @@ const { pet: activePet, pets } = user
 // Theme color: user-selected, falls back to 'orange'
 const petTheme = activePet?.theme_color || 'orange';
 
-// Notification unread count (filtered by active pet)
+// Notification unread count (filtered by active pet, exclude dismissed)
 let unreadCount = 0;
 if (user) {
   let query = supabase
     .from('notifications')
     .select('id', { count: 'exact', head: true })
     .eq('user_id', user.id)
-    .eq('read', false);
+    .eq('read', false)
+    .eq('dismissed', false);
   if (activePet) query = query.eq('pet_id', activePet.id);
   const { count } = await query;
   unreadCount = count ?? 0;

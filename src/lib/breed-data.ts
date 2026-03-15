@@ -737,9 +737,9 @@ export const BREED_DATA: Record<string, BreedProfile> = {
     obesityRisk: 'low',
     seniorAgeYears: 9,
   },
-  // Fallback para razas no listadas o cruzados
+  // Fallback para razas no listadas, cruzados, rescatados, callejeros
   mixed: {
-    displayName: 'Raza mixta / Desconocida',
+    displayName: 'Mestizo / Rescatado',
     idealWeightKgMin: 10,
     idealWeightKgMax: 30,
     sizeCategory: 'medium',
@@ -882,8 +882,29 @@ export function normalizeBreedKey(breed: string | null | undefined): string {
     'cruzado': 'mixed',
     'mixto': 'mixed',
     'mixed': 'mixed',
+    'mixed rescue': 'mixed',
+    'mixed  rescue': 'mixed',
     'desconocido': 'mixed',
     'other': 'mixed',
+    'rescue': 'mixed',
+    'rescatado': 'mixed',
+    'rescatada': 'mixed',
+    'adoptado': 'mixed',
+    'adoptada': 'mixed',
+    'callejero': 'mixed',
+    'callejera': 'mixed',
+    'criollo': 'mixed',
+    'criolla': 'mixed',
+    'perro de calle': 'mixed',
+    'sin raza': 'mixed',
+    'mutt': 'mixed',
+    'mongrel': 'mixed',
+    'stray': 'mixed',
+    'sato': 'mixed',
+    'potcake': 'mixed',
+    'aspin': 'mixed',
+    'indie': 'mixed',
+    'perro mestizo': 'mixed',
   };
 
   // Búsqueda directa

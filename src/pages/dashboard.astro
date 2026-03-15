@@ -242,10 +242,71 @@ try {
     }
   }
 
+  // ── Smart reminders (non-invasive, once per trigger) ──
+
+  // Grooming reminder: no bath/grooming in 60+ days
+  const lastGroomDate = allGroomings?.[0]?.date;
+  if (lastGroomDate) {
+    const daysSinceGroom = Math.floor((Date.now() - new Date(lastGroomDate + 'T00:00:00').getTime()) / 86400000);
+    if (daysSinceGroom >= 60) {
+      const msg = `${pet.name} lleva ${daysSinceGroom} días sin un baño o grooming`;
+      const key = `grooming_reminder::${msg}`;
+      if (!existingSet.has(key)) {
+        newNotifications.push({ type: 'grooming_reminder', title: '✂️ Hora de un baño', message: msg, icon: '✂️', href: '/salud/grooming' });
+      }
+    }
+  }
+
+  // Activity reminder: no walks logged in 7+ days
+  const lastActivityDate = activityLogs?.[0]?.date;
+  if (lastActivityDate) {
+    const daysSinceActivity = Math.floor((Date.now() - new Date(lastActivityDate + 'T00:00:00').getTime()) / 86400000);
+    if (daysSinceActivity >= 7) {
+      const msg = `Llevas ${daysSinceActivity} días sin registrar paseos de ${pet.name}`;
+      const key = `activity_reminder::${msg}`;
+      if (!existingSet.has(key)) {
+        newNotifications.push({ type: 'activity_reminder', title: '🐕 ¿Pasearon hoy?', message: msg, icon: '🐕', href: '/actividad' });
+      }
+    }
+  }
+
+  // Vaccine booster due in ≤2 days
+  const { data: vaccinesNextDue } = await supabase
+    .from('vaccines')
+    .select('name, next_due')
+    .eq('pet_id', pet.id)
+    .not('next_due', 'is', null);
+  const nowMs = new Date().setHours(0, 0, 0, 0);
+  for (const v of vaccinesNextDue ?? []) {
+    const daysUntilVac = Math.ceil((new Date(v.next_due + 'T00:00:00').getTime() - nowMs) / 86400000);
+    if (daysUntilVac >= 0 && daysUntilVac <= 2) {
+      const msg = daysUntilVac === 0
+        ? `Hoy toca el refuerzo de ${v.name} de ${pet.name}`
+        : `Faltan ${daysUntilVac} día${daysUntilVac !== 1 ? 's' : ''} para el refuerzo de ${v.name}`;
+      const key = `vaccine_due::${msg}`;
+      if (!existingSet.has(key)) {
+        newNotifications.push({ type: 'vaccine_due', title: '💉 Vacuna próxima', message: msg, icon: '💉', href: '/salud/vacunas' });
+      }
+    }
+  }
+
+  // Weight check reminder: no weight recorded in 90+ days
+  const lastWeightDate = weightRecords?.[0]?.date;
+  if (lastWeightDate) {
+    const daysSinceWeight = Math.floor((Date.now() - new Date(lastWeightDate + 'T00:00:00').getTime()) / 86400000);
+    if (daysSinceWeight >= 90) {
+      const msg = `Llevas ${daysSinceWeight} días sin pesar a ${pet.name}`;
+      const key = `weight_reminder::${msg}`;
+      if (!existingSet.has(key)) {
+        newNotifications.push({ type: 'weight_reminder', title: '⚖️ Hora de pesar', message: msg, icon: '⚖️', href: '/salud/peso' });
+      }
+    }
+  }
+
   // Insert only truly new notifications
   if (newNotifications.length > 0) {
     await supabase.from('notifications').insert(
-      newNotifications.map(n => ({ ...n, user_id: user.id, pet_id: pet.id }))
+      newNotifications.map(n => ({ ...n, user_id: user.id, pet_id: pet.id, dismissed: false }))
     );
   }
 
