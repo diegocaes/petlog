@@ -1,4 +1,4 @@
-# PetLog
+# Vivra
 
 App móvil-first para registrar la vida de una mascota (perro). Stack: Astro 5 SSR + Supabase + Tailwind CSS v4 + React islands. Deploy en Vercel.
 

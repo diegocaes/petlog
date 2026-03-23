@@ -1,4 +1,4 @@
-// Badge system — engagement badges earned by using PetLog features.
+// Badge system — engagement badges earned by using Vivra features.
 // Each badge has an id, display info, and a condition evaluated from counts.
 
 export interface BadgeDef {

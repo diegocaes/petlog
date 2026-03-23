@@ -1,5 +1,5 @@
 /**
- * PetLog Premium — Centralized premium/free gating logic
+ * Vivra Premium — Centralized premium/free gating logic
  *
  * This module is the SINGLE SOURCE OF TRUTH for what's free and what's premium.
  * Used by both web (Astro SSR) and will be used by iOS (React Native) since it's pure TS.

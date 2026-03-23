@@ -1,6 +1,6 @@
-# PetLog iOS — Roadmap & Arquitectura
+# Vivra iOS — Roadmap & Arquitectura
 
-> Plan maestro para la app nativa iOS de PetLog.
+> Plan maestro para la app nativa iOS de Vivra.
 > El mismo Supabase backend que usa la web. Un usuario, todos sus datos, en ambas plataformas.
 
 ---
@@ -44,8 +44,8 @@ La app web y la app iOS comparten:
 ## Arquitectura del repositorio
 
 ```
-petlog/                          ← repositorio actual (web)
-petlog-mobile/                   ← NUEVO repositorio iOS
+vivra/                          ← repositorio actual (web)
+vivra-mobile/                   ← NUEVO repositorio iOS
   ├── app/                       ← Expo Router (file-based routing)
   │   ├── (auth)/
   │   │   ├── login.tsx
@@ -150,8 +150,8 @@ Navegación: Tab bar con 5 tabs: Inicio, Salud, Comida, Viajes, Perfil.
 - [ ] Localización: español (es) como principal, inglés (en) como fallback
 
 ### Privacidad y datos
-- [ ] Privacy Policy URL pública (ej: petlog.app/privacy)
-- [ ] Terms of Service URL pública (ej: petlog.app/terms)
+- [ ] Privacy Policy URL pública (ej: vivra.app/privacy)
+- [ ] Terms of Service URL pública (ej: vivra.app/terms)
 - [ ] GDPR / datos del usuario: solo datos de mascotas, no datos sensibles de personas
 - [ ] Fotos de mascotas: uso claramente declarado en Privacy Nutrition Label
 - [ ] Cámara: solo para fotos de mascotas (NSCameraUsageDescription)
@@ -179,9 +179,9 @@ Navegación: Tab bar con 5 tabs: Inicio, Salud, Comida, Viajes, Perfil.
 - Necesario para: TestFlight, App Store, Push Notifications
 
 ### 2. App Store Connect
-- Crear el app record: "PetLog"
-- Bundle ID: `com.petlog.app`
-- SKU: `petlog-ios-v1`
+- Crear el app record: "Vivra"
+- Bundle ID: `com.vivra.app`
+- SKU: `vivra-ios-v1`
 
 ### 3. Privacy Policy y Terms of Service (OBLIGATORIOS para App Store)
 - Crear páginas en la web: `/privacy` y `/terms`
@@ -247,8 +247,8 @@ CREATE POLICY "Users read own subscription" ON user_subscriptions
 
 ### 5. Google OAuth — configurar para mobile
 - En Google Cloud Console, agregar:
-  - iOS Bundle ID: `com.petlog.app`
-  - URL Scheme: `com.petlog.app` (para deep link de callback)
+  - iOS Bundle ID: `com.vivra.app`
+  - URL Scheme: `com.vivra.app` (para deep link de callback)
 - Supabase ya soporta esto, solo hay que agregar el Bundle ID
 
 ### 6. Supabase Storage buckets existentes
@@ -265,7 +265,7 @@ CREATE POLICY "Users read own subscription" ON user_subscriptions
 **Objetivo: Todo lo que Apple y Supabase necesitan listo.**
 
 - [ ] 0.1 — Registrar Apple Developer Program ($99)
-- [ ] 0.2 — Crear app en App Store Connect (Bundle ID: com.petlog.app)
+- [ ] 0.2 — Crear app en App Store Connect (Bundle ID: com.vivra.app)
 - [x] 0.3 — Crear página `/privacy` en la web (requerida por Apple) ✅
 - [x] 0.4 — Crear página `/terms` en la web (requerida por Apple) ✅
 - [ ] 0.5 — Ejecutar SQL de nuevas tablas en Supabase (push_tokens, referrals, user_subscriptions)
@@ -283,7 +283,7 @@ CREATE POLICY "Users read own subscription" ON user_subscriptions
 - [ ] 1.3 — Auth guard (root `_layout.tsx`) — si no hay sesión → pantalla login
 - [ ] 1.4 — Pantalla Login: email/password + Google OAuth (misma cuenta web)
 - [ ] 1.5 — Pantalla Register: email/password (con validación)
-- [ ] 1.6 — Deep link handler para OAuth callback (`com.petlog.app://auth/callback`)
+- [ ] 1.6 — Deep link handler para OAuth callback (`com.vivra.app://auth/callback`)
 - [ ] 1.7 — Forgot password flow
 - [ ] 1.8 — Onboarding básico (nombre de mascota — si no tiene mascotas)
 - [ ] 1.9 — Design system base: Colors, Typography, Spacing, Button, Card, LoadingScreen
@@ -368,8 +368,8 @@ CREATE POLICY "Users read own subscription" ON user_subscriptions
 
 - [ ] 8.1 — Integrar RevenueCat SDK
 - [ ] 8.2 — Crear productos en App Store Connect:
-  - `petlog_premium_monthly` — $2.99/mes
-  - `petlog_premium_yearly` — $19.99/año
+  - `vivra_premium_monthly` — $2.99/mes
+  - `vivra_premium_yearly` — $19.99/año
 - [ ] 8.3 — Paywall screen (diseño "Apple-proof")
 - [ ] 8.4 — Gates de features premium (máx 2 mascotas en free, etc.)
 - [ ] 8.5 — Restore purchases
@@ -445,7 +445,7 @@ Supabase (backend único)
 1. **Crear páginas `/privacy` y `/terms` en la web** — Apple las revisa antes de aprobar la app
 2. **Ejecutar el SQL** de las nuevas tablas en Supabase (push_tokens, referrals, user_subscriptions)
 3. **Registrar Apple Developer Program** si no está hecho
-4. **Crear el App Record** en App Store Connect con Bundle ID `com.petlog.app`
+4. **Crear el App Record** en App Store Connect con Bundle ID `com.vivra.app`
 
 Solo con eso en orden, el scaffold de la app puede empezar sin bloqueos.
 
@@ -453,7 +453,7 @@ Solo con eso en orden, el scaffold de la app puede empezar sin bloqueos.
 
 ## Preguntas a responder antes de fase 1
 
-- [ ] ¿El nombre en App Store será "PetLog" exacto? (verificar disponibilidad)
+- [ ] ¿El nombre en App Store será "Vivra" exacto? (verificar disponibilidad)
 - [ ] ¿Primero solo iPhone o también iPad desde el inicio?
 - [ ] ¿El premium de la app web también se gestiona con RevenueCat, o queda como pago directo (Stripe)?
 - [ ] ¿Habrá Android también, o solo iOS por ahora?

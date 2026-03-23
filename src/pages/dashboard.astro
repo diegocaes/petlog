@@ -415,7 +415,7 @@ const topActions = todoActions.slice(0, 4);
           <div class="flex items-start gap-2">
             <span class="text-base shrink-0 mt-0.5">💡</span>
             <p class="text-xs text-amber-dark leading-relaxed">
-              No importa si {pet.name} es mayor — PetLog te ayuda a llevar su historial desde hoy.
+              No importa si {pet.name} es mayor — Vivra te ayuda a llevar su historial desde hoy.
             </p>
           </div>
         </div>
@@ -442,7 +442,7 @@ const topActions = todoActions.slice(0, 4);
 
   <script is:inline>
     (function() {
-      if (localStorage.getItem('petlog_checklist_hidden') === '1') {
+      if (localStorage.getItem('vivra_checklist_hidden') === '1') {
         var el = document.getElementById('onboarding-checklist');
         if (el) el.style.display = 'none';
       }
@@ -453,7 +453,7 @@ const topActions = todoActions.slice(0, 4);
       var btn = document.getElementById('btn-dismiss-checklist');
       if (btn) {
         btn.addEventListener('click', function() {
-          localStorage.setItem('petlog_checklist_hidden', '1');
+          localStorage.setItem('vivra_checklist_hidden', '1');
           var el = document.getElementById('onboarding-checklist');
           if (el) el.style.display = 'none';
         });

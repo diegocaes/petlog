@@ -20,25 +20,25 @@ if (Astro.url.searchParams.has('code') || Astro.url.searchParams.has('token_hash
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#F97316" />
-    <meta name="description" content="PetLog — El diario digital de tu mascota. Vacunas, peso, veterinario, actividad y pasaporte de viaje en un solo lugar. Gratis." />
+    <meta name="description" content="Vivra — El diario digital de tu mascota. Vacunas, peso, veterinario, actividad y pasaporte de viaje en un solo lugar. Gratis." />
     <meta name="keywords" content="mascota, perro, vacunas, veterinario, peso, pasaporte mascota, diario mascota, pet tracker, dog health" />
-    <meta name="author" content="PetLog" />
-    <link rel="canonical" href="https://petlog.app/" />
+    <meta name="author" content="Vivra" />
+    <link rel="canonical" href="https://vivra.app/" />
 
     <!-- Open Graph -->
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://petlog.app/" />
-    <meta property="og:title" content="PetLog — El diario digital de tu mascota" />
+    <meta property="og:url" content="https://vivra.app/" />
+    <meta property="og:title" content="Vivra — El diario digital de tu mascota" />
     <meta property="og:description" content="Vacunas, peso, veterinario, actividad y pasaporte de viaje. Todo en un solo lugar, siempre actualizado." />
-    <meta property="og:image" content="https://petlog.app/og-image.png" />
+    <meta property="og:image" content="https://vivra.app/og-image.png" />
     <meta property="og:locale" content="es_PA" />
-    <meta property="og:site_name" content="PetLog" />
+    <meta property="og:site_name" content="Vivra" />
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="PetLog — El diario digital de tu mascota" />
+    <meta name="twitter:title" content="Vivra — El diario digital de tu mascota" />
     <meta name="twitter:description" content="Vacunas, peso, veterinario, actividad y pasaporte de viaje. Todo en un solo lugar." />
-    <meta name="twitter:image" content="https://petlog.app/og-image.png" />
+    <meta name="twitter:image" content="https://vivra.app/og-image.png" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -47,16 +47,16 @@ if (Astro.url.searchParams.has('code') || Astro.url.searchParams.has('token_hash
     <link rel="manifest" href="/manifest.json" />
     <link rel="icon" href="/icons/icon-192.png" />
     <link rel="apple-touch-icon" href="/icons/icon-192.png" />
-    <title>PetLog — El diario digital de tu mascota</title>
+    <title>Vivra — El diario digital de tu mascota</title>
 
     <!-- Structured Data -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
       "@type": "WebApplication",
-      "name": "PetLog",
+      "name": "Vivra",
       "description": "El diario digital de tu mascota. Vacunas, peso, veterinario, actividad y pasaporte de viaje en un solo lugar.",
-      "url": "https://petlog.app",
+      "url": "https://vivra.app",
       "applicationCategory": "LifestyleApplication",
       "operatingSystem": "Web",
       "offers": {
@@ -66,7 +66,7 @@ if (Astro.url.searchParams.has('code') || Astro.url.searchParams.has('token_hash
       },
       "author": {
         "@type": "Organization",
-        "name": "PetLog"
+        "name": "Vivra"
       }
     }
     </script>
@@ -120,7 +120,7 @@ if (Astro.url.searchParams.has('code') || Astro.url.searchParams.has('token_hash
       .hero::before {
         content: '';
         position: absolute; inset: 0;
-        background-image: url('/PetLog.png');
+        background-image: url('/bg_home.png');
         background-size: 420px auto;
         background-repeat: repeat;
         opacity: 0.15;
@@ -210,7 +210,7 @@ if (Astro.url.searchParams.has('code') || Astro.url.searchParams.has('token_hash
       .features-section::before {
         content: '';
         position: absolute; inset: 0;
-        background-image: url('/PetLog.png');
+        background-image: url('/bg_home.png');
         background-size: 480px auto;
         background-repeat: repeat;
         opacity: 0.03;
@@ -300,7 +300,7 @@ if (Astro.url.searchParams.has('code') || Astro.url.searchParams.has('token_hash
       .passport-section::before {
         content: '';
         position: absolute; inset: 0;
-        background-image: url('/PetLog.png');
+        background-image: url('/bg_home.png');
         background-size: 480px auto;
         background-repeat: repeat;
         opacity: 0.035;
@@ -336,7 +336,7 @@ if (Astro.url.searchParams.has('code') || Astro.url.searchParams.has('token_hash
       .cta-section::before {
         content: '';
         position: absolute; inset: 0;
-        background-image: url('/PetLog.png');
+        background-image: url('/bg_home.png');
         background-size: 400px auto;
         background-repeat: repeat;
         opacity: 0.15;
@@ -403,7 +403,7 @@ if (Astro.url.searchParams.has('code') || Astro.url.searchParams.has('token_hash
     <!-- ── NAV ── -->
     <nav>
       <a href="/" class="nav-logo">
-        <img src="/PetLog-logo.svg" alt="PetLog" style="height:72px;width:auto;" />
+        <img src="/Vivra.svg" alt="Vivra" style="height:72px;width:auto;" />
       </a>
       <div style="display:flex;align-items:center;gap:16px;">
         <a href="/login" style="font-size:14px;font-weight:600;color:var(--ink);text-decoration:none;opacity:0.6;transition:opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.6'">Entrar</a>
@@ -424,7 +424,7 @@ if (Astro.url.searchParams.has('code') || Astro.url.searchParams.has('token_hash
           </div>
         </div>
         <div class="hero-mockup">
-          <img src="/mockup-iphone.png" alt="PetLog en iPhone — dashboard de tu mascota" />
+          <img src="/mockup-iphone.png" alt="Vivra en iPhone — dashboard de tu mascota" />
         </div>
       </div>
     </section>
@@ -546,14 +546,14 @@ if (Astro.url.searchParams.has('code') || Astro.url.searchParams.has('token_hash
     <!-- ── CTA ── -->
     <section class="cta-section">
       <h2>Acceso solo<br/>por invitacion</h2>
-      <p>Pide tu codigo a alguien que ya use PetLog. Cada dueno de perro puede invitar a otros.</p>
+      <p>Pide tu codigo a alguien que ya use Vivra. Cada dueno de perro puede invitar a otros.</p>
       <div class="cta-actions">
         <a href="/register" class="btn-primary">Tengo una invitacion</a>
         <a href="/login" class="btn-secondary">Ya tengo cuenta</a>
       </div>
     </section>
 
-    <!-- ── WHY PETLOG ── -->
+    <!-- ── WHY VIVRA ── -->
     <section class="privacy-section">
       <div style="text-align:center;margin-bottom:36px;">
         <span class="section-label" style="display:block;">Simple y confiable</span>
@@ -594,9 +594,9 @@ if (Astro.url.searchParams.has('code') || Astro.url.searchParams.has('token_hash
     <!-- ── FOOTER ── -->
     <footer>
       <a href="/" class="footer-logo">
-        <img src="/PetLog-logo.svg" alt="PetLog" style="height:28px;width:auto;filter:brightness(0) invert(1);" />
+        <img src="/Vivra-white.svg" alt="Vivra" style="height:28px;width:auto;" />
       </a>
-      <p>© 2026 PetLog · Hecho con ❤️ en Panamá · <a href="/privacy">Privacidad</a> · <a href="/terms">Términos</a> · <a href="/login">Iniciar sesión</a></p>
+      <p>© 2026 Vivra · Hecho con ❤️ en Panamá · <a href="/privacy">Privacidad</a> · <a href="/terms">Términos</a> · <a href="/login">Iniciar sesión</a></p>
     </footer>
 
   </body>

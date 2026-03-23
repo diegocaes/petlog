@@ -1,15 +1,15 @@
-# PetLog Vitality Score — Research & Scientific References
+# Vivra Vitality Score — Research & Scientific References
 
-> Este documento es la fuente de verdad científica detrás del modelo de salud propietario de PetLog.
+> Este documento es la fuente de verdad científica detrás del modelo de salud propietario de Vivra.
 > Actualizado: Febrero 2026.
 
 ---
 
 ## 1. Marco conceptual: ¿Por qué un score compuesto?
 
-El PetLog Vitality Score está inspirado en modelos de salud humana como **Garmin Body Battery**, **WHOOP Recovery Score** y **Apple Vitals** (watchOS 11), que demostraron que combinar múltiples señales en un solo número accionable es más útil para el usuario que mostrar métricas aisladas.
+El Vivra Vitality Score está inspirado en modelos de salud humana como **Garmin Body Battery**, **WHOOP Recovery Score** y **Apple Vitals** (watchOS 11), que demostraron que combinar múltiples señales en un solo número accionable es más útil para el usuario que mostrar métricas aisladas.
 
-La diferencia clave de PetLog vs. esos modelos: **no requerimos hardware**. Toda la señal viene de datos que el dueño ya registra en la app.
+La diferencia clave de Vivra vs. esos modelos: **no requerimos hardware**. Toda la señal viene de datos que el dueño ya registra en la app.
 
 ---
 
@@ -78,7 +78,7 @@ La diferencia clave de PetLog vs. esos modelos: **no requerimos hardware**. Toda
 - **Inputs:** Frecuencia de comportamientos anormales (rascado, lamido, deglución, sueño), estratificados por tamaño/peso
 - **Output:** Score 0–10 (>5 = recomendar consulta vet)
 - **Concordancia con diagnóstico veterinario: 87.5%**
-- Este es el paper más directamente análogo al PetLog Vitality Score
+- Este es el paper más directamente análogo al Vivra Vitality Score
 - 📄 [PMC Full Text — Kim & Kim 2024](https://pmc.ncbi.nlm.nih.gov/articles/PMC10812422/)
 - 📄 [PubMed](https://pubmed.ncbi.nlm.nih.gov/38254424/)
 
@@ -112,7 +112,7 @@ La diferencia clave de PetLog vs. esos modelos: **no requerimos hardware**. Toda
 - **Motor:** Firstbeat Analytics (Finlandia)
 - **Inputs:** HRV, FC reposo, estrés (derivado de HRV), calidad de sueño, VO2max, intensidad de actividad
 - **Metodología:** Normalización contra baseline personal rodante → metáfora de batería
-- **Lección para PetLog:** El baseline personal es más importante que las normas poblacionales
+- **Lección para Vivra:** El baseline personal es más importante que las normas poblacionales
 - 📄 [Garmin Body Battery — Explicación oficial](https://support.garmin.com/en-US/?faq=VOFJAsiXut9K19k1qEn5W5)
 - 📄 [Pocket-lint — Body Battery explained](https://www.pocket-lint.com/garmin-body-battery-explained/)
 
@@ -120,12 +120,12 @@ La diferencia clave de PetLog vs. esos modelos: **no requerimos hardware**. Toda
 - **Inputs:** HRV (sueño profundo), FC reposo, frecuencia respiratoria, rendimiento de sueño, temperatura, SpO2
 - **Metodología:** Compara cada noche contra baseline personal de 14 días. HRV tiene mayor peso
 - **Categorías:** Verde (67–100%), Amarillo (34–66%), Rojo (0–33%)
-- **Lección para PetLog:** Score categorizado en semáforo es más accionable que un número puro
+- **Lección para Vivra:** Score categorizado en semáforo es más accionable que un número puro
 - 📄 [WHOOP — How Recovery Works](https://www.whoop.com/us/en/thelocker/how-does-whoop-recovery-work-101/)
 
 ### 4.3 Apple Vitals (watchOS 11, 2024)
 - **Metodología:** Baseline de 7 noches; anomalía solo cuando 2+ métricas desvían simultáneamente
-- **Lección para PetLog:** Una sola señal = ruido; dos o más señales simultáneas = alerta real (multi-signal anomaly detection)
+- **Lección para Vivra:** Una sola señal = ruido; dos o más señales simultáneas = alerta real (multi-signal anomaly detection)
 - 📄 [Apple watchOS 11 — Vitals](https://www.apple.com/newsroom/2024/06/watchos-11-brings-powerful-health-and-fitness-insights/)
 - 📄 [Apple Support — Vitals App](https://support.apple.com/en-us/120142)
 
@@ -140,7 +140,7 @@ La diferencia clave de PetLog vs. esos modelos: **no requerimos hardware**. Toda
 | **Petivity (Purina)** | Tests laboratorio (microbioma, riñón, dental) | Kits físicos | No | Tests periódicos costosos |
 | **Fetch Health Forecast** | Datos de claims de seguros por raza/edad | No | No visible | No app de seguimiento |
 | **Fi Collar** | GPS + actividad (pasos, sueño) | Sí ($150+) | No | Solo actividad |
-| **PetLog Vitality Score** | Todos los pilares combinados, sin hardware | **No** | **Sí** | — |
+| **Vivra Vitality Score** | Todos los pilares combinados, sin hardware | **No** | **Sí** | — |
 
 - 📄 [Whistle Health](https://www.whistle.com/products/whistle-health-smart-device)
 - 📄 [Whistle FIT — Pruritus Study (Frontiers)](https://pmc.ncbi.nlm.nih.gov/articles/PMC10445133/)
@@ -164,7 +164,7 @@ La diferencia clave de PetLog vs. esos modelos: **no requerimos hardware**. Toda
 
 ---
 
-## 7. Arquitectura del PetLog Vitality Score
+## 7. Arquitectura del Vivra Vitality Score
 
 ### Fórmula general
 
@@ -251,7 +251,7 @@ flags = {
 
 ---
 
-## 8. Datos que PetLog puede capturar en el futuro (roadmap)
+## 8. Datos que Vivra puede capturar en el futuro (roadmap)
 
 | Dato | Valor predictivo | Cómo capturarlo |
 |---|---|---|
@@ -266,7 +266,7 @@ flags = {
 
 ## 9. Posicionamiento competitivo
 
-> **PetLog Vitality Score es el único índice de salud canino multi-pilar, longitudinal y sin hardware del mercado hispano.**
+> **Vivra Vitality Score es el único índice de salud canino multi-pilar, longitudinal y sin hardware del mercado hispano.**
 
 Ninguna app existente combina:
 1. ✅ Peso histórico vs. ideal por raza (BCS-proxy)
@@ -279,4 +279,4 @@ Ninguna app existente combina:
 
 ---
 
-*Referencias compiladas y modelo diseñado en Febrero 2026 para PetLog v2.0.*
+*Referencias compiladas y modelo diseñado en Febrero 2026 para Vivra v2.0.*

@@ -1,10 +1,10 @@
-# PetLog — Contexto Completo del Proyecto
+# Vivra — Contexto Completo del Proyecto
 
 Documento exhaustivo para que cualquier AI o desarrollador entienda el proyecto al 100%.
 
 ---
 
-## Que es PetLog
+## Que es Vivra
 
 App movil-first para duenos de perros. Permite registrar salud, alimentacion, viajes, grooming, actividad y mas. Genera un "Vitality Score" (0-100) basado en datos reales del perro. Tiene sistema de badges, referidos, y modelo freemium.
 

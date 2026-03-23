@@ -596,7 +596,7 @@ const isOtherBreed = pet?.breed && !breedInList;
       </div>
       <div class="text-left">
         <p class="text-sm font-semibold text-ink">Enviar sugerencias</p>
-        <p class="text-xs text-muted">Ayúdanos a mejorar PetLog</p>
+        <p class="text-xs text-muted">Ayúdanos a mejorar Vivra</p>
       </div>
       <svg class="h-4 w-4 text-muted/40 ml-auto shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
     </button>
@@ -649,9 +649,9 @@ const isOtherBreed = pet?.breed && !breedInList;
 
   <!-- Footer -->
   <div class="mt-8 pb-4 text-center">
-    <p class="text-xs text-muted/50">PetLog © 2026</p>
+    <p class="text-xs text-muted/50">Vivra © 2026</p>
     <div class="mt-1 flex items-center justify-center gap-3">
-      <a href="mailto:soporte@petlog.app" class="text-xs text-muted/40 hover:text-muted transition-colors">Contactar soporte</a>
+      <a href="mailto:soporte@vivra.app" class="text-xs text-muted/40 hover:text-muted transition-colors">Contactar soporte</a>
       <span class="text-muted/30">·</span>
       <a href="/" class="text-xs text-muted/40 hover:text-muted transition-colors">Inicio</a>
     </div>
@@ -759,9 +759,9 @@ const isOtherBreed = pet?.breed && !breedInList;
         feedbackSendBtn.addEventListener('click', function() {
           var type = (feedbackType && feedbackType.value) || 'sugerencia';
           var msg = (feedbackMessage && feedbackMessage.value) || '';
-          var subject = encodeURIComponent('[PetLog] ' + type.charAt(0).toUpperCase() + type.slice(1));
+          var subject = encodeURIComponent('[Vivra] ' + type.charAt(0).toUpperCase() + type.slice(1));
           var body = encodeURIComponent(msg);
-          window.location.href = 'mailto:soporte@petlog.app?subject=' + subject + '&body=' + body;
+          window.location.href = 'mailto:soporte@vivra.app?subject=' + subject + '&body=' + body;
         });
       }
     });

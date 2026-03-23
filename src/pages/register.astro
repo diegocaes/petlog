@@ -123,7 +123,7 @@ if (refFromUrl) {
     <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" /></noscript>
     <link rel="manifest" href="/manifest.json" />
     <link rel="icon" href="/icons/icon-192.png" />
-    <title>Crear cuenta | PetLog</title>
+    <title>Crear cuenta | Vivra</title>
     <style>
       .right-panel {
         position: relative;
@@ -131,7 +131,7 @@ if (refFromUrl) {
       .right-panel::before {
         content: '';
         position: absolute; inset: 0;
-        background-image: url('/PetLog.png');
+        background-image: url('/bg_home.png');
         background-size: 380px auto;
         background-repeat: repeat;
         opacity: 0.10;
@@ -150,7 +150,7 @@ if (refFromUrl) {
       </div>
       <div class="relative">
         <a href="/" class="flex items-center mb-12 hover:opacity-80 transition-opacity">
-          <img src="/PetLog-logo.svg" alt="PetLog" style="height:80px;width:auto;filter:brightness(0) invert(1);" />
+          <img src="/Vivra-white.svg" alt="Vivra" style="height:80px;width:auto;" />
         </a>
         <h2 class="text-3xl font-bold leading-tight mb-4">Empieza el diario<br/>digital de tu mascota</h2>
         <p class="text-white/60 text-sm leading-relaxed mb-8">Todo lo que necesitas para cuidar a tu mejor amigo, en un solo lugar.</p>
@@ -191,7 +191,7 @@ if (refFromUrl) {
         <!-- Mobile logo -->
         <div class="mb-8 text-center lg:hidden animate-fade-up">
           <a href="/" class="inline-flex items-center hover:opacity-80 transition-opacity">
-            <img src="/PetLog-logo.svg" alt="PetLog" style="height:72px;width:auto;" />
+            <img src="/Vivra.svg" alt="Vivra" style="height:72px;width:auto;" />
           </a>
           <p class="text-sm text-muted mt-1">El diario digital de tu mascota</p>
         </div>
@@ -204,7 +204,7 @@ if (refFromUrl) {
             </div>
             <h2 class="text-2xl font-bold text-ink mb-2">Revisa tu correo</h2>
             <p class="text-sm text-muted leading-relaxed mb-6">
-              Te enviamos un enlace de confirmación. Haz clic en él para activar tu cuenta y empezar a usar PetLog.
+              Te enviamos un enlace de confirmación. Haz clic en él para activar tu cuenta y empezar a usar Vivra.
             </p>
             <div class="rounded-2xl border border-card-border bg-white px-4 py-4 text-left mb-6">
               <p class="text-xs text-muted font-medium mb-1">¿No llegó el correo?</p>
@@ -229,7 +229,7 @@ if (refFromUrl) {
                 {error === 'weak_password' && 'La contrasena debe tener al menos 8 caracteres.'}
                 {error === 'password_mismatch' && 'Las contrasenas no coinciden.'}
                 {error === 'invalid_ref' && 'Codigo de invitacion invalido. Necesitas que alguien te invite para registrarte.'}
-                {error === 'no_ref' && 'PetLog es solo por invitacion. Pide un codigo a alguien que ya use la app.'}
+                {error === 'no_ref' && 'Vivra es solo por invitación. Pide un código a alguien que ya use la app.'}
               </div>
             )}
 
@@ -246,7 +246,7 @@ if (refFromUrl) {
                 placeholder="Ej: TINTO2847"
                 class="w-full rounded-xl border border-card-border bg-white px-4 py-2.5 text-ink placeholder-muted text-sm transition-all duration-200 hover:border-gray-300 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20 uppercase tracking-wider font-mono"
               />
-              <p class="text-xs text-muted mt-1">Te lo da alguien que ya usa PetLog</p>
+              <p class="text-xs text-muted mt-1">Te lo da alguien que ya usa Vivra</p>
             </div>
 
             <!-- Google OAuth -->

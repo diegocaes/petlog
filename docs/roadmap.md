@@ -1,12 +1,12 @@
-# 🐾 PetLog - ROADMAP 2026-2027
+# 🐾 Vivra - ROADMAP 2026-2027
 **Versión 1.3** | Actualizado: 22 de febrero 2026
-**Objetivo final:** Convertir PetLog en la app #1 de registro de vida de mascotas en Latinoamérica (empezando por Panamá) y generar ingresos recurrentes vía Freemium + afiliados.
+**Objetivo final:** Convertir Vivra en la app #1 de registro de vida de mascotas en Latinoamérica (empezando por Panamá) y generar ingresos recurrentes vía Freemium + afiliados.
 
 ---
 
 ## 🎯 Visión General del Producto
 
-**Nombre:** PetLog
+**Nombre:** Vivra
 **Tagline:** "La vida completa de tu mascota en un solo lugar"
 **Modelo de negocio:** Freemium + Afiliados Amazon + (futuro) comisiones de reservas
 **Usuarios objetivo:** Dueños de perros y gatos en Panamá (luego LATAM)
@@ -86,7 +86,7 @@ ALTER TABLE pets ADD COLUMN IF NOT EXISTS color TEXT;
 - ✅ Onboarding mínimo: cuando no hay mascota, mostrar pantalla de bienvenida antes del formulario vacío
 - [ ] Revisar responsive en iPhone 12/15 y Android Chrome
 - [ ] Corregir todos los `forest`, `cream-dark` legacy restantes por las variables nuevas del tema
-- [ ] Deploy en dominio propio (sugerencia: `petlog.app` o `petlog.lat`)
+- [ ] Deploy en dominio propio (sugerencia: `vivra.app` o `vivra.lat`)
 - ✅ Google OAuth funcionando en producción (configurar callback URL de Vercel)
 - [ ] Vercel Analytics activado (gratis, 1 línea)
 - [ ] Documentar tablas en `docs/database.md`
@@ -98,7 +98,7 @@ ALTER TABLE pets ADD COLUMN IF NOT EXISTS color TEXT;
 - ✅ Razas en inglés, alfabéticas, con Border Collie
 - ✅ Checklist post-onboarding en el dashboard (`?onboarded=1`): 4 pasos accionables con links directos
 - ✅ Mensaje especial para mascotas adultas: "No importa si es mayor, registra desde hoy"
-- ✅ Logo PetLog en sidebar (desktop y mobile) y top bar → link a `/` (landing)
+- ✅ Logo Vivra en sidebar (desktop y mobile) y top bar → link a `/` (landing)
 - ✅ Hamburger menu mobile funcional (fix de `display:none` vs `classList.hidden`)
 - ✅ Eliminar cuenta desde `/perfil` con modal de confirmación y borrado en cascada en Supabase
 - ✅ Todos los journeys de auth auditados y corregidos (email no confirmado, login sin mascota, etc.)

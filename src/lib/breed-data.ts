@@ -1,5 +1,5 @@
 /**
- * PetLog Breed Database
+ * Vivra Breed Database
  * Fuentes: AKC breed standards, WSAVA guidelines, VetCompass UK (Pegram 2021),
  * Gough/Thomas/O'Neill "Breed Predispositions to Disease in Dogs and Cats" (3rd ed.),
  * OFA breed statistics, Pet Obesity Prevention ideal weight ranges.

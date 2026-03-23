@@ -90,7 +90,7 @@ const milestones = [
         <button
           id="btn-share"
           data-link={shareLink}
-          data-text={`Unete a PetLog, el diario digital de tu mascota. Usa mi codigo ${code} para registrarte: ${shareLink}`}
+          data-text={`Únete a Vivra, el diario digital de tu mascota. Usa mi codigo ${code} para registrarte: ${shareLink}`}
           class="w-full flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold text-white transition-all duration-200 active:scale-95"
           style="background:#F97316; box-shadow:0 4px 14px rgba(249,115,22,0.35);"
         >
@@ -218,7 +218,7 @@ const milestones = [
         var text = btnShare.getAttribute('data-text');
         var link = btnShare.getAttribute('data-link');
         if (navigator.share) {
-          navigator.share({ title: 'PetLog', text: text, url: link });
+          navigator.share({ title: 'Vivra', text: text, url: link });
         } else if (navigator.clipboard && link) {
           navigator.clipboard.writeText(link).then(function() {
             var orig = btnShare.textContent;

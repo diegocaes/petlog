@@ -1,6 +1,6 @@
 {
-  "name": "PetLog",
-  "short_name": "PetLog",
+  "name": "Vivra",
+  "short_name": "Vivra",
   "description": "El diario digital de tu mascota",
   "start_url": "/dashboard",
   "display": "standalone",

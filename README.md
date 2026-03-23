@@ -1,4 +1,4 @@
-# 🐾 PetLog
+# 🐾 Vivra
 
 El diario digital de tu mascota. App mobile-first, PWA instalable, para registrar vacunas, visitas al veterinario, alimentación, viajes y aventuras de tu perrito.
 

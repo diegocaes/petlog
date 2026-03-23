@@ -1,5 +1,5 @@
 /**
- * PetLog Vitality Score Engine
+ * Vivra Vitality Score Engine
  *
  * Modelo propietario de salud canina — 5 pilares, 0–100 puntos.
  *
@@ -824,7 +824,7 @@ const SCORE_CATEGORIES: Array<{
 // ─── Función principal ────────────────────────────────────────────────────────
 
 /**
- * Calcula el PetLog Vitality Score completo.
+ * Calcula el Vivra Vitality Score completo.
  *
  * Nunca muestra "crítico" — el peor estado visible es "perfil en construcción".
  * Tampoco usa lenguaje médico afirmativo — solo sugerencias y recomendaciones.
