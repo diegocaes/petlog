@@ -651,7 +651,7 @@ const isOtherBreed = pet?.breed && !breedInList;
   <div class="mt-8 pb-4 text-center">
     <p class="text-xs text-muted/50">Vivra © 2026</p>
     <div class="mt-1 flex items-center justify-center gap-3">
-      <a href="mailto:soporte@vivra.app" class="text-xs text-muted/40 hover:text-muted transition-colors">Contactar soporte</a>
+      <a href="mailto:admin@vivrapet.com" class="text-xs text-muted/40 hover:text-muted transition-colors">Contactar soporte</a>
       <span class="text-muted/30">·</span>
       <a href="/" class="text-xs text-muted/40 hover:text-muted transition-colors">Inicio</a>
     </div>
@@ -761,7 +761,7 @@ const isOtherBreed = pet?.breed && !breedInList;
           var msg = (feedbackMessage && feedbackMessage.value) || '';
           var subject = encodeURIComponent('[Vivra] ' + type.charAt(0).toUpperCase() + type.slice(1));
           var body = encodeURIComponent(msg);
-          window.location.href = 'mailto:soporte@vivra.app?subject=' + subject + '&body=' + body;
+          window.location.href = 'mailto:admin@vivrapet.com?subject=' + subject + '&body=' + body;
         });
       }
     });

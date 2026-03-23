@@ -150,8 +150,8 @@ Navegación: Tab bar con 5 tabs: Inicio, Salud, Comida, Viajes, Perfil.
 - [ ] Localización: español (es) como principal, inglés (en) como fallback
 
 ### Privacidad y datos
-- [ ] Privacy Policy URL pública (ej: vivra.app/privacy)
-- [ ] Terms of Service URL pública (ej: vivra.app/terms)
+- [ ] Privacy Policy URL pública (ej: vivrapet.com/privacy)
+- [ ] Terms of Service URL pública (ej: vivrapet.com/terms)
 - [ ] GDPR / datos del usuario: solo datos de mascotas, no datos sensibles de personas
 - [ ] Fotos de mascotas: uso claramente declarado en Privacy Nutrition Label
 - [ ] Cámara: solo para fotos de mascotas (NSCameraUsageDescription)
